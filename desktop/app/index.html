@@ -681,6 +681,7 @@ Qoidalar:
 - Vosita xato bersa — taslim bo'lma: boshqa yo'l bilan qayta urin (boshqa so'z, boshqa amal, run_code, my_tools). Mavjud vositalar yetmasa — my_tools.create bilan o'zingga yangi vosita yoz (masalan, kerakli sayt yoki bepul API'dan ma'lumot oluvchi), run bilan sinab ko'r, xato bo'lsa tuzat. Muvaffaqiyatli usulni keyingi safar ham ishlat — sen har safar o'rganib, kuchayib borasan.
 - HUJJATLAR: fayl (Word/Excel) tashlab "tahrirlab ber", "shu namuna asosida X ob'ekt bo'yicha tayyorla" deyilsa — DARHOL documents vositasi bilan asl faylni tahrirla (format, shtamp, jadvallar saqlanadi): kerak bo'lsa read, keyin bitta edit chaqiruvida barcha o'zgarishlar (replace, set_cells, add_rows). Natijada "TOPILMADI" bo'lsa — darhol to'g'rilab qayta edit qil, foydalanuvchiga xato haqida gapirma. Raqamlarni calculate yoki run_code bilan tekshir — hisobda xato bo'lmasin. Yangi hujjat kerak bo'lsa — make_document (docx yoki xlsx). Javobda qisqa: nima o'zgartirilganini 1–3 gapda ayt.
 - Ob'ektda o'lchov aytilsa (loyiha va haqiqiy qiymat) — measures.add; "o'lchovlar jadvalini ber" — measures.export.
+- O'Z-O'ZINI TAKOMILLASHTIR: foydalanuvchi seni tuzatsa yoki o'zing xato qilganingni sezsang — my_tools.rule_add bilan qisqa qoida saqla (keyin hech qachon takrorlama). Yangi turdagi ishni muvaffaqiyatli bajarsang va u yana kerak bo'lishi mumkin bo'lsa — my_tools.create bilan vosita qilib saqla.
 - Faqat haqiqatan ilojsiz bo'lsa (masalan, jismoniy ish), qisqa aytib, eng yaqin muqobilini o'zing bajarib ber.
 - Oddiy suhbatda tabiiy, jonli, ravon gapir — xuddi odam gapirgandek: qisqa gaplar, ro'yxat va belgilarsiz, "xo'p", "albatta", "tushunarli" kabi so'zlar bilan. Ro'yxat/jadval faqat foydalanuvchi hujjat yoki batafsil ma'lumot so'raganda.`;
 
@@ -689,6 +690,7 @@ async function ask(text,opt){
   let imgs=(opt&&opt.images)||[],extra='',shownAtt=[];
   if(ATT.items.length){const t=takeAttachments(text);imgs=imgs.concat(t.imgs);extra=t.extra;shownAtt=t.shown;text=t.text}
   if(!shownAtt.length&&!imgs.length){if(voiceControl(text))return;if(text.startsWith('/')&&runCommand(text))return;
+    if(/o['ʻ’]?zingni tekshir|o['ʻ’]?zingni tuzat|^\/tekshir/i.test(text)&&window.selfHeal){addMsg('u',text);$('inp').value='';addMsg('j','🔧 Tekshiryapman, ser…');window.selfHeal(true);return}
     if(/xato hisobot|hisobotni yubor.*xato|^\/xato/i.test(text)){addMsg('u',text);$('inp').value='';const d0=addMsg('j','⏳ Xato hisoboti tayyorlanmoqda…');setBody(d0,await errorReport());return}}
   stopSpeak();const um=addMsg('u',text);$('inp').value='';
   if(imgs.length){const g=document.createElement('div');g.className='uimgs';imgs.forEach(b=>{const im=document.createElement('img');im.src=URL.createObjectURL(b);im.onclick=()=>imgEditor(b);g.appendChild(im)});um.appendChild(g)}
@@ -707,6 +709,7 @@ async function ask(text,opt){
       if(extra){const h=S.history.findLast(m=>m.role==='user');if(h)h.content=text+' [biriktirilgan: '+shownAtt.map(x=>x.name).join(', ')+']'}
       answer=r.text||answer;
       S.history.push({role:'assistant',content:answer||'(javob yo\'q)'});noteExchange();
+      learnFromCorrection(text);if(String(answer).length>700&&Date.now()-(S.lastLearn||0)>600000){S.lastLearn=Date.now();learnSkill(text,answer)}
     } else {
       answer=localBrain(text);
     }
@@ -966,7 +969,7 @@ function sysPrompt(){
 Google hisobi: ${S.locked?'HIMOYA REJIMI — kirish bloklangan, Google vositalaridan foydalanma va buni ayt.':(live.length?'ulangan xizmatlar: '+live.join(', ')+'. Foydalanuvchi fayllari, hujjatlari, xatlari yoki kalendari haqida so\'rasa — tegishli vositadan foydalan. Yaratish/o\'zgartirish amallari foydalanuvchi tasdig\'ini talab qiladi; xat yuborma, faqat qoralama yarat.':'hech qaysi xizmat ulanmagan.')}
 ${(window.jarvisNative&&window.jarvisNative.web)?'':'BU BRAUZER (claude.ai) VERSIYASI: internetdan bevosita qidirish yo\'q. Rasm, video yoki sayt qidir/ko\'rsat deyilsa — open_link vositasining media_search (+kind) bilan qidiruv kartochkalarini ko\'rsat VA o\'z bilimingdan eng yaxshi 3–4 aniq variantni tavsiya qil. "Xato", "Failed to fetch", "yopiq", "qila olmayman" kabi texnik gaplarni aytma; kerak bo\'lsa bir jumla bilan: "Rasmlar va videolarni to\'g\'ridan-to\'g\'ri shu yerning o\'zida ko\'rsatish uchun telefon yoki kompyuterdagi Jarvis ilovasidan foydalaning". my_tools\'da http ishlamaydi.\n'}Muhim fakt aytilsa yoki "eslab qol" deyilsa — remember_fact.
 Foydalanuvchi pochta/fayl/kalendarni ochib ko'rsatishni yoki bir vaqtda bir nechta ishni so'rasa — open_app (gmail/drive/calendar/connections, yoki har bir mustaqil ish uchun alohida task). Fon vazifalari parallel ishlaydi.
-${kb?'Murodjonning ishlari haqida o\'rganilgan bilim (javoblarda foydalan):\n'+kb:''}${soul}${brainPrompt()}${(S.convos||[]).length?'\nOldingi suhbatlardan eslab qolinganlar:\n'+S.convos.slice(-10).map(c=>'- '+c.text).join('\n'):''}`}
+${rulesPrompt()}${kb?'Murodjonning ishlari haqida o\'rganilgan bilim (javoblarda foydalan):\n'+kb:''}${soul}${brainPrompt()}${(S.convos||[]).length?'\nOldingi suhbatlardan eslab qolinganlar:\n'+S.convos.slice(-10).map(c=>'- '+c.text).join('\n'):''}`}
 renderKB();
 
 /* ============ WINDOWS (multi-tasking workspace) ============ */
@@ -1470,6 +1473,19 @@ function brainPrompt(){const B=brain().filter(i=>i.para==='projects'||i.para==='
 
 /* ============ HERMES G'OYALARI: o'z-o'zini o'rgatish, odatlar (jadval), xotiradan qidirish, xarakter ============ */
 /* 1) Murakkab ishdan keyin ko'nikmani o'zi yaratadi yoki yaxshilaydi */
+function rulesPrompt(){const R=skills().filter(s=>s.rule),K=skills().filter(s=>!s.rule&&!s.code);let o='';
+  if(R.length)o+='\nO\'RGANILGAN QOIDALAR (oldingi xatolardan — ularga QAT\'IY amal qil):\n'+R.slice(-40).map(r=>'- '+r.text).join('\n')+'\n';
+  if(K.length)o+='\nKO\'NIKMALAR (mos vazifada shu usullarni qo\'lla):\n'+K.slice(-20).map(k=>`[${k.name}] ${String(k.text).slice(0,300)}`).join('\n')+'\n';return o}
+function addRule(text,src){text=String(text||'').trim();if(!text||text.length<8)return null;const nm='qoida-'+text.toLowerCase().replace(/[^a-z0-9ʻ'ʼ]+/g,'-').slice(0,40);
+  const ex=skills().find(s=>s.rule&&(s.name===nm||s.text===text));if(ex)return ex;const r={name:nm,text,rule:true,auto:true,src:src||'',at:Date.now()};skills().push(r);S.skills=skills().slice(-80);save();act('🧠 yangi qoida o\'rganildi: '+text.slice(0,60));return r}
+const CORR=/(noto['ʻ’]?g['ʻ’]?ri|xato qilding|xato bo['ʻ’]?ldi|bunday emas|unday emas|aslida|to['ʻ’]?g['ʻ’]?rila|men aytgandek emas|bu emas|qayta qil|yana xato|не правильно|неправильно|не так)/i;
+async function learnFromCorrection(userText){if(!sample||!CORR.test(userText))return;const H=S.history;if(H.length<3)return;
+  const prevA=[...H].reverse().find(m=>m.role==='assistant'),prevQ=H.filter(m=>m.role==='user').slice(-2)[0];
+  try{const r=await sample(`Sen JARVIS'ning o'z-o'zini tuzatish modulisan. Foydalanuvchi Jarvis'ni tuzatdi. Kelajakda shu xato takrorlanmasligi uchun BITTA aniq, umumiy qoida yoz (o'zbekcha, 1 gap, buyruq shaklida, masalan: "Dalolatnomada sanani doim kun.oy.yil shaklida yoz"). Agar umumiy qoida chiqmasa — faqat "-" yoz.
+OLDINGI SO'ROV: ${String(prevQ&&prevQ.content||'').slice(0,800)}
+JARVIS JAVOBI: ${String(prevA&&prevA.content||'').slice(0,1500)}
+FOYDALANUVCHI TUZATISHI: ${String(userText).slice(0,800)}`,{cache:false,modelTier:'quick'});
+    const t=(r.text||'').trim().replace(/^["'\-\s]+|["'\s]+$/g,'');if(t&&t!=='-'&&t.length>8&&t.length<300)addRule(t,'tuzatish')}catch(e){}}
 async function learnSkill(task,result){
   if(!sample||!task||String(result||'').length<300)return;
   try{const names=skills().map(s=>s.name).join(', ');
@@ -1654,16 +1670,33 @@ async function runMyTool(t,args){const N=NAT();
       end();m.t==='done'?res(m.v):rej(new Error(m.err))};
     w.onerror=e=>{end();rej(new Error(e.message||'kod xatosi'))};w.postMessage({t:'run',code:t.code,args:args||{}})})}
 TOOLS.push({name:'my_tools',description:`O'Z-O'ZINI TAKOMILLASHTIRISH. Mavjud vositalar yetmasa — o'zingga yangi vosita yoz va darhol ishlat; u saqlanadi va keyin ham, boshqa qurilmalarda ham ishlaydi. action: list; run (name*, args); create (name* — lotin_harf_bilan, description*, code*, params — args izohi); delete (name*). code — async JavaScript funksiya TANASI; mavjud o'zgaruvchilar: args (obyekt), http(url,{method,headers,body}) → {status,ok,json,text} (CORS'siz, istalgan API/sayt), web({action:'search'|'images'|'videos'|'fetch_url'|'wiki'|'news'|'weather',...}), show(kind:'images'|'videos'|'results', items, sarlavha) — foydalanuvchiga ko'rsatish, calc(ifoda), note(matn), remind(matn, ms). Natijani return qil. Xato bo'lsa — kodni tuzatib qayta create qil (bir xil name bilan almashtiriladi). Saqlangan vositalar: ${''}`,
-  inputSchema:{type:'object',properties:{action:{type:'string',enum:['list','run','create','delete']},name:{type:'string'},description:{type:'string'},code:{type:'string'},params:{type:'string'},args:{type:'object'}},required:['action']},
+  inputSchema:{type:'object',properties:{action:{type:'string',enum:['list','run','create','delete','rule_add','rules','rule_delete']},name:{type:'string'},description:{type:'string'},code:{type:'string'},params:{type:'string'},args:{type:'object'},rule:{type:'string'}},required:['action']},
   execute:async a=>{
     if(a.action==='list')return JSON.stringify(myTools().map(t=>({name:t.name,description:t.text,params:t.params||''})));
+    if(a.action==='rule_add'){const r=addRule(a.rule||a.description||a.name,'jarvis');return r?'Qoida saqlandi: '+r.text:'Qoida juda qisqa'}
+    if(a.action==='rules')return skills().filter(s=>s.rule).map(s=>s.name+': '+s.text).join('\n')||'Qoidalar yo\'q';
+    if(a.action==='rule_delete'){const i=skills().findIndex(s=>s.rule&&(s.name===a.name||s.text===a.rule));if(i<0)return 'topilmadi';tomb('s:'+skills()[i].name);skills().splice(i,1);save();return 'o\'chirildi'}
     const nm=String(a.name||'').trim().replace(/\s+/g,'_');if(!nm)throw new Error('name kerak');
     if(a.action==='delete'){const i=skills().findIndex(s=>s.name===nm&&s.code);if(i<0)return 'topilmadi';tomb('s:'+nm);skills().splice(i,1);save();act('🧩 vosita o\'chirildi: '+nm);return 'o\'chirildi'}
     if(a.action==='create'){if(!a.code)throw new Error('code kerak');try{new AsyncFn('args','http','web','show','calc','note','remind',a.code)}catch(e){throw new Error('Kodda sintaksis xato: '+e.message+' — tuzatib qayta yubor')}
       const ex=skills().find(s=>s.name===nm);const rec={name:nm,text:a.description||ex?.text||nm,code:a.code,params:a.params||'',auto:true,at:ex?.at||Date.now(),u:Date.now()};
       if(ex)Object.assign(ex,rec);else skills().push(rec);save();act('🧩 Jarvis o\'ziga yangi vosita yozdi: '+nm);return `"${nm}" vositasi saqlandi. Endi uni run bilan ishlat va natijani tekshir.`}
     if(a.action==='run'){const t=myTools().find(s=>s.name===nm);if(!t)throw new Error('Bunday vosita yo\'q. Avval create qil.');act('🧩 '+nm+' ishlamoqda…');
-      try{const r=await runMyTool(t,a.args);act('✓ '+nm);return shortJSON(r===undefined?'(natija qaytarilmadi)':r,10000)}catch(e){act('✕ '+nm+': '+e.message,'e');throw new Error(nm+' xatosi: '+e.message+' — kodni tuzatib, create bilan qayta saqla va yana sinab ko\'r')}}
+      try{const r=await runMyTool(t,a.args);act('✓ '+nm);return shortJSON(r===undefined?'(natija qaytarilmadi)':r,10000)}
+      catch(e){act('✕ '+nm+': '+e.message,'e');
+        // O'ZINI TUZATISH: xato bo'lsa kodni o'zi 2 marta tuzatib ko'radi
+        let err=e.message,code=t.code;
+        for(let k=0;k<2&&sample;k++){let fx;try{fx=await sample(`Quyidagi JavaScript vosita kodi xato berdi. Xatoni tuzatib, FAQAT yangi kodni \`\`\`js ... \`\`\` blokida qaytar. Kod — async funksiya TANASI; mavjud: args, http(url,{method,headers,body})→{status,ok,json,text}, web({action,...}), show(kind,items,title), calc(ifoda), note(matn), remind(matn,ms). document, localStorage, window YO'Q.
+VOSITA: ${nm} — ${t.text}
+ARGUMENTLAR: ${JSON.stringify(a.args||{}).slice(0,800)}
+XATO: ${err}
+KOD:
+${code}`,{cache:false,modelTier:'default'})}catch(se){break}
+          try{
+            const m=(fx.text||'').match(/```(?:js|javascript)?\s*([\s\S]*?)```/);if(!m)break;const nc=m[1].trim();try{new AsyncFn('args','http','web','show','calc','note','remind',nc)}catch(se){err='sintaksis: '+se.message;code=nc;continue}
+            const r=await runMyTool({...t,code:nc},a.args);t.code=nc;t.u=Date.now();save();act('🔧 Jarvis o\'z vositasini o\'zi tuzatdi: '+nm);return shortJSON(r===undefined?'(natija qaytarilmadi)':r,10000)}
+          catch(e2){err=e2.message}}
+        throw new Error(nm+' xatosi: '+err+' — boshqa usul bilan hal qil yoki kodni create bilan qayta yoz')}}
     throw new Error('noma\'lum action')}});
 
 

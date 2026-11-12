@@ -33,12 +33,13 @@
           msgs.push({role:'assistant',content:m.content||'',tool_calls:m.tool_calls});
           for(const tc of m.tool_calls){let out;
             try{const t=byName[tc.function.name];if(!t)throw new Error('Bunday vosita yo\'q: '+tc.function.name);
-              let args={};try{args=tc.function.arguments?JSON.parse(tc.function.arguments):{}}catch(e){args={}}
+              let args={};try{args=tc.function.arguments?JSON.parse(tc.function.arguments):{}}catch(e){throw new Error('argumentlar to\'g\'ri JSON emas — vositani qayta, to\'g\'ri JSON bilan chaqir')}
               const v=await t.execute(args);out=typeof v==='string'?v:JSON.stringify(v===undefined?{ok:true}:v)}
-            catch(e){out='XATO: '+(e&&e.message||e)}
+            catch(e){out='XATO: '+(e&&e.message||e);try{(window.__jerr=window.__jerr||[]).push({t:Date.now(),tool:tc.function.name,msg:String(e&&e.message||e).slice(0,200)});if(window.__jerr.length>50)window.__jerr.shift()}catch(er){}}
             msgs.push({role:'tool',tool_call_id:tc.id,content:String(out).slice(0,12000)})}
           continue}
         const text=(m.content||'').trim();
+        if(!text&&!opts.__retried){opts.__retried=true;msgs.push({role:'user',content:'(Tizim: javob bo\'sh qoldi. Iltimos, foydalanuvchiga to\'liq javob yoz.)'});continue}
         if(opts.onText)opts.onText({text,delta:text});
         return{text,truncated:false,modelApplied:r.model}}
       throw err('upstream_error','Vositalar zanjiri juda uzun bo\'ldi')
@@ -188,6 +189,34 @@
     const gb=document.getElementById('gmBtn');if(gb)gb.onclick=()=>window.openModelSettings();
     ui();setTimeout(()=>syncNow(),2500);setTimeout(()=>window.keysAuto&&window.keysAuto(),4500);setInterval(()=>window.keysAuto&&window.keysAuto(),15*60*1000)});
 
+  /* ===== O'Z-O'ZINI TUZATISH: muntazam tekshiruv va avtomatik tuzatish ===== */
+  window.selfHeal=async function(loud){const fixed=[],need=[];
+    try{const cfg=await N.getCfg();
+      for(const p of cfg.providers.filter(x=>x.enabled&&x.hasKey&&!x.local)){
+        const t=await N.test(p.id);if(t.ok)continue;const e=String(t.error||'');
+        if(/404|not.?found|does not exist|decommission|deprecated|no longer|invalid model|model_not_found/i.test(e)){
+          const ml=await N.models(p.id);if(ml&&ml.models&&ml.models.length){const pref=/(flash|gpt-oss|llama-4|llama-3\.3|qwen|kimi|glm|gemma|free)/i;
+            const pick=[...ml.models.filter(m=>pref.test(m)),...ml.models].filter((v,i,a)=>a.indexOf(v)===i).slice(0,3);
+            await N.setCfg({providers:[{id:p.id,models:pick}]});const t2=await N.test(p.id);
+            if(t2.ok)fixed.push(`${p.name}: eskirgan model almashtirildi → ${t2.model}`);else need.push(`${p.name}: model topilmadi (${String(t2.error).slice(0,80)})`)}}
+        else if(/401|403|invalid.*key|api key|unauthor/i.test(e))need.push(`${p.name}: kalit yaroqsiz — ⚙ Modellar'da yangi kalit kiriting`);
+        else if(/429/.test(e)){/* limit — vaqtincha, o'zi tiklanadi */}
+      }
+      if(N.gStatus){const g=await N.gStatus();if(g.loggedIn){const r=await N.gapiCall('Google Drive','list_recent_files',{pageSize:1});if(r&&r.error&&/needs_reauth|invalid_grant/.test(r.error.code+r.error.message))need.push('Google: qayta kirish kerak (⚙ → Google bilan kirish)')}}
+      if(N.web){const r=await N.web({action:'search',query:'Toshkent ob-havo',limit:3});if(r&&r.error){const r2=await N.web({action:'images',query:'Toshkent',limit:3});if(r2&&r2.error)need.push('Internet qidiruvi javob bermayapti — zaxira kartochkalar ishlaydi')}}
+      const errs=(window.__jerr||[]).filter(x=>Date.now()-x.t<86400000);
+      if(errs.length>=3&&typeof sample==='function'){const by={};errs.forEach(x=>{by[x.tool]=(by[x.tool]||0)+1});const top=Object.entries(by).sort((a,b)=>b[1]-a[1])[0];
+        try{const r=await sample(`Sen JARVIS'ning o'z-o'zini tuzatish modulisan. So'nggi xatolar:\n${errs.slice(-15).map(x=>x.tool+': '+x.msg).join('\n')}\nShu xatolar takrorlanmasligi uchun Jarvis amal qiladigan BITTA aniq qoida yoz (o'zbekcha, 1 gap). Foydasiz bo'lsa "-".`,{cache:false,modelTier:'quick'});
+          const t=(r.text||'').trim().replace(/^["'\-\s]+|["'\s]+$/g,'');if(t&&t!=='-'&&t.length>8&&t.length<300&&window.addRule){window.addRule(t,'xatolar');fixed.push('xatolardan yangi qoida: '+t.slice(0,80))}}catch(e){}
+        window.__jerr=[]}
+    }catch(e){need.push('tekshiruv xatosi: '+e.message)}
+    try{localStorage.setItem('jarvis_heal',JSON.stringify({at:Date.now(),fixed,need}))}catch(e){}
+    try{N.log('SELFHEAL fixed='+fixed.join('; ')+' need='+need.join('; '))}catch(e){}
+    if(fixed.length||need.length||loud){addMsg('j','🔧 **O\'z-o\'zini tekshirish**\n'+(fixed.length?'O\'zim tuzatdim:\n'+fixed.map(x=>'- '+x).join('\n')+'\n':'')+(need.length?'Sizning yordamingiz kerak:\n'+need.map(x=>'- '+x).join('\n'):'')+(!fixed.length&&!need.length?'Hammasi joyida, ser.':''))}
+    return{fixed,need}};
+  setTimeout(()=>{let last=0;try{last=JSON.parse(localStorage.getItem('jarvis_heal')||'{}').at||0}catch(e){}if(Date.now()-last>12*3600*1000)window.selfHeal(false)},90000);
+  setInterval(()=>{const n=(window.__jerr||[]).filter(x=>Date.now()-x.t<600000).length;if(n>=4)window.selfHeal(false)},300000);
+  setInterval(()=>window.selfHeal(false),12*3600*1000);
   /* avtomatik yangilanish (kompyuter) */
   if(N.updInstall){const upd=async()=>{try{const r=await N.updInstall();if(r&&r.ok&&r.version){
       const d=addMsg('j',`🔄 **Jarvis yangilandi: v${r.version}** — yangi imkoniyatlar qayta ishga tushirilgandan keyin ishlaydi.`);const b=document.createElement('button');b.className='chip w';b.style.marginTop='8px';b.textContent='↻ Hozir qayta ishga tushirish';b.onclick=()=>N.updRestart();d.appendChild(b);

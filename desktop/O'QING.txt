@@ -130,3 +130,13 @@ YANGI (v1.9) — tuzatishlar
 • TELEGRAM: bitta bot ikki qurilmada yoqilsa, biri o'zi chetga chiqadi (xabarlar yo'qolmaydi).
 • XAVFSIZLIK: Jarvis o'zi yozgan vositalar alohida himoyalangan muhitda ishlaydi — kalit va fayllaringizga tega olmaydi.
 • Hujjat oxiriga qo'shilgan matn endi hujjatning o'z shriftida. Namunalar uchun joy kattalashtirildi.
+
+=== v2.5 — O'ZINI O'ZI TUZATADIGAN JARVIS ===
+• Xatodan o'rganadi: "noto'g'ri", "bunday emas" desangiz — Jarvis xulosa chiqarib qoida saqlaydi va boshqa takrorlamaydi
+  (barcha qurilmalarda). Qoidalar 📚 Ko'nikmalar oynasida — keraksizini o'chirsa bo'ladi.
+• O'zi yozgan vosita xato bersa — kodini o'zi tuzatadi (2 marta urinadi) va tuzatilganini saqlaydi.
+• Har 12 soatda o'zini tekshiradi: eskirgan AI modelni o'zi yangisiga almashtiradi, yaroqsiz kalit, Google kirish,
+  qidiruv muammolarini topadi; o'zi tuzata olmasa — sizga aniq aytadi. Qo'lda: "o'zingni tekshir" deng.
+• Xatolar ko'payib ketsa — tekshiruv o'zi ishga tushadi va xatolardan qoida chiqaradi.
+• Muvaffaqiyatli bajarilgan katta ishlardan ko'nikma o'rganadi va keyingi safar shu usulni qo'llaydi.
+• AI noto'g'ri buyruq yuborsa yoki bo'sh javob bersa — o'zi qayta so'raydi.
