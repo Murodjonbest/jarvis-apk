@@ -148,3 +148,9 @@ YANGI (v1.9) — tuzatishlar
 • Sinxron tezlashdi: har 30 soniyada, o'zgarishdan 3 soniya keyin va ilovani ochgan zahoti.
 • Avvaldan sinxron: qaydlar, eslatmalar, o'lchovlar, bilim, ko'nikmalar, o'rganilgan qoidalar, Jarvis yozgan vositalar,
   namunalar, API kalitlar.
+
+=== v2.7 — YANGI KO'RINISH ===
+• Kompyuter versiyasi ixcham, zamonaviy ko'rinishga o'tdi: chapda menyu (Suhbat · Eslatma · Ilovalar · Holat · Sozlash),
+  o'rtada suhbat, ochilgan oynalar (Gmail, Drive, hujjat, sozlamalar…) o'ng tomonda yon panel bo'lib chiqadi — suhbat ko'rinib turadi.
+• Esc — ochiq oynani yopadi. Chap tepadagi doira — Jarvis holati (bosilsa suhbatga qaytadi).
+• Sozlamalar bo'limlarga bo'lindi (bosib ochiladi), Google kirish eng tepada.

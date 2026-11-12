@@ -134,3 +134,40 @@ body.mob .wmsg.acc.open>:not(.h){margin-left:12px;margin-right:12px}
 body.mob .wb>.kbm,body.mob .wb>.vrow{padding:6px 4px;font-size:13px}
 body.mob .wmsg a{color:var(--cy2)}
 body.mob details>summary{padding:6px 0;font-size:14px}
+
+/* ===================== KOMPYUTER (keng ekran) ===================== */
+body.mob.desk{--topH:52px;--navH:0px;--navW:84px;--paneW:min(600px,46vw);font-size:15.5px}
+body.desk #mTop{left:var(--navW);padding-left:18px}
+body.desk #mTop .mb b{font-size:14px}
+body.desk #mNav{top:0;bottom:0;left:0;right:auto;width:var(--navW);height:auto;padding:0 0 12px;display:flex;flex-direction:column;align-items:stretch;gap:2px;border-top:0;border-right:1px solid rgba(64,200,255,.14);background:#020910}
+body.desk #mNav button{height:66px;flex:0 0 66px;font-size:11.5px;border-radius:0}
+body.desk #mNav button .i{font-size:22px}
+body.desk #mNav button:hover{background:rgba(63,210,255,.06);color:var(--cy2)}
+body.desk #mNav button.on::before{top:14px;bottom:14px;left:0;right:auto;width:3px;height:auto}
+body.desk #mNav .coreWrap.deskOrb{display:flex!important;height:var(--navW)!important;width:var(--navW);flex:0 0 var(--navW);position:relative;margin-bottom:6px;cursor:pointer}
+body.desk #mNav .coreWrap.deskOrb #core{width:66px!important;height:66px!important}
+body.desk #mNav .coreWrap.deskOrb .state,body.desk #mNav .coreWrap.deskOrb .wakeHint,body.desk #mNav .coreWrap.deskOrb .brand{display:none!important}
+body.desk .hud{padding:var(--topH) 0 0 var(--navW)!important;transition:padding-right .2s}
+body.desk.winopen .hud{padding-right:var(--paneW)!important}
+body.desk .center,body.desk .left.show,body.desk .right.show{width:100%;max-width:1000px;margin:0 auto}
+body.desk .left.show,body.desk .right.show{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));align-content:start;padding:16px}
+body.desk .wakeHint{position:fixed;left:var(--navW);right:0;bottom:78px;text-align:center;pointer-events:none}
+body.desk .log{padding:18px 20px 10px;gap:10px}
+body.desk .msg{max-width:78%;font-size:15.5px;padding:10px 14px}
+body.desk .bar{padding:10px 16px 14px;border-top:0;background:none}
+body.desk #inp{min-height:48px;border-radius:24px;padding:13px 18px}
+body.desk .bar .btn{height:48px;width:48px;min-width:48px;border-radius:24px}
+body.desk #attBtn:hover,body.desk #mTop button:hover{background:rgba(63,210,255,.15)!important}
+body.desk .win{left:auto!important;right:0!important;top:var(--topH)!important;width:var(--paneW)!important;height:calc(100vh - var(--topH))!important;border-left:1px solid rgba(64,200,255,.16)!important;background:#04101a!important;animation:mInR .18s ease-out}
+@keyframes mInR{from{transform:translateX(20px);opacity:0}to{transform:none;opacity:1}}
+body.desk .wh .mBack{display:none}
+body.desk #mSheet{left:calc(var(--navW) + 8px);right:auto;top:calc(var(--topH) + 8px);bottom:auto;width:440px;max-height:calc(100vh - var(--topH) - 24px);border-radius:18px;border:1px solid rgba(64,200,255,.2);transform:translateX(-12px);opacity:0;pointer-events:none;transition:.18s}
+body.desk #mSheet.open{transform:none;opacity:1;pointer-events:auto}
+body.desk #mSheet .grab{display:none}
+body.desk #mSheet .app:hover .i{background:#174056}
+body.desk #mShade.open{background:rgba(0,0,0,.25)}
+body.desk .modal{align-items:center}
+body.desk .modal .box{width:min(520px,92vw);border-radius:18px;border-width:1px;padding:20px}
+body.desk .toast{left:auto!important;right:18px!important;width:380px;top:calc(var(--topH) + 10px)!important}
+body.desk #attMenu{left:calc(var(--navW) + 14px);right:auto;bottom:80px;width:300px}
+body.desk #imgEd{left:var(--navW)}

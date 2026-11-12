@@ -1,0 +1,173 @@
+/* ===== JARVIS — telefon interfeysi (ixcham) ===== */
+html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;overflow-x:hidden;max-width:100vw}
+button,select,input,textarea{touch-action:manipulation}
+body.mob{--topH:48px;--navH:56px;--st:env(safe-area-inset-top);--sb:env(safe-area-inset-bottom);overflow:hidden;height:100dvh;font-size:15px;background:#030a12}
+body.mob .tabs,body.mob .dock,body.mob #estop,body.mob .brand,body.mob #stateTxt,body.mob .coreWrap,body.mob #wake,body.mob .bar #liveBtn{display:none!important}
+body.mob .hud::before,body.mob .hud::after{display:none}
+
+/* --- yuqori panel --- */
+#mTop{display:none}
+body.mob #mTop{position:fixed;top:0;left:0;right:0;height:calc(var(--topH) + var(--st));padding:var(--st) 8px 0 12px;display:flex;align-items:center;gap:6px;background:rgba(3,10,18,.96);backdrop-filter:blur(12px);border-bottom:1px solid rgba(64,200,255,.14);z-index:58}
+#mOrb{width:26px;height:26px;border-radius:50%;flex:0 0 26px;background:radial-gradient(circle at 50% 50%,#d8fbff 0 18%,#3fd2ff 30%,rgba(63,210,255,.15) 62%,transparent 70%);box-shadow:0 0 12px rgba(63,210,255,.55);border:1.5px solid rgba(139,233,255,.7);transition:.3s}
+#mOrb.thinking{animation:mSpin 1s linear infinite;border-style:dashed;border-color:var(--amber)}
+#mOrb.listening{animation:mPulse .9s ease-in-out infinite;box-shadow:0 0 18px rgba(255,90,106,.7);border-color:#ff8a96}
+#mOrb.speaking{animation:mPulse .5s ease-in-out infinite}
+@keyframes mSpin{to{transform:rotate(360deg)}}@keyframes mPulse{50%{transform:scale(1.18)}}
+#mTop .mb{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.05}
+#mTop .mb b{font:700 13px Orbitron;letter-spacing:.2em;color:var(--cy2)}
+#mTop .mb small{font:500 11px Rajdhani,sans-serif;letter-spacing:.04em;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;text-transform:lowercase}
+#mTop .mb small.busy{color:var(--amber)}
+#mTop button{height:34px;width:34px;min-width:34px;border-radius:17px;border:0;background:rgba(63,210,255,.08);color:var(--cy2);font-size:16px;padding:0;display:flex;align-items:center;justify-content:center}
+#mTop button.on{background:rgba(63,210,255,.28);box-shadow:0 0 12px rgba(63,210,255,.4)}
+#mTop #mStop{background:rgba(255,90,106,.12);font-size:15px}
+
+/* --- pastki menyu --- */
+#mNav{display:none}
+body.mob #mNav{position:fixed;left:0;right:0;bottom:0;height:calc(var(--navH) + var(--sb));padding-bottom:var(--sb);display:grid;grid-template-columns:repeat(5,1fr);background:rgba(3,10,18,.97);backdrop-filter:blur(12px);border-top:1px solid rgba(64,200,255,.14);z-index:58;transition:transform .2s}
+#mNav button{background:none;border:0;color:#6f8ea3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:600 10.5px Rajdhani,sans-serif;position:relative}
+#mNav button .i{font-size:19px;line-height:1;filter:grayscale(.7) opacity(.7);transition:.15s}
+#mNav button.on{color:var(--cy2)}#mNav button.on .i{filter:none}
+#mNav button.on::before{content:'';position:absolute;top:0;left:32%;right:32%;height:2px;border-radius:2px;background:var(--cy);box-shadow:0 0 8px var(--cy)}
+#mNav .badge{display:none}
+body.mob.kb #mNav{transform:translateY(110%)}
+
+/* --- asosiy maydon --- */
+body.mob .hud{display:flex!important;flex-direction:column;gap:0;height:100dvh!important;min-height:0!important;padding:calc(var(--topH) + var(--st)) 0 calc(var(--navH) + var(--sb))!important;overflow:hidden}
+body.mob.kb .hud{padding-bottom:0!important}
+body.mob .center{flex:1;min-height:0;display:flex;flex-direction:column}
+body.mob .left.show,body.mob .right.show{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 8px 14px;gap:8px}
+body.mob .wakeHint{position:static;font-size:12px;padding:2px 12px;min-height:0}
+body.mob .wakeHint:empty{display:none}
+
+/* --- suhbat --- */
+body.mob .panel.chat{flex:1!important;height:auto!important;min-height:0!important;display:flex;flex-direction:column;border:0!important;background:none!important;border-radius:0;box-shadow:none!important;padding:0!important}
+body.mob .chat::before{display:none}
+body.mob .log{padding:10px 10px 6px;gap:7px;font-size:15px}
+body.mob .msg{max-width:88%;padding:8px 11px;font-size:15px;line-height:1.38;border-radius:16px;border:0;position:relative}
+body.mob .msg.u{background:linear-gradient(135deg,#0f5a7a,#0b4560);color:#eafaff;border-bottom-right-radius:5px}
+body.mob .msg.j{background:#0b1a28;border-left:0;border-bottom-left-radius:5px;color:#d9eef8}
+body.mob .msg.j .who{display:none}
+body.mob .msg .copy{position:absolute;top:2px;right:4px;opacity:.35;font-size:12px;background:none;border:0;color:var(--mut);padding:4px}
+body.mob .msg.j .body{padding-right:14px}
+body.mob .msg.foreign{background:#1a1408;border:0!important}
+body.mob .msg table{font-size:13px;display:block;overflow-x:auto}
+body.mob .msg .chip{border-radius:12px}
+body.mob .pal{max-height:38vh;overflow:auto}
+
+/* --- yozish paneli: 📎 | matn | mikrofon/yuborish --- */
+body.mob .bar{gap:6px;padding:6px 8px 8px;align-items:flex-end;background:rgba(3,10,18,.92);border-top:1px solid rgba(64,200,255,.1)}
+body.mob .bar .btn{height:42px;min-width:42px;width:42px;border-radius:21px;padding:0;border:0;background:rgba(63,210,255,.1)}
+body.mob #attBtn{font-size:18px;background:none!important;color:var(--mut)}
+body.mob #inp{flex:1;min-width:0;min-height:42px;max-height:30vh;font-size:16px;border-radius:21px;padding:10px 14px;resize:none;line-height:1.3;background:#0b1a28;border:1px solid rgba(64,200,255,.18)}
+body.mob .bar #mic{order:5;background:linear-gradient(135deg,#1aa6d6,#0d6f95)!important;color:#fff;box-shadow:0 2px 10px rgba(26,166,214,.4)}
+body.mob .bar #mic svg{width:21px;height:21px}
+body.mob .bar #mic.rec{background:linear-gradient(135deg,#ff5a6a,#c22d3b)!important;animation:mPulse 1s infinite}
+body.mob .bar #send{order:4;background:linear-gradient(135deg,#1aa6d6,#0d6f95)!important;color:#fff}
+body.mob.hastext .bar #mic{display:none!important}
+body.mob:not(.hastext) .bar #send{display:none!important}
+body.mob .bar #stop{border-radius:21px}
+body.mob #attBar{padding:6px 8px 0}
+body.mob #attMenu{left:8px;right:8px;bottom:calc(var(--navH) + var(--sb) + 64px);min-width:0}
+
+/* --- panellar (Tizim, Eslatma) --- */
+body.mob .panel{border-radius:14px;padding:12px!important;background:#0a1825!important;border:1px solid rgba(64,200,255,.12)!important}
+body.mob .panel::before{display:none}
+body.mob .ttl{font-size:10px;margin-bottom:8px}
+body.mob .stat{font-size:14px;padding:5px 0}
+body.mob .clock{font-size:30px}
+body.mob .chip{padding:8px 11px;font-size:13.5px;border-radius:10px}
+body.mob .chips{gap:6px}
+body.mob select,body.mob input[type=text],body.mob input[type=password],body.mob input:not([type]),body.mob input[type=datetime-local]{min-height:38px;font-size:15px;border-radius:9px}
+body.mob .addrow{gap:6px}
+body.mob .addrow button{min-width:42px;min-height:38px;border-radius:9px}
+
+/* --- oynalar: to'liq ekran, ixcham sarlavha --- */
+body.mob .win{left:0!important;top:calc(var(--topH) + var(--st))!important;width:100vw!important;height:calc(100dvh - var(--topH) - var(--st) - var(--navH) - var(--sb))!important;min-width:0!important;resize:none!important;border:0!important;border-radius:0;box-shadow:none!important;background:#030a12!important;animation:mIn .16s ease-out}
+body.mob.kb .win{height:calc(100dvh - var(--topH) - var(--st))!important}
+@keyframes mIn{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+body.mob .wh{padding:4px 6px 4px 2px;min-height:44px;cursor:default;gap:4px;background:#06121e!important;border-bottom:1px solid rgba(64,200,255,.12)}
+body.mob .wh .wt{font-size:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.08em}
+body.mob .wh button{width:36px;height:34px;border-radius:17px;font-size:14px;border:0;background:rgba(63,210,255,.06)}
+body.mob .wh button[title="Yig'ish"]{display:none}
+body.mob .wh .mBack{order:-1;font-size:24px;color:var(--cy2);background:none}
+body.mob .wb{-webkit-overflow-scrolling:touch;padding:10px;font-size:14.5px}
+body.mob .wmsg{border-radius:12px;border-left-width:3px;padding:10px 12px;background:#0a1825}
+body.mob .wmsg .t{font-size:14px}
+body.mob .wact button{border-radius:10px;padding:8px 11px}
+
+/* --- tasdiqlash, bildirishnoma --- */
+body.mob .modal{align-items:flex-end}
+body.mob .modal .box{width:100vw;max-width:none;border-radius:20px 20px 0 0;padding:18px 16px calc(16px + var(--sb));border-width:1px 0 0}
+body.mob .modal .bt{display:flex;gap:10px}
+body.mob .modal .bt button{flex:1;min-height:48px;font-size:16px;border-radius:12px}
+body.mob .toast{transform:none!important;z-index:72!important;left:10px!important;right:10px!important;top:calc(var(--topH) + var(--st) + 6px)!important;bottom:auto!important;max-width:none!important;border-radius:12px;font-size:14px;padding:10px 14px}
+body.mob .lockbar{top:calc(var(--topH) + var(--st))!important}
+
+/* --- ilovalar varag'i --- */
+#mShade{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:56;opacity:0;pointer-events:none;transition:opacity .2s}
+#mShade.open{opacity:1;pointer-events:auto}
+#mSheet{position:fixed;left:0;right:0;bottom:calc(var(--navH) + var(--sb));max-height:70dvh;overflow-y:auto;z-index:57;background:#07131f;border-top:1px solid rgba(64,200,255,.2);border-radius:20px 20px 0 0;padding:8px 12px 14px;transform:translateY(115%);transition:transform .22s cubic-bezier(.2,.8,.2,1);box-shadow:0 -10px 40px rgba(0,0,0,.6)}
+#mSheet.open{transform:none}
+#mSheet .grab{width:38px;height:4px;border-radius:2px;background:rgba(64,200,255,.3);margin:0 auto 10px}
+#mSheet h4{font:700 10px Orbitron;letter-spacing:.18em;color:var(--mut);margin:10px 2px 8px}
+#mSheet .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+#mSheet .app{background:none;border:0;border-radius:14px;color:var(--txt);padding:8px 2px;display:flex;flex-direction:column;align-items:center;gap:5px;font:600 11.5px Rajdhani,sans-serif;line-height:1.1;text-align:center}
+#mSheet .app .i{font-size:22px;line-height:1;width:48px;height:48px;border-radius:15px;background:#0d2232;display:flex;align-items:center;justify-content:center}
+#mSheet .app:active .i{background:#174056}
+#mSheet .wl{display:flex;flex-direction:column;gap:6px}
+#mSheet .wl button{display:flex;align-items:center;gap:8px;text-align:left;background:#0d2232;border:0;border-radius:12px;color:var(--txt);padding:10px 12px;font:600 14px Rajdhani,sans-serif}
+#mSheet .wl button span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#mSheet .wl button i{font-style:normal;color:var(--red);padding:0 4px}
+
+/* --- 🌙 karta --- */
+#wakeCard .stat{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0}
+#wakeCard .stat .chip{padding:6px 10px;font-size:12px}
+
+/* --- sozlamalar: yig'iladigan bo'limlar --- */
+body.mob .wmsg.acc{padding:0;overflow:hidden}
+body.mob .wmsg.acc>.h{padding:13px 40px 13px 12px;margin:0;position:relative;font-size:13.5px;cursor:pointer;color:var(--cy2)}
+body.mob .wmsg.acc>.h::after{content:'›';position:absolute;right:14px;top:50%;transform:translateY(-50%) rotate(90deg);font-size:20px;color:var(--mut);transition:.2s}
+body.mob .wmsg.acc.open>.h::after{transform:translateY(-50%) rotate(-90deg)}
+body.mob .wmsg.acc:not(.open)>:not(.h){display:none!important}
+body.mob .wmsg.acc.open{padding-bottom:10px}
+body.mob .wmsg.acc.open>:not(.h){margin-left:12px;margin-right:12px}
+body.mob .wb>.kbm,body.mob .wb>.vrow{padding:6px 4px;font-size:13px}
+body.mob .wmsg a{color:var(--cy2)}
+body.mob details>summary{padding:6px 0;font-size:14px}
+
+/* ===================== KOMPYUTER (keng ekran) ===================== */
+body.mob.desk{--topH:52px;--navH:0px;--navW:84px;--paneW:min(600px,46vw);font-size:15.5px}
+body.desk #mTop{left:var(--navW);padding-left:18px}
+body.desk #mTop .mb b{font-size:14px}
+body.desk #mNav{top:0;bottom:0;left:0;right:auto;width:var(--navW);height:auto;padding:0 0 12px;display:flex;flex-direction:column;align-items:stretch;gap:2px;border-top:0;border-right:1px solid rgba(64,200,255,.14);background:#020910}
+body.desk #mNav button{height:66px;flex:0 0 66px;font-size:11.5px;border-radius:0}
+body.desk #mNav button .i{font-size:22px}
+body.desk #mNav button:hover{background:rgba(63,210,255,.06);color:var(--cy2)}
+body.desk #mNav button.on::before{top:14px;bottom:14px;left:0;right:auto;width:3px;height:auto}
+body.desk #mNav .coreWrap.deskOrb{display:flex!important;height:var(--navW)!important;width:var(--navW);flex:0 0 var(--navW);position:relative;margin-bottom:6px;cursor:pointer}
+body.desk #mNav .coreWrap.deskOrb #core{width:66px!important;height:66px!important}
+body.desk #mNav .coreWrap.deskOrb .state,body.desk #mNav .coreWrap.deskOrb .wakeHint,body.desk #mNav .coreWrap.deskOrb .brand{display:none!important}
+body.desk .hud{padding:var(--topH) 0 0 var(--navW)!important;transition:padding-right .2s}
+body.desk.winopen .hud{padding-right:var(--paneW)!important}
+body.desk .center,body.desk .left.show,body.desk .right.show{width:100%;max-width:1000px;margin:0 auto}
+body.desk .left.show,body.desk .right.show{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));align-content:start;padding:16px}
+body.desk .wakeHint{position:fixed;left:var(--navW);right:0;bottom:78px;text-align:center;pointer-events:none}
+body.desk .log{padding:18px 20px 10px;gap:10px}
+body.desk .msg{max-width:78%;font-size:15.5px;padding:10px 14px}
+body.desk .bar{padding:10px 16px 14px;border-top:0;background:none}
+body.desk #inp{min-height:48px;border-radius:24px;padding:13px 18px}
+body.desk .bar .btn{height:48px;width:48px;min-width:48px;border-radius:24px}
+body.desk #attBtn:hover,body.desk #mTop button:hover{background:rgba(63,210,255,.15)!important}
+body.desk .win{left:auto!important;right:0!important;top:var(--topH)!important;width:var(--paneW)!important;height:calc(100vh - var(--topH))!important;border-left:1px solid rgba(64,200,255,.16)!important;background:#04101a!important;animation:mInR .18s ease-out}
+@keyframes mInR{from{transform:translateX(20px);opacity:0}to{transform:none;opacity:1}}
+body.desk .wh .mBack{display:none}
+body.desk #mSheet{left:calc(var(--navW) + 8px);right:auto;top:calc(var(--topH) + 8px);bottom:auto;width:440px;max-height:calc(100vh - var(--topH) - 24px);border-radius:18px;border:1px solid rgba(64,200,255,.2);transform:translateX(-12px);opacity:0;pointer-events:none;transition:.18s}
+body.desk #mSheet.open{transform:none;opacity:1;pointer-events:auto}
+body.desk #mSheet .grab{display:none}
+body.desk #mSheet .app:hover .i{background:#174056}
+body.desk #mShade.open{background:rgba(0,0,0,.25)}
+body.desk .modal{align-items:center}
+body.desk .modal .box{width:min(520px,92vw);border-radius:18px;border-width:1px;padding:20px}
+body.desk .toast{left:auto!important;right:18px!important;width:380px;top:calc(var(--topH) + 10px)!important}
+body.desk #attMenu{left:calc(var(--navW) + 14px);right:auto;bottom:80px;width:300px}
+body.desk #imgEd{left:var(--navW)}

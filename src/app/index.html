@@ -362,7 +362,7 @@ body{background:
   </div>
 </div>
 
-<script src="shim.js"></script>
+<link rel="stylesheet" href="ui.css"><script src="shim.js"></script>
 <script>
 /* ============ STATE ============ */
 const S = { notes:[], reminders:[], history:[], busy:false, mode:'idle', voice:true, locked:false,
@@ -411,6 +411,7 @@ function drawOrb(now){
   cx.fillStyle=g2;cx.beginPath();cx.arc(C,C,62*pulse,0,7);cx.fill()}
 
 function draw(now){
+  if(window.NO_ORB){setTimeout(()=>requestAnimationFrame(draw),700);return}
   if(window.JLOOK!=='avatar'){drawOrb(now);requestAnimationFrame(draw);return}
   if(window.ROBOT3D_ACTIVE){requestAnimationFrame(draw);return}
   const t=(now-t0)/1000,W=600,C=300;cx.clearRect(0,0,W,W);
@@ -2307,5 +2308,5 @@ img.onload=()=>{const tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);g
     gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);requestAnimationFrame(loop)})(t0)};
 })();
 </script>
-</body>
+<script src="ui.js"></script></body>
 </html>

@@ -2,7 +2,9 @@
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
-  document.body.classList.add('mob');
+  const DESK = !window.JARVIS_MOBILE;
+  document.body.classList.add('mob'); if (DESK) document.body.classList.add('desk');
+  window.NO_ORB = !DESK;
 
   /* ---- yuqori panel ---- */
   const top = document.createElement('header'); top.id = 'mTop';
@@ -94,7 +96,7 @@
 
   /* ---- klaviatura ochilganda joyni kengaytirish ---- */
   let kbT;
-  document.addEventListener('focusin', e => { if (/TEXTAREA|INPUT/.test(e.target.tagName) && !/checkbox|range|radio|button/.test(e.target.type)) { clearTimeout(kbT); document.body.classList.add('kb'); setTimeout(() => e.target.scrollIntoView({ block: 'nearest' }), 250); } });
+  document.addEventListener('focusin', e => { if (!DESK && (/TEXTAREA|INPUT/.test(e.target.tagName) && !/checkbox|range|radio|button/.test(e.target.type))) { clearTimeout(kbT); document.body.classList.add('kb'); setTimeout(() => e.target.scrollIntoView({ block: 'nearest' }), 250); } });
   document.addEventListener('focusout', () => { kbT = setTimeout(() => document.body.classList.remove('kb'), 150); });
 
   /* ---- suhbat boshlangach markaz kichrayadi; markazni bossa — katta/kichik ---- */
@@ -127,7 +129,7 @@
   const moon = document.createElement('button'); moon.id = 'mMoon'; moon.title = "Ekran o'chiq holatda ham 'Jarvis'"; moon.textContent = '🌙';
   top.insertBefore(moon, $('mLive'));
   const card = document.createElement('div'); card.className = 'panel'; card.id = 'wakeCard';
-  const lc = $('leftCol'); if (lc) lc.insertBefore(card, lc.firstChild);
+  const lc = $('leftCol'); if (lc && !DESK) lc.insertBefore(card, lc.firstChild);
   async function wst() { try { return WakeP ? await WakeP.status() : null; } catch (e) { return null; } }
   async function drawWake() {
     const st = await wst();
@@ -148,6 +150,7 @@
     } catch (er) { toast(er.message || String(er)); }
     setTimeout(drawWake, 800);
   });
+  if (DESK) moon.style.display = 'none';
   moon.onclick = () => { show('left'); const lc2 = $('leftCol'); if (lc2) lc2.scrollTop = 0; drawWake(); };
   document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(drawWake, 500); });
   drawWake();
@@ -180,6 +183,14 @@
       else if (loud) toast('Sizda eng so\'nggi versiya: v' + cur);
     } catch (e) {} }
   window.checkUpdate = checkUpdate; setTimeout(() => checkUpdate(false), 20000); setInterval(() => checkUpdate(false), 6 * 3600 * 1000);
+  if (DESK) {
+    const cw = document.querySelector('.coreWrap'); if (cw) { cw.classList.add('deskOrb'); nav.prepend(cw); }
+    const wh = $('wakeHint'); if (wh) document.body.appendChild(wh);
+    if (cw) cw.addEventListener('click', () => show('center'));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && window.mobBack) window.mobBack(); });
+    const paneSync = () => { const vis = [...document.querySelectorAll('.win')].some(w => w.style.display !== 'none'); document.body.classList.toggle('winopen', vis); };
+    new MutationObserver(paneSync).observe(document.body, { childList: true, subtree: false, attributes: false }); setInterval(paneSync, 400);
+  }
   show('center'); syncState();
   addEventListener('resize', () => { if (view && !$({ left: 'leftCol', center: 'centerCol', right: 'rightCol' }[view])?.classList.contains('show')) show(view); });
 })();
