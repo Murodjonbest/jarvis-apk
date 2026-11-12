@@ -556,7 +556,13 @@
     while (TG.on && tgCfg().token) {
       try {
         const u = await tgApi('getUpdates', { offset: TG.offset, timeout: 50, allowed_updates: ['message'] });
-        if (!u.ok) { await new Promise(r => setTimeout(r, 10000)); continue; }
+        if (!u.ok) {
+          if (u.error_code === 409) { // shu bot boshqa qurilmada ham ishlayapti — bir-biriga xalaqit bermaslik uchun biri chetga chiqadi
+            const now = Date.now(); TG.conf = (TG.conf || []).filter(t => now - t < 600000); TG.conf.push(now);
+            if (TG.conf.length >= 3) { TG.on = false; TG.conflict = true; logw('TG: bot boshqa qurilmada ishlayapti — bu qurilmada to\'xtatildi'); break; }
+            await new Promise(r => setTimeout(r, 30000 + Math.random() * 60000)); continue; }
+          await new Promise(r => setTimeout(r, 10000)); continue; }
+        TG.conf = [];
         for (const up of u.result) { TG.offset = up.update_id + 1; const m = up.message; if (!m) continue; const chat = m.chat.id; const owner = tgCfg().owner; const txt0 = (m.text || '').trim();
           if (!owner) { if (TG.code && txt0 === TG.code) { tgSave({ owner: chat, ownerName: m.from.first_name || '' }); TG.code = ''; await tgSend(chat, '✅ Ulandingiz, ser. Endi menga yozing yoki ovozli xabar yuboring.'); TG.onPaired && TG.onPaired(m.from.first_name || ''); }
             else await tgSend(chat, 'Jarvis: ulanish kodini yuboring (Jarvis → ⚙ Modellar → Telegram).'); continue; }
@@ -582,7 +588,7 @@
   async function tgSet(a) {
     if (a.token) { const tok = a.token.trim(); let r = {}; try { r = await (await fetchT(`https://api.telegram.org/bot${tok}/getMe`, {}, 15000)).json(); } catch (e) {} if (!r.ok) return { error: 'Token noto\'g\'ri yoki internet yo\'q' }; tgSave({ token: tok, owner: null, bot: r.result.username }); }
     if (a.unpair) tgSave({ owner: null }); if (typeof a.enabled === 'boolean') tgSave({ enabled: a.enabled });
-    const t = tgCfg(); TG.on = !!(t.token && t.enabled !== false);
+    const t = tgCfg(); TG.on = !!(t.token && t.enabled !== false); TG.conflict = false; TG.conf = [];
     if (TG.on && !t.owner) TG.code = String(Math.floor(100000 + Math.random() * 900000));
     if (TG.on) tgLoop();
     return { ok: true, bot: t.bot, code: TG.code, owner: !!t.owner };
@@ -687,7 +693,7 @@
         try { await gfetch('https://gmail.googleapis.com/gmail/v1/users/me/labels'); add('Gmail', true, 'ishlayapti'); } catch (er) { add('Gmail', false, er.message.slice(0, 120), 'Chiqib, qayta "Google bilan kirish" (Gmail ruxsatini bering)'); }
         try { await gfetch('https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=1'); add('Kalendar', true, 'ishlayapti'); } catch (er) { add('Kalendar', false, er.message.slice(0, 120), 'Google Cloud\'da Calendar API ni yoqing va qayta kiring'); }
       } catch (er) { add('Google token', false, er.message.slice(0, 160), /invalid_grant|relogin/.test(er.message) ? 'Qayta "Google bilan kirish"' : 'Google Cloud sozlamasini tekshiring'); } }
-    const tg = tgCfg(); if (tg.token) add('Telegram', !!tg.owner && TG.on, tg.owner ? (TG.on ? 'ishlayapti' : 'o\'chiq') : 'ulanmagan (kodni botga yuboring)', '');
+    const tg = tgCfg(); if (tg.token) add('Telegram', !!tg.owner && TG.on, TG.conflict ? 'bu bot boshqa qurilmada ishlayapti — bu yerda to\'xtatildi' : tg.owner ? (TG.on ? 'ishlayapti' : 'o\'chiq') : 'ulanmagan (kodni botga yuboring)', TG.conflict ? 'Telegram faqat bitta qurilmada yoqilsin (kompyuter tavsiya). Shu qurilmada kerak bo\'lsa — Telegram sozlamasida qayta yoqing' : '');
     return { items };
   }
 
@@ -706,10 +712,10 @@
     gLogin: A(gLogin), keysSync: A(keysSync), gLogout: A(() => { LS.set('gtok', null); return true; }), gPull: A(gPull), gPush: A(gPush),
     ttsGemini: A(ttsGemini), ttsCfg: A(ttsCfg), secExport: A(secExport), secImport: A(secImport),
     pc: A(pc), web: A(web), http: A(async x => { try { return await httpReq(x || {}); } catch (er) { return { error: er.message }; } }),
-    openInApp: A(u => openExt(u)), lens: A(lens), imgEdit: A(imgEdit), docRead: A(docRead), saveFile: A(saveFile), share: A(async o => { const Sh = reg('Share'); try { if (Sh) { await Sh.share({ title: o.title, text: o.text, url: o.url, dialogTitle: 'Ulashish' }); return true; } } catch (er) { if (/cancel/i.test(er.message || '')) return true; } return false; }), gapiList: A(gapiList), gapiDescribe: A(gapiDescribe), gapiCall: A(gapiCall),
+    openInApp: A(u => openExt(u)), wakeBusy: A(b => { const Wk = reg('Wake'); if (Wk && isNative) return Wk.setBusy({ busy: !!b }).catch(() => {}); }), lens: A(lens), imgEdit: A(imgEdit), docRead: A(docRead), saveFile: A(saveFile), share: A(async o => { const Sh = reg('Share'); try { if (Sh) { await Sh.share({ title: o.title, text: o.text, url: o.url, dialogTitle: 'Ulashish' }); return true; } } catch (er) { if (/cancel/i.test(er.message || '')) return true; } return false; }), gapiList: A(gapiList), gapiDescribe: A(gapiDescribe), gapiCall: A(gapiCall),
     diag: A(diag), log: A(m => { logw(m); return true; }), logRead: A(() => LS.get('log', []).join('\n')),
     liveCfg: A(liveCfg), liveSet: A(liveSet), screenshot: A(() => ({ error: 'Telefonda ekran rasmini olish yo\'q — kamerani ishlating.' })),
-    tgGet: A(() => { const t = tgCfg(); return { hasToken: !!t.token, on: TG.on, owner: !!t.owner, ownerName: t.ownerName || '', code: TG.code, enabled: t.enabled !== false }; }),
+    tgGet: A(() => { const t = tgCfg(); return { hasToken: !!t.token, on: TG.on, owner: !!t.owner, ownerName: t.ownerName || '', code: TG.code, enabled: t.enabled !== false, conflict: !!TG.conflict }; }),
     tgSet: A(tgSet), tgNotify: A(async text => { const t = tgCfg(); if (!t.token || !t.owner || t.enabled === false) return false; try { await tgSend(t.owner, text); return true; } catch (er) { return false; } }),
     tgReply: A((id, text) => { const f = TG.pending.get(id); if (f) { TG.pending.delete(id); f(text); } return true; }),
     onTg: cb => { TG.onIn = cb; }, onTgPaired: cb => { TG.onPaired = cb; }

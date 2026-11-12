@@ -1,0 +1,132 @@
+JARVIS DESKTOP — bepul AI modellar bilan
+
+ISHGA TUSHIRISH
+1. Bu papkani istalgan joyga qo'ying (masalan, C:\Jarvis).
+2. Jarvis.exe ni ikki marta bosing.
+   Windows "Windows protected your PC" desa: "More info" -> "Run anyway".
+3. Ish stoliga yorliq: Jarvis.exe ustida o'ng tugma -> "Send to" -> "Desktop (create shortcut)".
+
+BIRINCHI SOZLASH (2-3 daqiqa)
+Pastdagi "⚙ Modellar" tugmasini bosing. Har bir xizmat yonidagi "🔑 Kalit olish" ni bosing,
+o'sha saytda bepul ro'yxatdan o'ting, API kalitni nusxalab, Jarvisga qo'ying va "Saqlash" ni bosing.
+Kamida bittasi kerak. Tavsiya:
+  - Groq        — juda tez + ovozli buyruqlar (mikrofon) shu kalit bilan ishlaydi
+  - Google Gemini — Google hisobingiz bilan, o'zbek tilini yaxshi biladi
+  - OpenRouter  — Qwen, GLM, Kimi va boshqa bepul modellar
+  - NVIDIA NIM  — Kimi, GLM
+"✓ Sinash" tugmasi kalit ishlashini tekshiradi.
+
+API kalitlar faqat shu kompyuterda saqlanadi:
+%APPDATA%\Jarvis\jarvis-config.json  — hech kimga bermang.
+
+YANGI (v1.1)
+- Robot ko'rinish, tiniq ovoz (Google Gemini kaliti bilan), q harfi to'g'ri o'qiladi.
+- Face ID: ⚙ Modellar -> FACE ID -> "Yuzimni o'rgatish". Kamera ishlamasa zaxira PIN.
+- Ovozimni tanish (eksperimental) — "Jarvis" kutish rejimida begona ovozlarni e'tiborsiz qoldiradi.
+- Oflayn rejim: internet bo'lmasa vaqt, hisob, qayd, eslatmalar ishlaydi; Ollama o'rnatilgan bo'lsa AI ham ishlaydi.
+  O'zgarishlar navbatda turadi va internet qaytishi bilan Google xotira bilan avtomatik birlashtiriladi.
+- Google sinxron: ⚙ Modellar -> GOOGLE XOTIRA -> 1-qadamdagi ko'rsatma bo'yicha bir martalik sozlash.
+- API kalitlar parol bilan shifrlanib Google xotirada saqlanadi (boshqa kompyuterda tiklash mumkin).
+
+YANGI (v1.2)
+- Kompyuterni boshqarish: "Jarvis, Word'ni och", "Ish stolidan Paxtakon faylini top va och", "kompyuter holatini ayt".
+  PowerShell buyruqlari va fayl yozish har safar sizning ruxsatingiz bilan bajariladi.
+- Face ID va ovoz namunasi API kalitlar bilan birga parol bilan shifrlanib Google xotiraga saqlanadi:
+  yangi kompyuterda Jarvis -> Google bilan kirish -> parolni kiritib "Tiklash" -> hammasi o'z holiga qaytadi.
+
+YANGI (v1.3)
+- Jarvis siz tanlagan rasm ko'rinishida: rasm o'zgarmaydi, faqat jonlanadi (nafas, bosh harakati, gapirganda og'iz va qo'l, quloq nuri).
+- Internet: "Jarvis, Gulistonda ob-havo qanday?", "bugungi yangiliklar", "shu sahifani o'qi", "Vikipediyadan top".
+- Telegram: telefondan Jarvisga yozasiz yoki ovozli xabar yuborasiz — kompyuterdagi Jarvis bajaradi
+  (⚙ Modellar -> TELEGRAM bo'limi; kompyuter yoqiq va Jarvis ochiq bo'lishi kerak). Faqat siz ulana olasiz.
+- Til: Jarvis ravon, sof o'zbek tilida gapiradi.
+
+YANGI (v1.4) — Hermes agenti g'oyalari
+- O'z-o'zini o'rgatish: murakkab ishdan keyin Jarvis ish usulini 🤖 ko'nikma qilib saqlaydi va keyingi safar yaxshilaydi.
+- ⏰ Odatlar: belgilangan vaqtda ishni o'zi bajaradi (ertalabki brifing, kechki xulosa, haftalik ko'rib chiqish),
+  natijani ovoz bilan aytadi va Telegram'ga yuboradi.
+- Uzoq xotira: "esingdami…", "o'tgan safar…" desangiz — oldingi suhbatlar, faktlar va qaydlardan qidiradi.
+- 🎭 Xarakter: 📚 Ko'nikma oynasida Jarvis qanday gapirishini o'zingiz yozasiz.
+
+YANGI (v1.5)
+- 🎙 JONLI suhbat (Gemini Live): odamdek tabiiy ovozda real vaqtda gaplashadi, gapini bo'lishingiz mumkin,
+  vositalardan foydalanadi (kompyuter, eslatmalar, internet...) va "ekranga qara" desangiz ekraningizni ko'radi.
+  Pastdagi "🎙 JONLI" tugmasi yoki "Jarvis, jonli rejim". Google Gemini kaliti kerak. Ovoz: ⚙ Modellar -> JONLI SUHBAT.
+- 🕸 Xotira xaritasi: loyihalar, odamlar, qaydlar, ko'nikmalar qanday bog'langanini ko'rasiz.
+
+YANGI (v1.6)
+- Gmail, Kalendar va Drive endi exe'da ham ishlaydi (o'z Google kirishingiz orqali).
+  MUHIM: ⚙ Modellar -> GOOGLE -> "Chiqish" -> "🔑 Google bilan kirish" ni qayta bosing — Gmail va Kalendar ruxsatlari so'raladi.
+- Ko'rinish: dastlabki aylanuvchi doira qaytarildi (Tizim holati -> Ko'rinish: doira yoki rasm).
+- Ovozli boshqaruv: Groq kaliti bo'lmasa Gemini kaliti bilan ham ishlaydi; tasdiqlash oynasiga "ha" / "yo'q" deb javob berasiz;
+  "Jarvis" kutish rejimi yoqilgan bo'lsa, dastur ochilganda o'zi yoqiladi.
+
+YANGI (v1.7)
+- Python va JavaScript dastur ichiga o'rnatildi — INTERNETSIZ ham ishlaydi. Jarvis vazifani bajarish uchun o'zi kod yozib
+  ishga tushiradi (hisob-kitob, jadval tahlili, minglab elementni qayta ishlash). Qo'lda: /kod print(2**100)
+- ⚡ Ommaviy buyruqlar: 1000 tagacha buyruqni bir vaqtda bir nechtadan bajaradi, natijalarni bitta joyga yig'adi.
+
+YANGI (v1.8)
+- ⚡ Ommaviy buyruqlar: aqlli guruhlash — 1000 buyruq ~70 ta AI so'rovi bilan bajariladi (limit tejaladi).
+- ⚡ Ishonch rejimi (Tizim holati -> Tasdiqlash): Jarvis fayl, xat qoralamasi, kalendar, PowerShell amallarini so'ramasdan bajaradi.
+  Faqat diskni/tizimni buzadigan xavfli buyruqlar (format, C:\ ni o'chirish, o'chirib-yoqish...) baribir so'raladi.
+- 📴 Internetsiz AI: ⚙ Modellar -> INTERNETSIZ AI -> "Ollama'ni o'rnatish" -> "Modelni yuklash" (bir marta, internet bilan).
+
+YANGI (v1.9) — tuzatishlar
+- AI javob bermasligining asosiy sababi tuzatildi: Gemini vositalar ro'yxatini rad etayotgan edi.
+- Mikrofon: ovoz endi WAV formatida yuboriladi — Gemini bilan ham tanadi.
+- Internet yo'q bo'lsa xato o'rniga oflayn rejim javob beradi.
+- 🩺 Tekshiruv (pastki panel): Internet, har bir AI kaliti, mikrofon, ovoz, Google, Gmail, Kalendar, Drive xotirasi,
+  Ollama va Telegram'ni tekshiradi va har bir muammoga aniq yechim yozadi. "📋 Hisobotni nusxalash" — menga yuboring.
+
+=== v2.0 (12-noyabr 2026) ===
+• API KALITLAR ENDI AVTOMATIK: Google hisobingiz bilan kirgan zahoti barcha kalitlar o'zi yuklanadi
+  (kompyuterda ham, telefonda ham). Yangi kalit kiritsangiz — hamma qurilmaga o'zi tarqaladi.
+  Kalitlar Drive'dagi "Jarvis xotira/jarvis_kalitlar.json" faylida, Google hisobingizga bog'lab shifrlangan.
+• "📱 Telefon uchun kod" tugmasi (⚙ Modellar → GOOGLE): telefondagi Jarvis'ni bir marta ulash uchun.
+  Kod nusxalanadi va Telegram ulangan bo'lsa, Telegram'ingizga ham yuboriladi.
+
+=== v2.1 ===
+• Jarvis endi "qila olmayman" demaydi: "Xo'p ser, hozir hal qilaman" deb o'zi bajaradi, xato bo'lsa boshqa yo'l bilan qayta urinadi.
+• O'z-o'zini takomillashtirish: vositalar yetmasa, Jarvis o'ziga yangi vosita (kod) yozadi, sinaydi, tuzatadi va saqlaydi —
+  keyingi safar va boshqa qurilmalarda ham ishlatadi (📚 Ko'nikmalar oynasida ko'rinadi, o'chirsa bo'ladi).
+• "Top, ko'rsat": internetdan sahifa, RASM va VIDEOni o'zi topib, Jarvis ichida ko'rsatadi:
+  rasmlar galereya (bosib kattalashtirish, varaqlash), videolar shu yerning o'zida o'ynaydi, sahifalar kartochka.
+  Har birining yonida: ↗ Ochish · ⧉ Havola (nusxa) · 📤 Ulashish (Telegram'ingizga yuboradi). "⛶ Kattaroq" — alohida oynada.
+• Gapirib so'rasangiz — ovozda javob beradi; yozib so'rasangiz — jim, faqat matnda (gapirib bo'lmaydigan joylar uchun).
+
+=== v2.2 ===
+• "Jarvis" deb chaqirsangiz: "Labbay, ser! Nima xohlaysiz?", "Labbay ser, nima ish qilay?", "Eshitaman, ser. Nimani topib beray?" kabi javob beradi.
+• Doim tayyor: "Jarvis" tinglash ilova ochilishi bilan o'zi yoqiladi, uzilib qolsa o'zi qayta ulanadi.
+• 📎 tugmasi: rasm, kamera, fayl (Word, Excel, PowerPoint, PDF, matn) biriktirish. Faylni sudrab tashlash va Ctrl+V ham ishlaydi.
+  Fayl tashlab "shu bo'yicha dalolatnoma yarat" desangiz — Jarvis faylni o'qib, tayyor Word (.docx) hujjat yaratadi:
+  💾 Saqlash (Hujjatlar\Jarvis papkasiga, o'zi ochiladi) · 👁 Ko'rish · 📤 Ulashish · ☁ Drive'ga.
+• Rasm bo'yicha qidiruv (Google Lens kabi): rasmda kerakli joyni belgilab 🔍 Qidirish — Jarvis rasmni tanib,
+  o'xshash rasmlar va ma'lumotni o'zi topib ko'rsatadi + Google Lens natijalari havolasi.
+• Rasm muharriri: belgilash, kesish, burish, ko'zgu, chizish, matn yozish, yorqinlik/kontrast/rang, oq-qora,
+  🪄 AI tahrir (masalan "fonni olib tashla" — Gemini kaliti bilan), saqlash va ulashish.
+
+=== v2.3 ===
+• HUJJATNI ASL FORMATIDA TAHRIRLASH: Word (.docx) yoki Excel (.xlsx) tashlab "tahrirlab ber" deng — Jarvis shrift, shtamp,
+  jadvallarni buzmasdan matnni almashtiradi, katakchalarni to'ldiradi, jadvalga qator qo'shadi/o'chiradi va yangi fayl beradi.
+  Excel'da formulalar ochilganda qayta hisoblanadi.
+• NAMUNALAR: faylni 📌 bilan (yoki "namuna sifatida saqla" deb) saqlang. Keyin "Dalolatnoma namunasi asosida Yuksalish MFY
+  maktabi bo'yicha tayyorla" desangiz — namunadan nusxa olib, yangi ob'ektga moslaydi. Namunalar Google Drive orqali
+  kompyuter va telefonda umumiy.
+• EXCEL YARATISH: "jadvalni Excel qilib ber" — formulalar va chiroyli sarlavha bilan .xlsx.
+• O'LCHOVLAR: ob'ektda "devor qalinligi loyihada 51, haqiqatda 38 sm" deng — yozib boradi; "o'lchovlar jadvalini ber" —
+  farq ustuni bilan Excel yoki Word fayl.
+• TELEGRAM: telefondan Telegram'ga fayl yoki rasm yuborsangiz — Jarvis o'qiydi/bajaradi va tayyor faylni Telegram'ga qaytaradi.
+• XATO HISOBOTI: "xato hisobotini yubor" deng — barcha tekshiruv va jurnal Telegram'ingizga keladi (va nusxalanadi).
+
+=== v2.4 ===
+• AVTOMATIK YANGILANISH: Jarvis yangi versiyani o'zi yuklab oladi va "Hozir qayta ishga tushirish" tugmasini ko'rsatadi.
+  Bundan keyin zip'ni qo'lda yuklash shart emas. To'liq o'rnatma doim shu yerda:
+  https://github.com/Murodjonbest/jarvis-apk/releases/latest/download/Jarvis-Desktop.zip
+• FONDA ISHLASH: oynani yopsangiz Jarvis yopilmaydi — soat yonidagi belgiga o'tadi, "Jarvis" deb chaqirsangiz ochiladi,
+  Telegram ham ishlayveradi. Windows yoqilganda o'zi fonda ishga tushadi (belgi ustida o'ng tugma → o'chirsa bo'ladi).
+  To'liq chiqish: belgi ustida o'ng tugma → Chiqish.
+• TEJAMKOR TINGLASH: "Jarvis" so'zi avval kompyuterning o'zida (internetsiz) aniqlanadi — internet limiti behuda sarflanmaydi.
+• TELEGRAM: bitta bot ikki qurilmada yoqilsa, biri o'zi chetga chiqadi (xabarlar yo'qolmaydi).
+• XAVFSIZLIK: Jarvis o'zi yozgan vositalar alohida himoyalangan muhitda ishlaydi — kalit va fayllaringizga tega olmaydi.
+• Hujjat oxiriga qo'shilgan matn endi hujjatning o'z shriftida. Namunalar uchun joy kattalashtirildi.

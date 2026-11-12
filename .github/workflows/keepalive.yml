@@ -1,0 +1,16 @@
+name: Imzo kalitini saqlab turish
+# APK imzo kaliti GitHub keshida turadi; 7 kun ishlatilmasa o'chadi. Bu ish uni har 3 kunda "tirik" saqlaydi,
+# shunda yangi versiyalar doim eskisining ustidan o'rnatiladi.
+on:
+  schedule:
+    - cron: '23 2 */3 * *'
+  workflow_dispatch:
+jobs:
+  keep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/jarvis-key
+          key: jarvis-signing-key-v1
+      - run: ls -la ~/jarvis-key || echo "kalit topilmadi"

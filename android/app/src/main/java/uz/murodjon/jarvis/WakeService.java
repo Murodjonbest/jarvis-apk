@@ -28,6 +28,7 @@ public class WakeService extends Service implements RecognitionListener {
     static final String CH = "jarvis_wake";
     static volatile boolean running = false;
     static volatile boolean appVisible = false;
+    static volatile boolean busy = false;
     static volatile String lastError = "";
     static volatile long lastHit = 0;
     static WakeService self;
@@ -87,7 +88,7 @@ public class WakeService extends Service implements RecognitionListener {
             Recognizer rec = new Recognizer(model, 16000.0f, "[\"jarvis\", \"hey jarvis\", \"[unk]\"]");
             speech = new SpeechService(rec, 16000.0f);
             speech.startListening(this);
-            speech.setPause(appVisible);
+            speech.setPause(busy);
             lastError = "";
         } catch (Exception e) {
             lastError = "Mikrofon ochilmadi: " + e.getMessage();
@@ -95,26 +96,30 @@ public class WakeService extends Service implements RecognitionListener {
         }
     }
 
-    /** Ilova ekranda bo'lsa — mikrofonni ilovaning o'ziga bo'shatamiz. */
-    static void setAppVisible(boolean v) {
-        appVisible = v;
+    static void setAppVisible(boolean v) { appVisible = v; }
+
+    /** Ilova o'zi mikrofonni ishlatayotganda (buyruq yozib olish) — vaqtincha to'xtaymiz. */
+    static void setBusy(boolean b) {
+        busy = b;
         WakeService s = self;
         if (s != null && s.speech != null) {
-            try { s.speech.setPause(v); } catch (Exception ignored) {}
+            try { s.speech.setPause(b); } catch (Exception ignored) {}
         }
     }
 
     private void check(String json, String field) {
         try {
-            String t = new JSONObject(json).optString(field, "");
-            if (t.contains("jarvis")) hit();
+            String t = new JSONObject(json).optString(field, "").trim();
+            // soxta ishga tushishni kamaytirish: oraliq natijada faqat aniq "jarvis", yakuniyda — tarkibida bo'lsa
+            if ("partial".equals(field) ? (t.equals("jarvis") || t.equals("hey jarvis")) : t.contains("jarvis")) hit();
         } catch (Exception ignored) {}
     }
 
     private void hit() {
         long now = System.currentTimeMillis();
-        if (now - lastHit < 4000 || appVisible) return;
+        if (now - lastHit < 4000 || busy) return;
         lastHit = now;
+        if (appVisible && WakePlugin.instance != null) { WakePlugin.instance.fireWake(); return; }
         try { if (speech != null) speech.setPause(true); } catch (Exception ignored) {}
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         @SuppressWarnings("deprecation")

@@ -45,6 +45,19 @@
     }finally{if(onAbort&&opts.signal)opts.signal.removeEventListener('abort',onAbort)}}
   sample.limits=async()=>({images:true});
 
+  /* ---- tejamkor "Jarvis" aniqlash (Vosk, internetsiz) ---- */
+  let VK=null,VKp=null;
+  const voskOn=()=>{try{return localStorage.getItem('jarvis_vosk')!=='0'}catch(e){return true}};
+  function voskLoad(){if(VKp)return VKp;VKp=new Promise(res=>{const go=()=>window.Vosk.createModel(location.origin+'/vendor/vosk-model.tar.gz').then(m=>{VK=m;res(m)}).catch(e=>{console.warn('vosk',e);res(null)});
+      if(window.Vosk)return go();const sc=document.createElement('script');sc.src='vendor/vosk.js';sc.onload=go;sc.onerror=()=>res(null);document.head.appendChild(sc)});return VKp}
+  window.voskLoad=voskLoad;
+  async function voskHasWake(pcm){if(!VK){voskLoad();return null}
+    return new Promise(res=>{let done=false,t2=null;const r=new VK.KaldiRecognizer(16000,JSON.stringify(['jarvis','hey jarvis','[unk]']));
+      const fin=v=>{if(done)return;done=true;clearTimeout(t2);setTimeout(()=>{try{r.remove()}catch(e){}},50);res(v)};
+      r.on('result',m=>{const t=(m.result&&m.result.text)||'';if(/jarvis/.test(t))fin(true);else{clearTimeout(t2);t2=setTimeout(()=>fin(false),350)}});
+      r.on('partialresult',m=>{if(/jarvis/.test((m.result&&m.result.partial)||''))fin(true)});
+      try{r.acceptWaveformFloat(pcm,16000);r.retrieveFinalResult()}catch(e){fin(null)}setTimeout(()=>fin(null),3000)})}
+  setTimeout(()=>{if(voskOn())voskLoad()},6000);
   /* ---- dictation: mic → speech segments → Groq Whisper ---- */
   function makeDictation(){
     const L={partial:[],final:[],state:[]};let st='idle',stream=null,ctx=null,rec=null,raf=0,chunks=[],speaking=false,silentSince=0,lastFinal=0,noise=0.01,startedAt=0;
@@ -53,11 +66,13 @@
     async function flush(){if(!rec||rec.state!=='recording')return;const r=rec;await new Promise(res=>{r.onstop=res;r.stop()});
       const blob=new Blob(chunks,{type:r.mimeType||'audio/webm'});chunks=[];if(blob.size<3500)return;
       if(typeof W!=='undefined'&&W&&W.on&&window.voiceCheck&&!(await window.voiceCheck(blob))){emit('partial',{text:''});return}
-      emit('partial',{text:'🎙 tanilmoqda…'});
       let payload=await blob.arrayBuffer(),mt=blob.type;
-      try{const ac=new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,1,16000);const dec=await new AudioContext().decodeAudioData(payload.slice(0));
+      try{const dec=await new AudioContext().decodeAudioData(payload.slice(0));
         const len=Math.ceil(dec.duration*16000);const oc=new OfflineAudioContext(1,len,16000);const s=oc.createBufferSource();s.buffer=dec;s.connect(oc.destination);s.start();const r=await oc.startRendering();
-        const pcm=r.getChannelData(0);const wav=new DataView(new ArrayBuffer(44+pcm.length*2));const W=(o,str)=>{for(let i=0;i<str.length;i++)wav.setUint8(o+i,str.charCodeAt(i))};
+        const pcm=r.getChannelData(0);
+        // tejamkor tinglash: "Jarvis" kutilayotganda avval kompyuterning o'zida (internetsiz) tekshiramiz — yo'q bo'lsa internetga yubormaymiz
+        if(typeof W!=='undefined'&&W&&W.on&&!W.await&&voskOn()){const hit=await voskHasWake(pcm);if(hit===false){emit('partial',{text:''});return}}
+        emit('partial',{text:'🎙 tanilmoqda…'});const wav=new DataView(new ArrayBuffer(44+pcm.length*2));const W=(o,str)=>{for(let i=0;i<str.length;i++)wav.setUint8(o+i,str.charCodeAt(i))};
         W(0,'RIFF');wav.setUint32(4,36+pcm.length*2,true);W(8,'WAVE');W(12,'fmt ');wav.setUint32(16,16,true);wav.setUint16(20,1,true);wav.setUint16(22,1,true);wav.setUint32(24,16000,true);wav.setUint32(28,32000,true);wav.setUint16(32,2,true);wav.setUint16(34,16,true);W(36,'data');wav.setUint32(40,pcm.length*2,true);
         for(let i=0;i<pcm.length;i++){const v=Math.max(-1,Math.min(1,pcm[i]));wav.setInt16(44+i*2,v<0?v*32768:v*32767,true)}payload=wav.buffer;mt='audio/wav'}catch(e){}
       const res=await N.stt(payload,mt);
@@ -72,13 +87,13 @@
       const wake=(typeof W!=='undefined'&&W&&W.on);
       if(!wake&&!speaking&&lastFinal&&now-lastFinal>2200){api.stop();return}
       if(!wake&&!speaking&&!lastFinal&&now-startedAt>15000){api.stop();return}
-      raf=requestAnimationFrame(()=>loop(an,buf))}
+      raf=setTimeout(()=>loop(an,buf),30)}
     const api={
       start(){if(st==='listening')return Promise.resolve();startedAt=Date.now();lastFinal=0;
         return navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}).then(s=>{stream=s;ctx=new AudioContext();const src=ctx.createMediaStreamSource(s);const an=ctx.createAnalyser();an.fftSize=2048;src.connect(an);
-          setState('listening');loop(an,new Float32Array(an.fftSize))}).catch(e=>{throw err('not_granted','Mikrofonga ruxsat yo\'q: '+e.message)})},
-      async stop(){if(st!=='listening')return;cancelAnimationFrame(raf);if(speaking){speaking=false;await flush()}
-        try{stream.getTracks().forEach(t=>t.stop())}catch(e){}try{ctx.close()}catch(e){}setState('idle','stopped')},
+          setState('listening');try{N.wakeBusy&&N.wakeBusy(true)}catch(e){}loop(an,new Float32Array(an.fftSize))}).catch(e=>{throw err('not_granted','Mikrofonga ruxsat yo\'q: '+e.message)})},
+      async stop(){if(st!=='listening')return;clearTimeout(raf);if(speaking){speaking=false;await flush()}
+        try{stream.getTracks().forEach(t=>t.stop())}catch(e){}try{ctx.close()}catch(e){}try{N.wakeBusy&&N.wakeBusy(false)}catch(e){}setState('idle','stopped')},
       onPartial(f){L.partial.push(f)},onFinal(f){L.final.push(f)},onState(f){L.state.push(f)}};
     return api}
 
@@ -173,6 +188,11 @@
     const gb=document.getElementById('gmBtn');if(gb)gb.onclick=()=>window.openModelSettings();
     ui();setTimeout(()=>syncNow(),2500);setTimeout(()=>window.keysAuto&&window.keysAuto(),4500);setInterval(()=>window.keysAuto&&window.keysAuto(),15*60*1000)});
 
+  /* avtomatik yangilanish (kompyuter) */
+  if(N.updInstall){const upd=async()=>{try{const r=await N.updInstall();if(r&&r.ok&&r.version){
+      const d=addMsg('j',`🔄 **Jarvis yangilandi: v${r.version}** — yangi imkoniyatlar qayta ishga tushirilgandan keyin ishlaydi.`);const b=document.createElement('button');b.className='chip w';b.style.marginTop='8px';b.textContent='↻ Hozir qayta ishga tushirish';b.onclick=()=>N.updRestart();d.appendChild(b);
+      try{showToast('Yangi versiya v'+r.version+' tayyor','YANGILANISH')}catch(e){}}}catch(e){}};
+    setTimeout(upd,25000);setInterval(upd,6*3600*1000)}
   /* kalitlar Google hisobi bilan avtomatik */
   window.keysAuto=async function(loud){if(!N.keysSync)return;try{const r=await N.keysSync();
     if(r&&r.pulled){try{showToast(r.pulled+' ta API kalit Google hisobingizdan yuklandi','KALITLAR')}catch(e){}if(WINS.models){closeWin('models');window.openModelSettings()}}
@@ -398,9 +418,9 @@
   const base=window.openModelSettings;
   window.openModelSettings=async function(){await base();const w=WINS.models;if(!w||!N.tgGet||w.body.querySelector('[data-tgbox]'))return;const t=await N.tgGet();
     const box=document.createElement('div');box.className='wmsg';box.setAttribute('data-tgbox','1');box.style.borderColor='#2aa3e0';
-    box.innerHTML=`<div class="h">📱 TELEGRAM — TELEFONDAN JARVISGA</div><div class="t" style="font-size:13px;color:var(--mut)">Telefonda Telegram'dan Jarvisga yozasiz yoki <b>ovozli xabar</b> yuborasiz — kompyuterdagi Jarvis bajaradi va javob qaytaradi (kompyuter yoqiq va Jarvis ochiq bo'lishi kerak). Faqat siz ulana olasiz.<br>1) Telegram'da <a href="#" data-o="https://t.me/BotFather">@BotFather</a> → /newbot → nom bering → tokenni oling. 2) Tokenni shu yerga qo'ying → Ulash. 3) Botingizga chiqqan 6 raqamli kodni yuboring.</div>
+    box.innerHTML=`<div class="h">📱 TELEGRAM — TELEFONDAN JARVISGA</div><div class="t" style="font-size:13px;color:var(--mut)">Telefonda Telegram'dan Jarvisga yozasiz yoki <b>ovozli xabar</b> yuborasiz — kompyuterdagi Jarvis bajaradi va javob qaytaradi (kompyuter yoqiq va Jarvis ochiq bo'lishi kerak). Faqat siz ulana olasiz. <b>Bitta botni faqat bitta qurilmada yoqing</b> (kompyuter tavsiya — u fonda ham ishlaydi).<br>1) Telegram'da <a href="#" data-o="https://t.me/BotFather">@BotFather</a> → /newbot → nom bering → tokenni oling. 2) Tokenni shu yerga qo'ying → Ulash. 3) Botingizga chiqqan 6 raqamli kodni yuboring.</div>
       <div class="addrow"><input data-tgt type="password" placeholder="${t.hasToken?'Token saqlangan (yangisini kiritish mumkin)':'Bot token'}"><button data-tgs>Ulash</button></div>
-      <div class="kbm" data-tgr>${t.owner?'✓ Ulangan: '+esc(t.ownerName)+(t.on?' · ishlayapti':' · o\'chiq'):t.code?'Botingizga shu kodni yuboring: <b style="font-size:18px;color:var(--amber)">'+t.code+'</b>':t.hasToken?'Kod olish uchun "Ulash" ni bosing.':''}</div>
+      <div class="kbm" data-tgr>${t.conflict?'<b style="color:var(--amber)">⚠ Bu bot boshqa qurilmada (kompyuter yoki telefonda) ishlayapti, shuning uchun bu yerda to\'xtatildi. Bitta botni faqat bitta qurilmada yoqing.</b><br>':''}${t.owner?'✓ Ulangan: '+esc(t.ownerName)+(t.on?' · ishlayapti':' · o\'chiq'):t.code?'Botingizga shu kodni yuboring: <b style="font-size:18px;color:var(--amber)">'+t.code+'</b>':t.hasToken?'Kod olish uchun "Ulash" ni bosing.':''}</div>
       ${t.hasToken?`<label class="toggle"><input type="checkbox" data-tge ${t.enabled?'checked':''}> Telegram orqali boshqarish yoqilgan</label>${t.owner?'<div class="wact"><button data-tgu>Boshqa hisobga qayta ulash</button></div>':''}`:''}`;
     w.body.prepend(box);const q=s=>box.querySelector(s);
     box.querySelectorAll('[data-o]').forEach(a=>a.onclick=e=>{e.preventDefault();N.open(a.dataset.o)});

@@ -17,6 +17,37 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 
 @CapacitorPlugin(name = "Wake")
 public class WakePlugin extends Plugin {
+    static WakePlugin instance;
+
+    @Override
+    public void load() { instance = this; }
+
+    @PluginMethod
+    public void setBusy(PluginCall call) { WakeService.setBusy(call.getBoolean("busy", false)); call.resolve(); }
+
+    /** Xiaomi, Huawei, Oppo, Vivo, Samsung — fonda ishlashga ruxsat (avtoishga tushish) oynasi */
+    @PluginMethod
+    public void askAutostart(PluginCall call) {
+        String[][] c = {
+            {"com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity"},
+            {"com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"},
+            {"com.huawei.systemmanager", "com.huawei.systemmanager.optimize.process.ProtectActivity"},
+            {"com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity"},
+            {"com.oppo.safe", "com.oppo.safe.permission.startup.StartupAppListActivity"},
+            {"com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"},
+            {"com.samsung.android.lool", "com.samsung.android.sm.battery.ui.BatteryActivity"},
+            {"com.letv.android.letvsafe", "com.letv.android.letvsafe.AutobootManageActivity"}
+        };
+        for (String[] x : c) {
+            try {
+                Intent i = new Intent().setComponent(new android.content.ComponentName(x[0], x[1])).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(i); JSObject r = new JSObject(); r.put("opened", x[0]); call.resolve(r); return;
+            } catch (Exception ignored) {}
+        }
+        Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getContext().getPackageName())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        getContext().startActivity(i);
+        JSObject r = new JSObject(); r.put("opened", "app"); call.resolve(r);
+    }
 
     private JSObject state() {
         JSObject r = new JSObject();

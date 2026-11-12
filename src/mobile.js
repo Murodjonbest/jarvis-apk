@@ -120,7 +120,7 @@
     const row = (ok, t, act) => `<div class="stat"><span>${ok ? '🟢' : '🔴'} ${t}</span>${ok ? '<b>bor</b>' : `<button class="chip" data-w="${act}">Ruxsat berish</button>`}</div>`;
     card.innerHTML = `<div class="ttl">🌙 EKRAN O'CHIQ HOLATDA HAM "JARVIS"</div>
       <div class="kbm" style="margin:6px 0">Yoqilsa, telefon cho'ntakda, ekran o'chiq yoki boshqa ilova ochiq bo'lsa ham "Jarvis" deganingizni eshitadi (internetsiz, telefon ichida) va o'zi ochilib buyruqni tinglaydi. Batareyani biroz ko'proq sarflaydi.</div>
-      ${row(st.mic, 'Mikrofon', 'app')}${row(st.notif, 'Bildirishnoma', 'app')}${row(st.overlay, 'Boshqa ilovalar ustida ochilish', 'overlay')}${row(st.battery, 'Batareya cheklovisiz', 'battery')}
+      ${row(st.mic, 'Mikrofon', 'app')}${row(st.notif, 'Bildirishnoma', 'app')}${row(st.overlay, 'Boshqa ilovalar ustida ochilish', 'overlay')}${row(st.battery, 'Batareya cheklovisiz', 'battery')}<div class="stat"><span>⚙ Fonda ishlash (Xiaomi, Samsung…)</span><button class="chip" data-w="auto">Sozlash</button></div>
       <div class="row2" style="margin-top:8px"><button class="chip ${st.running ? 'red' : 'w'}" data-w="toggle">${st.running ? '⏹ O\'chirish' : '▶ Yoqish'}</button></div>
       ${st.error ? `<div class="kbm" style="color:var(--red)">${esc(st.error)}</div>` : st.running ? '<div class="kbm" style="color:var(--cy2)">✓ Tinglayapti. Ekranni o\'chirib "Jarvis" deb ko\'ring.</div>' : ''}`;
   }
@@ -128,7 +128,7 @@
     const b = e.target.closest('[data-w]'); if (!b || !WakeP) return; const a = b.dataset.w;
     try {
       if (a === 'toggle') { const st = await wst(); if (st && st.running) { await WakeP.stop(); try { localStorage.setItem('jn_wake_auto', '0'); } catch (e) {} } else { try { localStorage.setItem('jn_wake_auto', '1'); } catch (e) {} await WakeP.start(); toast("🌙 Endi ekran o'chiq bo'lsa ham \"Jarvis\" deng"); } }
-      if (a === 'overlay') await WakeP.askOverlay(); if (a === 'battery') await WakeP.askBattery(); if (a === 'app') await WakeP.appSettings();
+      if (a === 'overlay') await WakeP.askOverlay(); if (a === 'battery') await WakeP.askBattery(); if (a === 'app') await WakeP.appSettings(); if (a === 'auto') await WakeP.askAutostart();
     } catch (er) { toast(er.message || String(er)); }
     setTimeout(drawWake, 800);
   });
@@ -142,10 +142,28 @@
     try { if (window.wakeGreet) await window.wakeGreet(); } catch (e) {}
     const mic = $('mic'); if (mic && !mic.classList.contains('rec')) mic.click();
   };
+  // xizmat "Jarvis"ni eshitganda (ilova ochiq bo'lsa ham) — shu yerda javob beramiz
+  try { WakeP && WakeP.addListener('wake', () => window.onNativeWake && window.onNativeWake()); } catch (e) {}
+  // xizmat ishlayotganda WebView o'zi alohida tinglamaydi (mikrofon va internet limiti tejaladi)
+  setInterval(async () => { const st = await wst(); if (st && st.running && typeof W !== 'undefined' && W.on && !W.await && typeof wakeOff === 'function') { wakeOff(); } }, 5000);
   // doim tayyor: fon xizmati o'zi yoqiladi (o'chirib qo'ymagan bo'lsangiz)
   setTimeout(async () => { if (!WakeP) return; let off = false; try { off = localStorage.getItem('jn_wake_auto') === '0'; } catch (e) {}
     const st = await wst(); if (st && st.mic && !st.running && !off) { try { await WakeP.start(); } catch (e) {} drawWake(); } }, 4000);
 
+  /* ---- avtomatik yangilanish: GitHub'dagi yangi APK ---- */
+  const AppI = CE.registerPlugin && CE.Capacitor && CE.Capacitor.isNativePlatform && CE.Capacitor.isNativePlatform() ? CE.registerPlugin('App') : null;
+  const vNum = v => String(v || '0').replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0);
+  const newer = (a, b) => { const x = vNum(a), y = vNum(b); for (let i = 0; i < 4; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
+  async function checkUpdate(loud) {
+    if (!AppI || !window.jarvisNative) return;
+    try { const cur = (await AppI.getInfo()).version; const r = await window.jarvisNative.http({ url: 'https://api.github.com/repos/Murodjonbest/jarvis-apk/releases/latest', headers: { Accept: 'application/vnd.github+json' } });
+      const j = r.json || {}; const latest = String(j.tag_name || '').replace(/^v/, ''); const a = (j.assets || []).find(x => x.name === 'Jarvis.apk');
+      if (a && newer(latest, cur)) { if (localStorage.getItem('jn_upd_seen') === latest && !loud) return; localStorage.setItem('jn_upd_seen', latest);
+        const d = addMsg('j', `📲 **Yangi versiya: v${latest}** (sizda v${cur}). Bosing — yuklab olinadi, keyin "O'rnatish"ni bosasiz. Ma'lumotlaringiz saqlanib qoladi.`);
+        const b = document.createElement('button'); b.className = 'chip w'; b.style.marginTop = '8px'; b.textContent = '⬇ Yangilash'; b.onclick = () => window.jarvisNative.open(a.browser_download_url); d.appendChild(b); }
+      else if (loud) toast('Sizda eng so\'nggi versiya: v' + cur);
+    } catch (e) {} }
+  window.checkUpdate = checkUpdate; setTimeout(() => checkUpdate(false), 20000); setInterval(() => checkUpdate(false), 6 * 3600 * 1000);
   show('center'); syncState();
   addEventListener('resize', () => { if (view && !$({ left: 'leftCol', center: 'centerCol', right: 'rightCol' }[view])?.classList.contains('show')) show(view); });
 })();

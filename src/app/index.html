@@ -1639,11 +1639,20 @@ window.showMedia=function(kind,items,query){
 const AsyncFn=Object.getPrototypeOf(async function(){}).constructor;
 function myTools(){return skills().filter(s=>s.code)}
 async function runMyTool(t,args){const N=NAT();
-  const http=async(url,o)=>{if(N&&N.http){const r=await N.http({url,...(o||{})});if(r.error)throw new Error(r.error);return r}if(!window.JARVIS_DESKTOP)throw new Error('Brauzer versiyasida internetga chiqib bo\'lmaydi — internet kerak bo\'lmagan usulni tanla yoki open_link bilan kartochka ko\'rsat');const r=await fetch(url,o);const tx=await r.text();let j=null;try{j=JSON.parse(tx)}catch(e){}return{status:r.status,ok:r.ok,json:j,text:j?undefined:tx}};
-  const web=async a=>{if(!N||!N.web)throw new Error('web faqat ilovada');const r=await N.web(a);if(r&&r.error)throw new Error(r.error);return r};
-  const show=(kind,items,q)=>window.showMedia(kind,items,q);
-  const fn=new AsyncFn('args','http','web','show','calc','note','remind',t.code);
-  return await Promise.race([fn(args||{},http,web,show,calc,x=>addNote(String(x)),(x,at)=>addReminder(String(x),at)),new Promise((_,rj)=>setTimeout(()=>rj(new Error('vaqt tugadi (45 s)')),45000))])}
+  // XAVFSIZ MUHIT: Jarvis yozgan kod alohida "worker"da ishlaydi — sahifa, xotira, kalitlar va fayllarga tega olmaydi; faqat quyidagi yordamchilar orqali
+  const H={http:async(url,o)=>{if(N&&N.http){const r=await N.http({url,...(o||{})});if(r.error)throw new Error(r.error);return r}if(!window.JARVIS_DESKTOP)throw new Error('Brauzer versiyasida internetga chiqib bo\'lmaydi — internet kerak bo\'lmagan usulni tanla yoki open_link bilan kartochka ko\'rsat');const r=await fetch(url,o);const tx=await r.text();let j=null;try{j=JSON.parse(tx)}catch(e){}return{status:r.status,ok:r.ok,json:j,text:j?undefined:tx}},
+    web:async a=>{if(!N||!N.web)throw new Error('web faqat ilovada');const r=await N.web(a);if(r&&r.error)throw new Error(r.error);return r},
+    show:(kind,items,q)=>{window.showMedia(kind,items,q);return true},calc:x=>calc(String(x)),note:x=>{addNote(String(x));return true},remind:(x,at)=>{addReminder(String(x),at);return true}};
+  const src=`const AF=Object.getPrototypeOf(async function(){}).constructor;let seq=0;const P={};
+    const call=n=>(...a)=>new Promise((res,rej)=>{const id=++seq;P[id]=[res,rej];self.postMessage({t:'call',id,n,a:JSON.parse(JSON.stringify(a))})});
+    self.onmessage=async e=>{const m=e.data;if(m.t==='res'){const p=P[m.id];if(p){delete P[m.id];m.err?p[1](new Error(m.err)):p[0](m.v)}return}
+      if(m.t==='run'){try{const fn=new AF('args','http','web','show','calc','note','remind',m.code);const v=await fn(m.args,call('http'),call('web'),call('show'),call('calc'),call('note'),call('remind'));
+        self.postMessage({t:'done',v:v===undefined?null:JSON.parse(JSON.stringify(v))})}catch(er){self.postMessage({t:'fail',err:String(er&&er.message||er)})}}};`;
+  const url=URL.createObjectURL(new Blob([src],{type:'text/javascript'}));const w=new Worker(url);
+  return await new Promise((res,rej)=>{const end=()=>{clearTimeout(tm);try{w.terminate()}catch(e){}URL.revokeObjectURL(url)};const tm=setTimeout(()=>{end();rej(new Error('vaqt tugadi (45 s)'))},45000);
+    w.onmessage=async e=>{const m=e.data;if(m.t==='call'){try{if(!H[m.n])throw new Error('yo\'q');const v=await H[m.n](...m.a);w.postMessage({t:'res',id:m.id,v:v===undefined?null:JSON.parse(JSON.stringify(v))})}catch(er){w.postMessage({t:'res',id:m.id,err:String(er&&er.message||er)})}return}
+      end();m.t==='done'?res(m.v):rej(new Error(m.err))};
+    w.onerror=e=>{end();rej(new Error(e.message||'kod xatosi'))};w.postMessage({t:'run',code:t.code,args:args||{}})})}
 TOOLS.push({name:'my_tools',description:`O'Z-O'ZINI TAKOMILLASHTIRISH. Mavjud vositalar yetmasa — o'zingga yangi vosita yoz va darhol ishlat; u saqlanadi va keyin ham, boshqa qurilmalarda ham ishlaydi. action: list; run (name*, args); create (name* — lotin_harf_bilan, description*, code*, params — args izohi); delete (name*). code — async JavaScript funksiya TANASI; mavjud o'zgaruvchilar: args (obyekt), http(url,{method,headers,body}) → {status,ok,json,text} (CORS'siz, istalgan API/sayt), web({action:'search'|'images'|'videos'|'fetch_url'|'wiki'|'news'|'weather',...}), show(kind:'images'|'videos'|'results', items, sarlavha) — foydalanuvchiga ko'rsatish, calc(ifoda), note(matn), remind(matn, ms). Natijani return qil. Xato bo'lsa — kodni tuzatib qayta create qil (bir xil name bilan almashtiriladi). Saqlangan vositalar: ${''}`,
   inputSchema:{type:'object',properties:{action:{type:'string',enum:['list','run','create','delete']},name:{type:'string'},description:{type:'string'},code:{type:'string'},params:{type:'string'},args:{type:'object'}},required:['action']},
   execute:async a=>{
@@ -1820,8 +1829,9 @@ function zipStore(files){const enc=new TextEncoder();const parts=[],cent=[];let 
   const cl=cent.reduce((a,b)=>a+b.length,0);const e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cl,true);e.setUint32(16,off,true);
   return new Blob([...parts,...cent,new Uint8Array(e.buffer)],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})}
 const xe=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+let MD_INHERIT=false;
 function runs(t,base){base=base||{};const out=[];t.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/).forEach(p=>{if(!p)return;let b=base.b,i=base.i,s=p;if(/^\*\*.*\*\*$/.test(p)){b=true;s=p.slice(2,-2)}else if(/^\*.*\*$/.test(p)){i=true;s=p.slice(1,-1)}
-  out.push(`<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>${b?'<w:b/>':''}${i?'<w:i/>':''}<w:sz w:val="${base.sz||28}"/></w:rPr><w:t xml:space="preserve">${xe(s)}</w:t></w:r>`)});return out.join('')}
+  out.push(`<w:r><w:rPr>${MD_INHERIT?'':'<w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>'}${b?'<w:b/>':''}${i?'<w:i/>':''}${MD_INHERIT&&!base.sz?'':`<w:sz w:val="${base.sz||28}"/>`}</w:rPr><w:t xml:space="preserve">${xe(s)}</w:t></w:r>`)});return out.join('')}
 function para(t,o){o=o||{};return `<w:p><w:pPr>${o.jc?`<w:jc w:val="${o.jc}"/>`:'<w:jc w:val="both"/>'}<w:spacing w:after="${o.after==null?80:o.after}" w:line="276" w:lineRule="auto"/>${o.ind?'<w:ind w:firstLine="709"/>':''}${o.left?`<w:ind w:left="${o.left}" w:hanging="300"/>`:''}</w:pPr>${runs(t,o)}</w:p>`}
 function mdToDocx(md){const body=mdBodyXml(md);
   return mdWrapDocx(body)}
@@ -1922,7 +1932,7 @@ async function editDocx(bytes,ops){const files=await unzipAll(bytes);const rep=[
   for(const s of ops.set_cells||[]){x=tableOp(x,+s.table||1,t=>setCell(t,+s.row,+s.col,s.value));rep.push(`jadval ${s.table||1} [${s.row},${s.col}] = ${String(s.value).slice(0,30)}`)}
   for(const d of ops.delete_rows||[]){x=tableOp(x,+d.table||1,t=>delRows(t,(d.rows||[]).map(Number)));rep.push(`jadval ${d.table||1}: ${(d.rows||[]).length} qator o'chirildi`)}
   for(const a of ops.add_rows||[]){x=tableOp(x,+a.table||1,t=>addRows(t,a.rows||[],a.after_row?+a.after_row:0));rep.push(`jadval ${a.table||1}: ${(a.rows||[]).length} qator qo'shildi`)}
-  if(ops.append){const body=mdBodyXml(ops.append);x=x.replace(/(<w:sectPr[\s\S]*?<\/w:sectPr>\s*<\/w:body>)/,body+'$1');if(!x.includes(body))x=x.replace('</w:body>',body+'</w:body>');rep.push('oxiriga matn qo\'shildi')}
+  if(ops.append){MD_INHERIT=true;let body;try{body=mdBodyXml(ops.append)}finally{MD_INHERIT=false}x=x.replace(/(<w:sectPr[\s\S]*?<\/w:sectPr>\s*<\/w:body>)/,body+'$1');if(!x.includes(body))x=x.replace('</w:body>',body+'</w:body>');rep.push('oxiriga matn qo\'shildi')}
   if(ops.delete_paragraphs){for(const d of ops.delete_paragraphs){let k=0;x=x.replace(/<w:p[ >][\s\S]*?<\/w:p>/g,px=>{const t=norm(xmlText(px));if(d&&t.includes(norm(d))&&!/<w:tbl>/.test(px)){k++;return''}return px});rep.push(`"${String(d).slice(0,30)}" bor ${k} ta paragraf o'chirildi`)}}
   put('word/document.xml',x);
   return{blob:await zipStoreTyped(files,MIME_DOCX),report:rep}}
@@ -1985,13 +1995,16 @@ function makeXlsx(md){const tabs=mdTables(md);
 async function showFile(blob,fname,title,mdText){const bytes=new Uint8Array(await blob.arrayBuffer());regFile(fname,bytes,blob.type);let txt=mdText;
   if(txt==null){try{txt=await extractText(new File([blob],fname,{type:blob.type}))}catch(e){txt=''}}docCard(title||fname,blob,fname,txt||'');window.__madeFiles&&window.__madeFiles.push({name:fname,blob})}
 /* --- NAMUNALAR (shablonlar): kompyuter va telefonda umumiy (Google Drive orqali) --- */
+const IDB={p:null,open(){return this.p||(this.p=new Promise((res,rej)=>{try{const r=indexedDB.open('jarvis',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
+  async op(mode,fn){const d=await this.open();return new Promise((res,rej)=>{const q=fn(d.transaction('kv',mode).objectStore('kv'));q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
+  get(k){return this.op('readonly',st=>st.get(k))},set(k,v){return this.op('readwrite',st=>st.put(v,k))},del(k){return this.op('readwrite',st=>st.delete(k))}};
 const TPL={get list(){try{return JSON.parse(localStorage.getItem('jarvis_tpl_idx')||'[]')}catch(e){return[]}},set list(v){try{localStorage.setItem('jarvis_tpl_idx',JSON.stringify(v))}catch(e){}}};
 async function tplSave(name,file,desc){const b64=btoa(Array.from(file.bytes,c=>String.fromCharCode(c)).join(''));
-  try{localStorage.setItem('jarvis_tpl_'+name,JSON.stringify({name,file:file.name,mime:file.mime,b64,desc}))}catch(e){throw new Error('Telefon/brauzer xotirasi to\'ldi — eski namunalarni o\'chiring')}
+  const rec=JSON.stringify({name,file:file.name,mime:file.mime,b64,desc});try{await IDB.set('tpl_'+name,rec)}catch(e){try{localStorage.setItem('jarvis_tpl_'+name,rec)}catch(er){throw new Error('Qurilma xotirasi to\'ldi — eski namunalarni o\'chiring')}}
   TPL.list=TPL.list.filter(t=>t.name!==name).concat([{name,file:file.name,desc:desc||'',at:Date.now()}]);
   const N=NAT();if(N&&N.tplPut){N.tplPut({name,json:JSON.stringify({name,file:file.name,mime:file.mime,b64,desc,at:Date.now()})}).catch(()=>{})}}
-async function tplLoad(name){let v=null;try{v=JSON.parse(localStorage.getItem('jarvis_tpl_'+name)||'null')}catch(e){}
-  if(!v){const N=NAT();if(N&&N.tplGet){const r=await N.tplGet({name});if(r&&r.json){v=JSON.parse(r.json);try{localStorage.setItem('jarvis_tpl_'+name,r.json)}catch(e){}}}}
+async function tplLoad(name){let v=null;try{v=JSON.parse((await IDB.get('tpl_'+name))||'null')}catch(e){}if(!v)try{v=JSON.parse(localStorage.getItem('jarvis_tpl_'+name)||'null')}catch(e){}
+  if(!v){const N=NAT();if(N&&N.tplGet){const r=await N.tplGet({name});if(r&&r.json){v=JSON.parse(r.json);try{await IDB.set('tpl_'+name,r.json)}catch(e){}}}}
   if(!v)throw new Error('Namuna topilmadi: '+name);const bin=atob(v.b64);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return regFile(v.file,u,v.mime)}
 async function tplSync(){const N=NAT();if(!N||!N.tplList)return;try{const r=await N.tplList();if(!r||!r.items)return;const idx=TPL.list;
   r.items.forEach(it=>{if(!idx.some(t=>t.name===it.name))idx.push({name:it.name,file:it.file||'',desc:it.desc||'',at:it.at||0,remote:true})});TPL.list=idx}catch(e){}}
@@ -2011,7 +2024,7 @@ NAMUNA ASOSIDA YANGI HUJJAT: template_use → read → edit (ob'ekt nomi, sanala
   execute:async a=>{
     if(a.action==='files'){const l=Object.values(FILES).sort((x,y)=>y.at-x.at).map(f=>`${f.name} (${Math.round(f.bytes.length/1024)} KB)`);return l.length?l.join('\n'):'Sessiyada fayl yo\'q. Foydalanuvchidan 📎 orqali fayl tashlashni so\'ra yoki namunadan foydalan.'}
     if(a.action==='templates'){await tplSync();const l=TPL.list;return l.length?l.map(t=>`${t.name} — ${t.desc||t.file}`).join('\n'):'Namunalar yo\'q. Foydalanuvchi fayl tashlab "namuna sifatida saqla" desa — template_save.'}
-    if(a.action==='template_delete'){TPL.list=TPL.list.filter(t=>t.name!==a.name);try{localStorage.removeItem('jarvis_tpl_'+a.name)}catch(e){}const N=NAT();if(N&&N.tplDel)await N.tplDel({name:a.name});return 'o\'chirildi'}
+    if(a.action==='template_delete'){TPL.list=TPL.list.filter(t=>t.name!==a.name);try{localStorage.removeItem('jarvis_tpl_'+a.name)}catch(e){}try{await IDB.del('tpl_'+a.name)}catch(e){}const N=NAT();if(N&&N.tplDel)await N.tplDel({name:a.name});return 'o\'chirildi'}
     if(a.action==='template_use'){const f=await tplLoad(a.name||a.file);act('📌 namuna ochildi: '+a.name);return `"${f.name}" namunasi ochildi. Matni:\n`+(await fileText(f)).slice(0,40000)}
     const f=findFile(a.file);if(!f)throw new Error('Fayl topilmadi: '+(a.file||'')+'. Mavjud: '+(Object.keys(FILES).join(', ')||'yo\'q'));
     if(a.action==='read')return (await fileText(f)).slice(0,50000);
@@ -2096,6 +2109,7 @@ function handleWakeFinal(text){
   const rest=t.slice(m.index+m[0].length).trim();
   if(rest.length>2){wakeCommand(rest);return}
   W.await=true;W.greetAt=Date.now();wakeUI();clearTimeout(W.awaitTimer);
+  try{window.jarvisNative&&window.jarvisNative.showWin&&window.jarvisNative.showWin()}catch(e){}
   (async()=>{await window.wakeGreet();W.greetAt=Date.now();setMode('listening');wakeUI();
     clearTimeout(W.awaitTimer);W.awaitTimer=setTimeout(()=>{W.await=false;if(S.mode==='listening')setMode('idle');wakeUI()},10000)})();
 }
@@ -2134,7 +2148,7 @@ greet();
     // doim tayyor: ilovada "Jarvis" tinglash o'zi yoqiladi va uzilsa qayta ulanadi
     if(window.JARVIS_DESKTOP){const auto=()=>{try{return localStorage.getItem('jarvis_wake_auto')!=='0'}catch(e){return true}};
       setTimeout(()=>{if(auto()&&!W.on)wakeOn()},1500);
-      setInterval(()=>{if(auto()&&!document.hidden&&!S.busy&&!listening&&S.mode!=='speaking'&&!W.await){if(!W.on)wakeOn();else if(!W.running){W.restartFails=0;wakeStart()}}},8000)}
+      setInterval(()=>{if(auto()&&(!document.hidden||!window.JARVIS_MOBILE)&&!S.busy&&!listening&&S.mode!=='speaking'&&!W.await){if(!W.on)wakeOn();else if(!W.running){W.restartFails=0;wakeStart()}}},8000)}
     dict.onPartial(({text})=>{
       if(W.on){if(W.await)$('inp').value=text;else if(WAKE.test(text)){setMode('listening');wakeHint('Labbay, ser…',true)}return}
       $('inp').value=dictBase+dictText+text});

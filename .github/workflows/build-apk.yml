@@ -67,6 +67,18 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon --stacktrace
           cp app/build/outputs/apk/release/app-release.apk ../Jarvis.apk
+      - name: Kompyuter versiyasi (Windows) va avtomatik yangilanish paketi
+        run: |
+          V=2.0.${{ github.run_number }}
+          node -e "const f='desktop/app/package.json';const p=JSON.parse(require('fs').readFileSync(f,'utf8'));p.version='$V';require('fs').writeFileSync(f,JSON.stringify(p))"
+          tar -czf desktop/app/vendor/vosk-model.tar.gz -C /tmp/m vosk-model-small-en-us-0.15
+          (cd desktop/app && zip -qr ../../jarvis-desktop-update.zip . -x 'vendor/pyodide/*' -x 'vendor/model/*' -x 'vendor/vosk-model.tar.gz')
+          curl -sSL -o /tmp/el.zip https://github.com/electron/electron/releases/download/v45.3.0/electron-v45.3.0-win32-x64.zip
+          rm -rf /tmp/J && mkdir -p /tmp/J/Jarvis && unzip -q /tmp/el.zip -d /tmp/J/Jarvis
+          mv /tmp/J/Jarvis/electron.exe /tmp/J/Jarvis/Jarvis.exe && rm -f /tmp/J/Jarvis/resources/default_app.asar
+          mkdir -p /tmp/J/Jarvis/resources/app && cp -r desktop/app/. /tmp/J/Jarvis/resources/app/ && cp "desktop/O'QING.txt" /tmp/J/Jarvis/
+          (cd /tmp/J && zip -qr "$GITHUB_WORKSPACE/Jarvis-Desktop.zip" Jarvis)
+          ls -la Jarvis-Desktop.zip jarvis-desktop-update.zip
       - uses: actions/upload-artifact@v4
         with:
           name: Jarvis-apk
@@ -77,7 +89,11 @@ jobs:
           tag_name: v2.0.${{ github.run_number }}
           name: JARVIS v2.0.${{ github.run_number }}
           make_latest: true
-          files: Jarvis.apk
+          files: |
+            Jarvis.apk
+            Jarvis-Desktop.zip
+            jarvis-desktop-update.zip
           body: |
-            📱 Telefonga o'rnatish: pastdagi **Jarvis.apk** ni bosing → yuklab oling → oching → "Noma'lum manbalardan o'rnatish"ga ruxsat bering → O'rnatish.
-            Eng so'nggi versiya doim: https://github.com/${{ github.repository }}/releases/latest/download/Jarvis.apk
+            📱 **Telefon:** Jarvis.apk ni bosing → yuklab oling → oching → "Noma'lum manbalardan o'rnatish"ga ruxsat bering → O'rnatish.
+            💻 **Kompyuter:** Jarvis-Desktop.zip ni yuklab oling → ochib (Extract) → Jarvis\Jarvis.exe. Keyingi yangilanishlar o'zi keladi.
+            Doim eng so'nggisi: https://github.com/${{ github.repository }}/releases/latest
