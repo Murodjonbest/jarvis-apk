@@ -174,6 +174,8 @@ body{background:
 .envbox b{color:var(--amber)} .envbox .link{margin-right:6px}
 
 
+/* ===== boshqa qurilmadan kelgan suhbat ===== */
+.msg.foreign{border-left-color:var(--amber)!important;opacity:.92}.msg.foreign .fh{font-size:12px;color:var(--amber);margin-bottom:6px}.msg.foreign .fm{font-size:14px;margin:3px 0}.msg.foreign .fm.u b{color:var(--cy2)}
 /* ===== biriktirma, muharrir, hujjat ===== */
 #attBar{display:none;gap:6px;padding:6px 8px 0;flex-wrap:wrap}
 .att{position:relative;border:1px solid var(--line2);border-radius:10px;background:rgba(63,210,255,.06);display:flex;align-items:center;gap:6px;font-size:13px}
@@ -461,8 +463,8 @@ function draw(now){
 requestAnimationFrame(draw);
 
 /* ============ STORAGE ============ */
-function lsSave(){try{localStorage.setItem('jarvis_state',JSON.stringify({notes:S.notes,reminders:S.reminders,knowledge:S.knowledge,locked:S.locked,convos:S.convos||[],skills:S.skills,brain:S.brain||[],tomb:S.tomb||{},secrets:S.secrets||null,routines:S.routines||[],soul:S.soul||null,measures:S.measures||[]}))}catch(e){}}
-function lsLoad(){try{const v=JSON.parse(localStorage.getItem('jarvis_state')||'null');if(v){S.notes=v.notes||[];S.reminders=v.reminders||[];if(v.knowledge)S.knowledge=Object.assign(S.knowledge,v.knowledge);S.locked=!!v.locked;S.convos=v.convos||[];if(v.skills)S.skills=v.skills;if(v.brain)S.brain=v.brain;S.tomb=v.tomb||{};S.secrets=v.secrets||null;S.routines=v.routines||[];S.soul=v.soul||null;S.measures=v.measures||[]}}catch(e){}}
+function lsSave(){try{localStorage.setItem('jarvis_state',JSON.stringify({notes:S.notes,reminders:S.reminders,knowledge:S.knowledge,locked:S.locked,convos:S.convos||[],skills:S.skills,brain:S.brain||[],tomb:S.tomb||{},secrets:S.secrets||null,routines:S.routines||[],soul:S.soul||null,measures:S.measures||[],chat:S.chat||[],cloudFiles:S.cloudFiles||[],chatSeen:S.chatSeen||0}))}catch(e){}}
+function lsLoad(){try{const v=JSON.parse(localStorage.getItem('jarvis_state')||'null');if(v){S.notes=v.notes||[];S.reminders=v.reminders||[];if(v.knowledge)S.knowledge=Object.assign(S.knowledge,v.knowledge);S.locked=!!v.locked;S.convos=v.convos||[];if(v.skills)S.skills=v.skills;if(v.brain)S.brain=v.brain;S.tomb=v.tomb||{};S.secrets=v.secrets||null;S.routines=v.routines||[];S.soul=v.soul||null;S.measures=v.measures||[];S.chat=v.chat||[];S.cloudFiles=v.cloudFiles||[];S.chatSeen=v.chatSeen||Date.now()}}catch(e){}}
 let saveTimer=null;
 function save(){lsSave();renderLists();try{renderKB()}catch(e){}clearTimeout(saveTimer);
   if(typeof GM!=='undefined'&&GM.on){S.memUpdated=Date.now();gmSchedule();return}
@@ -692,7 +694,7 @@ async function ask(text,opt){
   if(!shownAtt.length&&!imgs.length){if(voiceControl(text))return;if(text.startsWith('/')&&runCommand(text))return;
     if(/o['ʻ’]?zingni tekshir|o['ʻ’]?zingni tuzat|^\/tekshir/i.test(text)&&window.selfHeal){addMsg('u',text);$('inp').value='';addMsg('j','🔧 Tekshiryapman, ser…');window.selfHeal(true);return}
     if(/xato hisobot|hisobotni yubor.*xato|^\/xato/i.test(text)){addMsg('u',text);$('inp').value='';const d0=addMsg('j','⏳ Xato hisoboti tayyorlanmoqda…');setBody(d0,await errorReport());return}}
-  stopSpeak();const um=addMsg('u',text);$('inp').value='';
+  stopSpeak();const um=addMsg('u',text);$('inp').value='';chatLog('u',text+(shownAtt.length?' [📎 '+shownAtt.map(x=>x.name).join(', ')+']':''));
   if(imgs.length){const g=document.createElement('div');g.className='uimgs';imgs.forEach(b=>{const im=document.createElement('img');im.src=URL.createObjectURL(b);im.onclick=()=>imgEditor(b);g.appendChild(im)});um.appendChild(g)}
   shownAtt.filter(x=>x.kind==='doc').forEach(x=>{const d2=document.createElement('div');d2.className='udoc';d2.textContent='📄 '+x.name+(x.err?' (o\'qilmadi)':'');um.appendChild(d2)});
   S.jobs=(S.jobs||0)+1;S.busy=true;$('stop').style.display='';setMode('thinking');
@@ -709,7 +711,7 @@ async function ask(text,opt){
       if(extra){const h=S.history.findLast(m=>m.role==='user');if(h)h.content=text+' [biriktirilgan: '+shownAtt.map(x=>x.name).join(', ')+']'}
       answer=r.text||answer;
       S.history.push({role:'assistant',content:answer||'(javob yo\'q)'});noteExchange();
-      learnFromCorrection(text);if(String(answer).length>700&&Date.now()-(S.lastLearn||0)>600000){S.lastLearn=Date.now();learnSkill(text,answer)}
+      chatLog('j',answer);learnFromCorrection(text);if(String(answer).length>700&&Date.now()-(S.lastLearn||0)>600000){S.lastLearn=Date.now();learnSkill(text,answer)}
     } else {
       answer=localBrain(text);
     }
@@ -1144,18 +1146,19 @@ document.querySelectorAll('[data-app]').forEach(b=>b.onclick=()=>b.dataset.app==
 
 /* ============ SYNC MERGE (web + desktop, oflayn tahrirlar bilan) ============ */
 function tomb(k){S.tomb=S.tomb||{};S.tomb[k]=Date.now()}
-const MKEY={routines:x=>'o:'+x.id,notes:x=>'n:'+x.id,reminders:x=>'r:'+x.id,brain:x=>'b:'+x.id,convos:x=>'c:'+x.at,skills:x=>'s:'+x.name,measures:x=>'m:'+x.id};
+const MKEY={routines:x=>'o:'+x.id,notes:x=>'n:'+x.id,reminders:x=>'r:'+x.id,brain:x=>'b:'+x.id,convos:x=>'c:'+x.at,skills:x=>'s:'+x.name,measures:x=>'m:'+x.id,chat:x=>'h:'+x.id,cloudFiles:x=>'f:'+x.name};
 const stamp=x=>x&&(x.u||x.at||0)||0;
 function mergeMem(rm){
   if(!rm||rm.app!=='JARVIS')return false;
   const T=S.tomb=S.tomb||{};for(const k in rm.tomb||{})T[k]=Math.max(T[k]||0,rm.tomb[k]);
   const alive=(k,x)=>!(T[k]&&T[k]>=stamp(x));
-  const lists={routines:S.routines||[],notes:S.notes,reminders:S.reminders,brain:S.brain||[],convos:S.convos||[],skills:S.skills||null,measures:S.measures||[]};
+  const lists={routines:S.routines||[],notes:S.notes,reminders:S.reminders,brain:S.brain||[],convos:S.convos||[],skills:S.skills||null,measures:S.measures||[],chat:S.chat||[],cloudFiles:S.cloudFiles||[]};
   for(const name in MKEY){const kf=MKEY[name];const rl=rm[name];if(!Array.isArray(rl)&&!lists[name])continue;
     const map=new Map();(lists[name]||[]).forEach(x=>map.set(kf(x),x));
     (rl||[]).forEach(x=>{const k=kf(x),l=map.get(k);if(!l||stamp(x)>stamp(l))map.set(k,x)});
     const out=[...map.entries()].filter(([k,x])=>alive(k,x)).map(([,x])=>x);
-    if(name==='routines')S.routines=out;else if(name==='notes')S.notes=out;else if(name==='reminders')S.reminders=out;else if(name==='brain')S.brain=out;else if(name==='convos')S.convos=out.sort((a,b)=>a.at-b.at).slice(-60);else if(name==='skills'&&(rl||lists.skills))S.skills=out;else if(name==='measures')S.measures=out}
+    if(name==='routines')S.routines=out;else if(name==='notes')S.notes=out;else if(name==='reminders')S.reminders=out;else if(name==='brain')S.brain=out;else if(name==='convos')S.convos=out.sort((a,b)=>a.at-b.at).slice(-60);else if(name==='skills'&&(rl||lists.skills))S.skills=out;else if(name==='measures')S.measures=out;else if(name==='chat')S.chat=out.sort((a,b)=>a.at-b.at).slice(-120);else if(name==='cloudFiles')S.cloudFiles=out.sort((a,b)=>a.at-b.at).slice(-60)}
+  try{setTimeout(()=>window.onForeignSync&&window.onForeignSync(),50)}catch(e){}
   const rk=rm.knowledge;if(rk){const lk=S.knowledge;const lf=lk.facts||[];
     if((rk.updated||0)>(lk.updated||0)){['profile','projects','people','recurring','terms','sources','updated'].forEach(f=>{if(rk[f]!==undefined)lk[f]=rk[f]})}
     const fm=new Map();[...lf,...(rk.facts||[])].forEach(f=>{const k='f:'+f.text;const o=fm.get(k);if(!o||stamp(f)>stamp(o))fm.set(k,f)});
@@ -1170,7 +1173,7 @@ function mergeMem(rm){
 const MEM_FILE='jarvis_xotira.json',MEM_FOLDER='Jarvis xotira';
 const GM=Object.assign({on:false,folderId:'',fileId:'',lastSync:0,status:'o\'chiq',movedFromClaude:false},(()=>{try{return JSON.parse(localStorage.getItem('jarvis_gmem')||'{}')}catch(e){return{}}})());
 function gmSave(){try{localStorage.setItem('jarvis_gmem',JSON.stringify(GM))}catch(e){}memUI()}
-function memSnapshot(){return{app:'JARVIS',version:3,updated:Date.now(),tomb:S.tomb||{},secrets:S.secrets||null,routines:S.routines||[],soul:S.soul||null,notes:S.notes,reminders:S.reminders,knowledge:S.knowledge,convos:S.convos||[],skills:S.skills,brain:S.brain||[],measures:S.measures||[]}}
+function memSnapshot(){return{app:'JARVIS',version:3,updated:Date.now(),tomb:S.tomb||{},secrets:S.secrets||null,routines:S.routines||[],soul:S.soul||null,notes:S.notes,reminders:S.reminders,knowledge:S.knowledge,convos:S.convos||[],skills:S.skills,brain:S.brain||[],measures:S.measures||[],chat:(S.chat||[]).slice(-120),cloudFiles:(S.cloudFiles||[]).slice(-60)}}
 function memApply(m){if(!m||m.app!=='JARVIS')return false;
   S.notes=m.notes||S.notes;S.reminders=m.reminders||S.reminders;if(m.knowledge)S.knowledge=Object.assign(S.knowledge,m.knowledge);S.convos=m.convos||S.convos||[];if(m.skills)S.skills=m.skills;if(m.brain)S.brain=m.brain;
   lsSave();renderLists();renderKB();return true}
@@ -2026,7 +2029,7 @@ function makeXlsx(md){const tabs=mdTables(md);
   return new Blob([zipStore(ents)],{type:MIME_XLSX})}
 /* --- tayyor faylni ko'rsatish --- */
 async function showFile(blob,fname,title,mdText){const bytes=new Uint8Array(await blob.arrayBuffer());regFile(fname,bytes,blob.type);let txt=mdText;
-  if(txt==null){try{txt=await extractText(new File([blob],fname,{type:blob.type}))}catch(e){txt=''}}docCard(title||fname,blob,fname,txt||'');window.__madeFiles&&window.__madeFiles.push({name:fname,blob})}
+  if(txt==null){try{txt=await extractText(new File([blob],fname,{type:blob.type}))}catch(e){txt=''}}docCard(title||fname,blob,fname,txt||'');window.__madeFiles&&window.__madeFiles.push({name:fname,blob});cloudPut(fname,bytes,blob.type).then(ok=>{if(ok)act('☁ fayl boshqa qurilmalarga ham yuborildi: '+fname)}).catch(()=>{})}
 /* --- NAMUNALAR (shablonlar): kompyuter va telefonda umumiy (Google Drive orqali) --- */
 const IDB={p:null,open(){return this.p||(this.p=new Promise((res,rej)=>{try{const r=indexedDB.open('jarvis',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
   async op(mode,fn){const d=await this.open();return new Promise((res,rej)=>{const q=fn(d.transaction('kv',mode).objectStore('kv'));q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
@@ -2055,11 +2058,12 @@ NAMUNA ASOSIDA YANGI HUJJAT: template_use → read → edit (ob'ekt nomi, sanala
     delete_rows:{type:'array',items:{type:'object',properties:{table:{type:'number'},rows:{type:'array',items:{type:'number'}}}}},
     delete_paragraphs:{type:'array',items:{type:'string'}},append:{type:'string'}},required:['action']},
   execute:async a=>{
-    if(a.action==='files'){const l=Object.values(FILES).sort((x,y)=>y.at-x.at).map(f=>`${f.name} (${Math.round(f.bytes.length/1024)} KB)`);return l.length?l.join('\n'):'Sessiyada fayl yo\'q. Foydalanuvchidan 📎 orqali fayl tashlashni so\'ra yoki namunadan foydalan.'}
+    if(a.action==='files'){const l=Object.values(FILES).sort((x,y)=>y.at-x.at).map(f=>`${f.name} (${Math.round(f.bytes.length/1024)} KB)`);(S.cloudFiles||[]).filter(c=>!FILES[c.name]).forEach(c=>l.push(`${c.name} (☁ ${c.dn||'boshqa qurilma'}da yaratilgan — read/edit qilsang o'zi yuklanadi)`));return l.length?l.join('\n'):'Sessiyada fayl yo\'q. Foydalanuvchidan 📎 orqali fayl tashlashni so\'ra yoki namunadan foydalan.'}
     if(a.action==='templates'){await tplSync();const l=TPL.list;return l.length?l.map(t=>`${t.name} — ${t.desc||t.file}`).join('\n'):'Namunalar yo\'q. Foydalanuvchi fayl tashlab "namuna sifatida saqla" desa — template_save.'}
     if(a.action==='template_delete'){TPL.list=TPL.list.filter(t=>t.name!==a.name);try{localStorage.removeItem('jarvis_tpl_'+a.name)}catch(e){}try{await IDB.del('tpl_'+a.name)}catch(e){}const N=NAT();if(N&&N.tplDel)await N.tplDel({name:a.name});return 'o\'chirildi'}
     if(a.action==='template_use'){const f=await tplLoad(a.name||a.file);act('📌 namuna ochildi: '+a.name);return `"${f.name}" namunasi ochildi. Matni:\n`+(await fileText(f)).slice(0,40000)}
-    const f=findFile(a.file);if(!f)throw new Error('Fayl topilmadi: '+(a.file||'')+'. Mavjud: '+(Object.keys(FILES).join(', ')||'yo\'q'));
+    let f=findFile(a.file);if(!f&&a.file){const c=(S.cloudFiles||[]).find(x=>x.name===a.file||x.name.toLowerCase().includes(String(a.file).toLowerCase()));if(c)try{f=await cloudGet(c.name)}catch(e){}}
+    if(!f)throw new Error('Fayl topilmadi: '+(a.file||'')+'. Mavjud: '+(Object.keys(FILES).join(', ')||'yo\'q'));
     if(a.action==='read')return (await fileText(f)).slice(0,50000);
     if(a.action==='template_save'){const nm=(a.name||f.name.replace(/\.\w+$/,'')).trim();await tplSave(nm,f,a.description);act('📌 namuna saqlandi: '+nm);return `"${nm}" namuna sifatida saqlandi (kompyuter va telefonda ham ishlaydi).`}
     if(a.action==='edit'){const isX=/\.xlsx$/i.test(f.name)||f.mime===MIME_XLSX,isD=/\.docx$/i.test(f.name)||f.mime===MIME_DOCX;if(!isX&&!isD)throw new Error('Faqat Word (.docx) va Excel (.xlsx) fayllarni asl formatida tahrirlash mumkin. Boshqa turdagi fayl uchun make_document bilan yangisini yarat.');
@@ -2089,6 +2093,32 @@ async function errorReport(){const N=NAT();let log='',dg='';try{log=N&&N.logRead
   const txt=`JARVIS XATO HISOBOTI ${new Date().toLocaleString('ru-RU')}\nQurilma: ${navigator.userAgent.slice(0,120)}\n\n${dg}\n\n--- jurnal ---\n${log||'(bo\'sh)'}\n\n--- faollik ---\n${[...$('actLog').children].slice(0,25).map(x=>x.textContent).join('\n')}`.replace(/(key=|Bearer |gsk_|AIza|sk-)[\w-]{6,}/g,'$1***');
   let sent=false;try{sent=N&&N.tgNotify?await N.tgNotify(txt.slice(0,3900)):false}catch(e){}try{await navigator.clipboard.writeText(txt)}catch(e){}
   return sent?'Xato hisoboti Telegram\'ingizga yuborildi va nusxalandi — uni Claude\'ga yuboring.':'Xato hisoboti nusxalandi — uni Claude\'ga joylang.'}
+
+
+/* ============ QURILMALAR O'RTASIDA SINXRON: suhbat va fayllar ============ */
+const DEV=(()=>{try{let d=localStorage.getItem('jarvis_dev');if(!d){d=Math.random().toString(36).slice(2,9);localStorage.setItem('jarvis_dev',d)}return d}catch(e){return 'w'+Math.random().toString(36).slice(2,7)}})();
+const DEVNAME=()=>window.JARVIS_MOBILE?'📱 Telefon':window.JARVIS_DESKTOP?'💻 Kompyuter':'🌐 Brauzer';
+if(!S.chatSeen)S.chatSeen=Date.now();
+function chatLog(who,text){if(!text)return;S.chat=S.chat||[];S.chat.push({id:DEV+'-'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),who,text:String(text).slice(0,1500),at:Date.now(),dev:DEV,dn:DEVNAME()});if(S.chat.length>150)S.chat=S.chat.slice(-120);save()}
+window.chatLog=chatLog;
+window.onForeignSync=function(){
+  const seen=S.chatSeen||0;let maxAt=seen;
+  const fresh=(S.chat||[]).filter(x=>x.dev!==DEV&&x.at>seen).sort((a,b)=>a.at-b.at);
+  if(fresh.length){const box=addMsg('j','');box.classList.add('foreign');
+    box.querySelector('.body').innerHTML=`<div class="fh">🔄 ${esc(fresh[0].dn||'Boshqa qurilma')}da davom etgan suhbat (${fresh.length} ta xabar)</div>`+fresh.slice(-12).map(x=>`<div class="fm ${x.who}"><b>${x.who==='u'?'Siz':'Jarvis'}:</b> ${esc(x.text.slice(0,400))}${x.text.length>400?'…':''}</div>`).join('');
+    // AI ham bilsin — davomini shu yerda gaplasha olasiz
+    fresh.forEach(x=>{S.history.push({role:x.who==='u'?'user':'assistant',content:(x.who==='u'?'['+(x.dn||'boshqa qurilma')+'da] ':'')+x.text});maxAt=Math.max(maxAt,x.at)});
+    S.history=S.history.slice(-30);while(S.history.length&&S.history[0].role!=='user')S.history.shift()}
+  const nf=(S.cloudFiles||[]).filter(f=>f.dev!==DEV&&f.at>seen);
+  nf.forEach(f=>{maxAt=Math.max(maxAt,f.at);const d=addMsg('j',`📄 **${esc(f.dn||'Boshqa qurilma')}da yaratilgan fayl:** ${esc(f.name)}`);const b=document.createElement('button');b.className='chip w';b.style.marginTop='6px';b.textContent='⬇ Shu yerda ochish';
+    b.onclick=async()=>{b.textContent='⏳…';try{const fl=await cloudGet(f.name);S.curMsg=d;await showFile(new Blob([fl.bytes],{type:fl.mime}),fl.name,fl.name);b.remove()}catch(e){b.textContent='✕ '+e.message}};d.appendChild(b)});
+  if(maxAt>seen){S.chatSeen=maxAt;lsSave()}};
+async function cloudPut(name,bytes,mime){const N=NAT();if(!N||!N.tplPut||bytes.length>8e6)return false;
+  let st;try{st=await N.gStatus()}catch(e){}if(!st||!st.loggedIn)return false;
+  const b64=btoa(Array.from(bytes,c=>String.fromCharCode(c)).join(''));const r=await N.tplPut({name,kind:'fayl',json:JSON.stringify({name,mime,b64,at:Date.now(),dn:DEVNAME()})});if(r&&r.error)return false;
+  S.cloudFiles=(S.cloudFiles||[]).filter(f=>f.name!==name).concat([{name,mime,size:bytes.length,at:Date.now(),dev:DEV,dn:DEVNAME()}]);save();return true}
+async function cloudGet(name){const N=NAT();if(!N||!N.tplGet)throw new Error('faqat ilovada');const r=await N.tplGet({name,kind:'fayl'});if(!r||!r.json)throw new Error('topilmadi');const v=JSON.parse(r.json);
+  const bin=atob(v.b64);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return regFile(v.name,u,v.mime)}
 
 /* ============ INPUT ============ */
 $('send').onclick=()=>ask($('inp').value,{typed:true});

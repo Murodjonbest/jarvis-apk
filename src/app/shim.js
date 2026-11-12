@@ -179,13 +179,15 @@
   window.syncNow=syncNow;
   window.addEventListener('online',()=>{SY.online=true;ui();schedule(1500)});
   window.addEventListener('offline',()=>{SY.online=false;SY.status='📴 oflayn';ui()});
-  setInterval(()=>syncNow(),90000);
+  setInterval(()=>{if(!document.hidden||!window.JARVIS_MOBILE)syncNow()},30000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule(800)});
+  window.addEventListener('focus',()=>schedule(800));
   document.addEventListener('DOMContentLoaded',()=>{
     // status rows
     const anchor=document.getElementById('sCount');if(anchor){const row=anchor.closest('.stat');
       row.insertAdjacentHTML('beforebegin','<div class="stat"><span><i class="dot" id="dNet"></i>Internet</span><b id="sNet">…</b></div><div class="stat"><span><i class="dot" id="dSync"></i>Google sinxron</span><b id="sSync">—</b></div>')}
     // every local save → mark dirty, sync soon (offline: queued)
-    const orig=window.save;window.save=function(){const r=orig.apply(this,arguments);SY.dirty=true;if(SY.online===false){SY.status='📴 oflayn · o\'zgarishlar navbatda';ui()}schedule(8000);return r};
+    const orig=window.save;window.save=function(){const r=orig.apply(this,arguments);SY.dirty=true;if(SY.online===false){SY.status='📴 oflayn · o\'zgarishlar navbatda';ui()}schedule(3000);return r};
     const gb=document.getElementById('gmBtn');if(gb)gb.onclick=()=>window.openModelSettings();
     ui();setTimeout(()=>syncNow(),2500);setTimeout(()=>window.keysAuto&&window.keysAuto(),4500);setInterval(()=>window.keysAuto&&window.keysAuto(),15*60*1000)});
 
@@ -436,7 +438,7 @@
             const d2=document.createElement('div');d2.className='udoc';d2.textContent='📄 '+m.file.name;um.appendChild(d2)}}
         const now=new Date();const d=addMsg('j','…');S.curMsg=d;
         const r=await sample(sysPrompt()+`\n\n[Hozir: ${fmtDate(now)}, ${pad(now.getHours())}:${pad(now.getMinutes())}]\n[Foydalanuvchi Telegram orqali telefondan yozmoqda — javobni qisqa, markdown belgilarsiz yoz. Yaratilgan yoki tahrirlangan fayllar unga Telegram'da avtomatik yuboriladi.]\n\n---\nFoydalanuvchi: `+m.text+extra,{tools:allTools(),cache:false,modelTier:'default',...(imgs.length?{images:imgs}:{})});
-        ans=(r.text||'').replace(/\*\*/g,'');setBody(d,r.text||'');S.history.push({role:'user',content:m.text+(m.file?' [fayl: '+m.file.name+']':'')},{role:'assistant',content:ans});noteExchange()}
+        ans=(r.text||'').replace(/\*\*/g,'');setBody(d,r.text||'');try{chatLog('u','📱 Telegram: '+m.text);chatLog('j',ans)}catch(e){}S.history.push({role:'user',content:m.text+(m.file?' [fayl: '+m.file.name+']':'')},{role:'assistant',content:ans});noteExchange()}
       catch(e){ans=e&&e.code==='offline'?'📴 Internet yo\'q: '+localBrain(m.text):'✕ '+(e&&e.message||e)}
       N.tgReply(m.id,ans||'…');
       const made=window.__madeFiles||[];window.__madeFiles=null;

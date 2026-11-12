@@ -140,3 +140,11 @@ YANGI (v1.9) — tuzatishlar
 • Xatolar ko'payib ketsa — tekshiruv o'zi ishga tushadi va xatolardan qoida chiqaradi.
 • Muvaffaqiyatli bajarilgan katta ishlardan ko'nikma o'rganadi va keyingi safar shu usulni qo'llaydi.
 • AI noto'g'ri buyruq yuborsa yoki bo'sh javob bersa — o'zi qayta so'raydi.
+
+=== v2.6 — KOMPYUTER VA TELEFON SINXRON ===
+• Suhbat ham sinxron: kompyuterda gaplashgan narsangiz telefonda (va aksincha) "🔄 Kompyuterda davom etgan suhbat"
+  bo'lib chiqadi — Jarvis ham uni biladi, gapni shu yerdan davom ettirasiz.
+• Yaratilgan/tahrirlangan fayllar ikkinchi qurilmaga o'zi yetib boradi: "📄 Telefonda yaratilgan fayl … ⬇ Shu yerda ochish".
+• Sinxron tezlashdi: har 30 soniyada, o'zgarishdan 3 soniya keyin va ilovani ochgan zahoti.
+• Avvaldan sinxron: qaydlar, eslatmalar, o'lchovlar, bilim, ko'nikmalar, o'rganilgan qoidalar, Jarvis yozgan vositalar,
+  namunalar, API kalitlar.

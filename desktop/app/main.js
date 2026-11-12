@@ -525,27 +525,27 @@ ipcMain.handle('file:save', async (e, { b64, name, share }) => {
   } catch (err) { return { error: err.message }; }
 });
 /* ---------- NAMUNALAR: Google Drive'da (hamma qurilmada) ---------- */
-const tplFile = n => 'namuna__' + String(n).replace(/['\\\/:*?"<>|]+/g, '_').slice(0, 80) + '.json';
-async function tplFind(folder, n) { const q = encodeURIComponent(`name = '${tplFile(n)}' and '${folder}' in parents and trashed = false`); return ((await (await gfetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)&pageSize=3`)).json()).files || [])[0]; }
-async function tplPut({ name, json }) {
-  try { const folder = await memFolder(); const ex = await tplFind(folder, name); let desc = ''; try { desc = (JSON.parse(json).desc || '').slice(0, 200); } catch (e) {}
+const tplFile = (n, k) => (k || 'namuna') + '__' + String(n).replace(/['\\\/:*?"<>|]+/g, '_').slice(0, 80) + '.json';
+async function tplFind(folder, n, k) { const q = encodeURIComponent(`name = '${tplFile(n, k)}' and '${folder}' in parents and trashed = false`); return ((await (await gfetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)&pageSize=3`)).json()).files || [])[0]; }
+async function tplPut({ name, json, kind }) {
+  try { const folder = await memFolder(); const ex = await tplFind(folder, name, kind); let desc = ''; try { desc = (JSON.parse(json).desc || '').slice(0, 200); } catch (e) {}
     if (ex) { await gfetch(`https://www.googleapis.com/upload/drive/v3/files/${ex.id}?uploadType=media`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: json }); return { ok: true }; }
     const bd = 'jrv' + Date.now();
     await gfetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', { method: 'POST', headers: { 'Content-Type': 'multipart/related; boundary=' + bd },
-      body: `--${bd}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name: tplFile(name), parents: [folder], mimeType: 'application/json', description: name + (desc ? ' — ' + desc : ''), appProperties: { jarvisTpl: '1' } })}\r\n--${bd}\r\nContent-Type: application/json\r\n\r\n${json}\r\n--${bd}--` });
+      body: `--${bd}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name: tplFile(name, kind), parents: [folder], mimeType: 'application/json', description: name + (desc ? ' — ' + desc : ''), appProperties: { jarvisTpl: '1' } })}\r\n--${bd}\r\nContent-Type: application/json\r\n\r\n${json}\r\n--${bd}--` });
     return { ok: true };
   } catch (e) { return { error: e.message }; }
 }
-async function tplList() {
-  try { const folder = await memFolder(); const q = encodeURIComponent(`name contains 'namuna__' and '${folder}' in parents and trashed = false`);
+async function tplList(a) { const kind = (a && a.kind) || 'namuna';
+  try { const folder = await memFolder(); const q = encodeURIComponent(`name contains '${kind}__' and '${folder}' in parents and trashed = false`);
     const fl = ((await (await gfetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,description,modifiedTime)&pageSize=100`)).json()).files || []);
-    return { items: fl.map(f => { const d = f.description || ''; const i = d.indexOf(' — '); return { name: i > 0 ? d.slice(0, i) : (d || f.name.replace(/^namuna__|\.json$/g, '')), desc: i > 0 ? d.slice(i + 3) : '', at: Date.parse(f.modifiedTime) || 0 }; }) };
+    return { items: fl.map(f => { const d = f.description || ''; const i = d.indexOf(' — '); return { name: i > 0 ? d.slice(0, i) : (d || f.name.replace(new RegExp('^' + kind + '__|\\.json$', 'g'), '')), desc: i > 0 ? d.slice(i + 3) : '', at: Date.parse(f.modifiedTime) || 0 }; }) };
   } catch (e) { return { error: e.message }; }
 }
-async function tplGet({ name }) { try { const folder = await memFolder(); const ex = await tplFind(folder, name); if (!ex) return { error: 'yo\'q' }; return { json: await (await gfetch(`https://www.googleapis.com/drive/v3/files/${ex.id}?alt=media`)).text() }; } catch (e) { return { error: e.message }; } }
-async function tplDel({ name }) { try { const folder = await memFolder(); const ex = await tplFind(folder, name); if (ex) await gfetch(`https://www.googleapis.com/drive/v3/files/${ex.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trashed: true }) }); return { ok: true }; } catch (e) { return { error: e.message }; } }
+async function tplGet({ name, kind }) { try { const folder = await memFolder(); const ex = await tplFind(folder, name, kind); if (!ex) return { error: 'yo\'q' }; return { json: await (await gfetch(`https://www.googleapis.com/drive/v3/files/${ex.id}?alt=media`)).text() }; } catch (e) { return { error: e.message }; } }
+async function tplDel({ name, kind }) { try { const folder = await memFolder(); const ex = await tplFind(folder, name, kind); if (ex) await gfetch(`https://www.googleapis.com/drive/v3/files/${ex.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trashed: true }) }); return { ok: true }; } catch (e) { return { error: e.message }; } }
 ipcMain.handle('tpl:put', (e, a) => tplPut(a || {}));
-ipcMain.handle('tpl:list', () => tplList());
+ipcMain.handle('tpl:list', (e, a) => tplList(a));
 ipcMain.handle('tpl:get', (e, a) => tplGet(a || {}));
 ipcMain.handle('tpl:del', (e, a) => tplDel(a || {}));
 ipcMain.handle('http', async (e, a) => { try { return await httpReq(a || {}); } catch (err) { return { error: err.message }; } });

@@ -30,7 +30,7 @@ contextBridge.exposeInMainWorld('jarvisNative', {
   docRead: (a) => ipcRenderer.invoke('doc:read', a),
   saveFile: (a) => ipcRenderer.invoke('file:save', a),
   tplPut: (a) => ipcRenderer.invoke('tpl:put', a),
-  tplList: () => ipcRenderer.invoke('tpl:list'),
+  tplList: (a) => ipcRenderer.invoke('tpl:list', a),
   tplGet: (a) => ipcRenderer.invoke('tpl:get', a),
   tplDel: (a) => ipcRenderer.invoke('tpl:del', a),
   tgSendFile: (a) => ipcRenderer.invoke('tg:file', a),
