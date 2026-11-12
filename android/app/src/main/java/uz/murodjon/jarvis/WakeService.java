@@ -31,6 +31,8 @@ public class WakeService extends Service implements RecognitionListener {
     static volatile boolean busy = false;
     static volatile String lastError = "";
     static volatile long lastHit = 0;
+    static volatile String lastHeard = "";
+    static volatile boolean ready = false;
     static WakeService self;
 
     private Model model;
@@ -85,11 +87,11 @@ public class WakeService extends Service implements RecognitionListener {
     private void startListening() {
         try {
             if (speech != null) { speech.stop(); speech.shutdown(); }
-            Recognizer rec = new Recognizer(model, 16000.0f, "[\"jarvis\", \"hey jarvis\", \"[unk]\"]");
+            Recognizer rec = new Recognizer(model, 16000.0f, "[\"jarvis\", \"hey jarvis\", \"jervis\", \"[unk]\"]");
             speech = new SpeechService(rec, 16000.0f);
             speech.startListening(this);
             speech.setPause(busy);
-            lastError = "";
+            lastError = ""; ready = true;
         } catch (Exception e) {
             lastError = "Mikrofon ochilmadi: " + e.getMessage();
             Log.e(TAG, lastError);
@@ -110,8 +112,9 @@ public class WakeService extends Service implements RecognitionListener {
     private void check(String json, String field) {
         try {
             String t = new JSONObject(json).optString(field, "").trim();
+            if (!t.isEmpty() && !"partial".equals(field)) lastHeard = t + " (" + new java.text.SimpleDateFormat("HH:mm:ss").format(new java.util.Date()) + ")";
             // soxta ishga tushishni kamaytirish: oraliq natijada faqat aniq "jarvis", yakuniyda — tarkibida bo'lsa
-            if ("partial".equals(field) ? (t.equals("jarvis") || t.equals("hey jarvis")) : t.contains("jarvis")) hit();
+            if ("partial".equals(field) ? (t.equals("jarvis") || t.equals("hey jarvis") || t.equals("jervis")) : (t.contains("jarvis") || t.contains("jervis"))) hit();
         } catch (Exception ignored) {}
     }
 
@@ -158,7 +161,7 @@ public class WakeService extends Service implements RecognitionListener {
 
     @Override
     public void onDestroy() {
-        running = false;
+        running = false; ready = false;
         self = null;
         try { if (speech != null) { speech.stop(); speech.shutdown(); } } catch (Exception ignored) {}
         try { if (cpu != null && cpu.isHeld()) cpu.release(); } catch (Exception ignored) {}

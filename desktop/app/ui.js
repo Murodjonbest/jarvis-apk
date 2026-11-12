@@ -138,15 +138,15 @@
     const row = (ok, t, act) => `<div class="stat"><span>${ok ? '🟢' : '🔴'} ${t}</span>${ok ? '<b>bor</b>' : `<button class="chip" data-w="${act}">Ruxsat berish</button>`}</div>`;
     card.innerHTML = `<div class="ttl">🌙 EKRAN O'CHIQ HOLATDA HAM "JARVIS"</div>
       <div class="kbm" style="margin:6px 0">Yoqilsa, telefon cho'ntakda, ekran o'chiq yoki boshqa ilova ochiq bo'lsa ham "Jarvis" deganingizni eshitadi (internetsiz, telefon ichida) va o'zi ochilib buyruqni tinglaydi. Batareyani biroz ko'proq sarflaydi.</div>
-      ${row(st.mic, 'Mikrofon', 'app')}${row(st.notif, 'Bildirishnoma', 'app')}${row(st.overlay, 'Boshqa ilovalar ustida ochilish', 'overlay')}${row(st.battery, 'Batareya cheklovisiz', 'battery')}<div class="stat"><span>⚙ Fonda ishlash (Xiaomi, Samsung…)</span><button class="chip" data-w="auto">Sozlash</button></div>
+      ${row(st.mic, 'Mikrofon', 'app')}${row(st.notif, 'Bildirishnoma', 'app')}${row(st.overlay, 'Boshqa ilovalar ustida ochilish', 'overlay')}${row(st.battery, 'Batareya cheklovisiz', 'battery')}${row(st.fullscreen, 'Qulflangan ekranda ochilish', 'fs')}<div class="stat"><span>⚙ Fonda ishlash (Xiaomi, Samsung…)</span><button class="chip" data-w="auto">Sozlash</button></div>
       <div class="row2" style="margin-top:8px"><button class="chip ${st.running ? 'red' : 'w'}" data-w="toggle">${st.running ? '⏹ O\'chirish' : '▶ Yoqish'}</button></div>
-      ${st.error ? `<div class="kbm" style="color:var(--red)">${esc(st.error)}</div>` : st.running ? '<div class="kbm" style="color:var(--cy2)">✓ Tinglayapti. Ekranni o\'chirib "Jarvis" deb ko\'ring.</div>' : ''}`;
+      ${st.error ? `<div class="kbm" style="color:var(--red)">${esc(st.error)}</div>` : st.running ? (st.ready ? '<div class="kbm" style="color:var(--cy2)">✓ Tinglayapti. "Jarvis" deb aniq ayting (ingliz talaffuzida: "JAR-vis").</div>' : '<div class="kbm" style="color:var(--amber)">⏳ Ovoz modeli tayyorlanmoqda (birinchi marta 10–30 soniya)…</div>') + (st.heard ? `<div class="kbm">Oxirgi eshitgani: <b>${esc(st.heard)}</b></div>` : '') : ''}`;
   }
   card.addEventListener('click', async e => {
     const b = e.target.closest('[data-w]'); if (!b || !WakeP) return; const a = b.dataset.w;
     try {
       if (a === 'toggle') { const st = await wst(); if (st && st.running) { await WakeP.stop(); try { localStorage.setItem('jn_wake_auto', '0'); } catch (e) {} } else { try { localStorage.setItem('jn_wake_auto', '1'); } catch (e) {} await WakeP.start(); toast("🌙 Endi ekran o'chiq bo'lsa ham \"Jarvis\" deng"); } }
-      if (a === 'overlay') await WakeP.askOverlay(); if (a === 'battery') await WakeP.askBattery(); if (a === 'app') await WakeP.appSettings(); if (a === 'auto') await WakeP.askAutostart();
+      if (a === 'overlay') await WakeP.askOverlay(); if (a === 'battery') await WakeP.askBattery(); if (a === 'app') await WakeP.appSettings(); if (a === 'fs') await WakeP.askFullScreen(); if (a === 'auto') await WakeP.askAutostart();
     } catch (er) { toast(er.message || String(er)); }
     setTimeout(drawWake, 800);
   });
@@ -167,7 +167,11 @@
   setInterval(async () => { const st = await wst(); if (st && st.running && typeof W !== 'undefined' && W.on && !W.await && typeof wakeOff === 'function') { wakeOff(); } }, 5000);
   // doim tayyor: fon xizmati o'zi yoqiladi (o'chirib qo'ymagan bo'lsangiz)
   setTimeout(async () => { if (!WakeP) return; let off = false; try { off = localStorage.getItem('jn_wake_auto') === '0'; } catch (e) {}
-    const st = await wst(); if (st && st.mic && !st.running && !off) { try { await WakeP.start(); } catch (e) {} drawWake(); } }, 4000);
+    const st = await wst(); if (st && !st.running && !off) {
+      let first = false; try { first = !localStorage.getItem('jn_wake_asked'); localStorage.setItem('jn_wake_asked', '1'); } catch (e) {}
+      if (st.mic || first) { try { await WakeP.start(); if (first) toast('🌙 "Jarvis" deb chaqirsangiz, ekran o\'chiq bo\'lsa ham eshitaman. To\'liq ishlashi uchun Holat → 🌙 bo\'limida ruxsatlarni bering'); } catch (e) { if (first) toast(e.message || String(e)); } }
+      drawWake(); } }, 3000);
+  setInterval(() => { if (view === 'left') drawWake(); }, 3000);
 
   /* ---- avtomatik yangilanish: GitHub'dagi yangi APK ---- */
   const AppI = CE.registerPlugin && CE.Capacitor && CE.Capacitor.isNativePlatform && CE.Capacitor.isNativePlatform() ? CE.registerPlugin('App') : null;

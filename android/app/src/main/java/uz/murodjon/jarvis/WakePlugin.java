@@ -13,9 +13,15 @@ import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
+import com.getcapacitor.PermissionState;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
 
-@CapacitorPlugin(name = "Wake")
+@CapacitorPlugin(name = "Wake", permissions = {
+    @Permission(strings = { Manifest.permission.RECORD_AUDIO }, alias = "mic"),
+    @Permission(strings = { "android.permission.POST_NOTIFICATIONS" }, alias = "notif")
+})
 public class WakePlugin extends Plugin {
     static WakePlugin instance;
 
@@ -58,6 +64,11 @@ public class WakePlugin extends Plugin {
         r.put("overlay", Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(getContext()));
         PowerManager pm = (PowerManager) getContext().getSystemService(android.content.Context.POWER_SERVICE);
         r.put("battery", Build.VERSION.SDK_INT < 23 || pm.isIgnoringBatteryOptimizations(getContext().getPackageName()));
+        r.put("heard", WakeService.lastHeard);
+        r.put("ready", WakeService.ready);
+        boolean fs = true;
+        if (Build.VERSION.SDK_INT >= 34) { try { fs = ((android.app.NotificationManager) getContext().getSystemService(android.content.Context.NOTIFICATION_SERVICE)).canUseFullScreenIntent(); } catch (Exception ignored) {} }
+        r.put("fullscreen", fs);
         r.put("notif", Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(getContext(), "android.permission.POST_NOTIFICATIONS") == PackageManager.PERMISSION_GRANTED);
         return r;
     }
@@ -66,17 +77,40 @@ public class WakePlugin extends Plugin {
 
     @PluginMethod
     public void start(PluginCall call) {
-        if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.RECORD_AUDIO}, 41);
-            call.reject("Avval mikrofonga ruxsat bering va qayta bosing");
+        boolean needNotif = Build.VERSION.SDK_INT >= 33 && getPermissionState("notif") != PermissionState.GRANTED;
+        if (getPermissionState("mic") != PermissionState.GRANTED || needNotif) {
+            requestPermissionForAliases(needNotif ? new String[]{"mic", "notif"} : new String[]{"mic"}, call, "permDone");
             return;
         }
-        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(getContext(), "android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(getActivity(), new String[]{"android.permission.POST_NOTIFICATIONS"}, 42);
-        }
+        startSvc(call);
+    }
+
+    @PermissionCallback
+    private void permDone(PluginCall call) {
+        if (getPermissionState("mic") != PermissionState.GRANTED) { call.reject("Mikrofonga ruxsat berilmadi — Sozlamalar → Ilovalar → JARVIS → Ruxsatlar → Mikrofon"); return; }
+        startSvc(call);
+    }
+
+    private void startSvc(PluginCall call) {
         getContext().getSharedPreferences("jarvis", 0).edit().putBoolean("wake", true).apply();
         Intent i = new Intent(getContext(), WakeService.class);
-        if (Build.VERSION.SDK_INT >= 26) getContext().startForegroundService(i); else getContext().startService(i);
+        try { if (Build.VERSION.SDK_INT >= 26) getContext().startForegroundService(i); else getContext().startService(i); }
+        catch (Exception e) { call.reject("Xizmat ishga tushmadi: " + e.getMessage()); return; }
+        call.resolve(state());
+    }
+
+    /** Qulflangan ekranda ham ochilish (Android 14+: "To'liq ekranli bildirishnomalar") */
+    @PluginMethod
+    public void askFullScreen(PluginCall call) {
+        try {
+            if (Build.VERSION.SDK_INT >= 34) {
+                getContext().startActivity(new Intent("android.settings.MANAGE_APP_USE_FULL_SCREEN_INTENT", Uri.parse("package:" + getContext().getPackageName())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            } else {
+                getContext().startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getContext().getPackageName())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            }
+        } catch (Exception e) {
+            getContext().startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getContext().getPackageName())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        }
         call.resolve(state());
     }
 
