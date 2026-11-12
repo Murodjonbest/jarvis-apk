@@ -8,6 +8,9 @@
   /* ---- sample: OpenAI-style tool loop ---- */
   async function sample(input,opts={}){
     const msgs=typeof input==='string'?[{role:'user',content:input}]:input.map(m=>({role:m.role,content:String(m.content)}));
+    let vision=false;
+    if(opts.images&&opts.images.length){const urls=await Promise.all(opts.images.slice(0,4).map(b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b)})));
+      for(let i=msgs.length-1;i>=0;i--)if(msgs[i].role==='user'){msgs[i]={role:'user',content:[{type:'text',text:msgs[i].content},...urls.map(u=>({type:'image_url',image_url:{url:u}}))]};break}vision=true}
     const scrub=s=>{if(Array.isArray(s))return s.map(scrub);if(!s||typeof s!=='object')return s;const o={};for(const k in s){if(['additionalProperties','$schema','default','examples','format','minLength','maxLength','pattern','minimum','maximum','minItems','maxItems'].includes(k))continue;o[k]=scrub(s[k])}
       if(o.type==='array'&&!o.items)o.items={type:'string'};if(o.type==='object'&&o.properties&&!Object.keys(o.properties).length){delete o.properties;delete o.required}
       if(o.type==='object'&&!o.properties&&o!==null){/* bo'sh obyekt */}return o};
@@ -20,7 +23,7 @@
       for(let step=0;step<20;step++){
         if(opts.signal&&opts.signal.aborted)throw Object.assign(new Error('aborted'),{name:'AbortError'});
         if(opts.onText&&step===0)opts.onText({text:'…',delta:''});
-        const r=await N.chat({id,messages:msgs,tools:step<11?tools:[],tier:opts.modelTier});
+        const r=await N.chat({id,messages:msgs,tools:step<11?tools:[],tier:opts.modelTier,vision});
         if(opts.signal&&opts.signal.aborted)throw Object.assign(new Error('aborted'),{name:'AbortError'});
         if(r.error)throw err(r.error.code,r.error.message);
         try{const el=document.getElementById('sTier');if(el)el.textContent=r.provider+' · '+r.model.split('/').pop();
@@ -40,7 +43,7 @@
         return{text,truncated:false,modelApplied:r.model}}
       throw err('upstream_error','Vositalar zanjiri juda uzun bo\'ldi')
     }finally{if(onAbort&&opts.signal)opts.signal.removeEventListener('abort',onAbort)}}
-  sample.limits=async()=>({images:false});
+  sample.limits=async()=>({images:true});
 
   /* ---- dictation: mic → speech segments → Groq Whisper ---- */
   function makeDictation(){

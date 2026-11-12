@@ -78,13 +78,15 @@
     if (p.id === 'claude') { h['x-api-key'] = p.key; h['anthropic-version'] = '2023-06-01'; }
     return h;
   }
-  async function chat({ id, messages, tools, tier }) {
+  const VISION = { gemini: null, groq: ['meta-llama/llama-4-scout-17b-16e-instruct', 'meta-llama/llama-4-maverick-17b-128e-instruct'], openrouter: ['google/gemma-3-27b-it:free', 'openrouter/free'], nvidia: ['meta/llama-4-maverick-17b-128e-instruct'], claude: null };
+  async function chat({ id, messages, tools, tier, vision }) {
     const cfg = loadCfg();
-    const provs = cfg.providers.filter(p => p.enabled && p.key && p.models && p.models.length);
+    let provs = cfg.providers.filter(p => p.enabled && p.key && p.models && p.models.length);
+    if (vision) { provs = provs.filter(p => p.id in VISION).sort((a, b) => (a.id === 'gemini' ? -1 : 0) - (b.id === 'gemini' ? -1 : 0)); if (!provs.length) return { error: { code: 'no_keys', message: 'Rasmni tushunish uchun Google Gemini yoki Groq kaliti kerak (⚙ Sozlash).' } }; }
     if (!provs.length) return { error: { code: 'no_keys', message: 'Hech qanday model sozlanmagan. "⚙ Modellar" oynasida kamida bitta bepul API kalit kiriting (Gemini yoki Groq).' } };
     const errors = []; let netErrs = 0;
     for (const p of provs) {
-      const models = tier === 'quick' ? [...p.models].reverse() : p.models;
+      const models = vision && VISION[p.id] ? VISION[p.id] : tier === 'quick' ? [...p.models].reverse() : p.models;
       for (const m of models) {
         if (aborted.has(id)) { aborted.delete(id); return { error: { code: 'aborted', message: 'to\'xtatildi' } }; }
         const ck = p.id + '/' + m;
@@ -341,6 +343,58 @@
   }
   function ttsCfg(upd) { const r = raw(); if (upd) { if (typeof upd.ttsOn === 'boolean') r.ttsOn = upd.ttsOn; if (upd.ttsModel) r.ttsModel = upd.ttsModel.trim(); saveRaw(r); ttsCool = 0; }
     return { ttsOn: r.ttsOn !== false, ttsModel: r.ttsModel || 'gemini-2.5-flash-preview-tts' }; }
+
+  /* ---------- RASM: Lens qidiruv, AI tahrir; HUJJAT: PDF o'qish ---------- */
+  async function geminiKey() { const g = loadCfg().providers.find(p => p.id === 'gemini'); return g && g.key ? g : null; }
+  async function imgEdit({ b64, mime, prompt }) {
+    const g = await geminiKey(); if (!g) return { error: 'Buning uchun Google Gemini kaliti kerak' };
+    const model = (raw().imgModel) || 'gemini-2.5-flash-image';
+    try {
+      const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': g.key },
+        body: JSON.stringify({ contents: [{ parts: [{ inlineData: { mimeType: mime || 'image/jpeg', data: b64 } }, { text: prompt }] }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'] } }) }, 120000);
+      const t = await r.text(); if (!r.ok) return { error: r.status === 429 ? 'Bepul limit tugadi — birozdan keyin urinib ko\'ring' : r.status + ' ' + t.slice(0, 160) };
+      const parts = (((JSON.parse(t).candidates || [])[0] || {}).content || {}).parts || []; const im = parts.find(x => x.inlineData);
+      if (!im) return { error: parts.map(x => x.text || '').join(' ').slice(0, 200) || 'Rasm qaytmadi' };
+      return { b64: im.inlineData.data, mime: im.inlineData.mimeType };
+    } catch (err) { return { error: err.message }; }
+  }
+  async function docRead({ b64, mime, name }) {
+    const g = await geminiKey(); if (!g) return { error: 'PDF va skaner hujjatlarni o\'qish uchun Google Gemini kaliti kerak' };
+    if (!/pdf|image/.test(mime || '')) return { error: 'Bu fayl turi qo\'llanmaydi: ' + (name || mime) };
+    try {
+      const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${g.models[0] || 'gemini-flash-latest'}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': g.key },
+        body: JSON.stringify({ contents: [{ parts: [{ inlineData: { mimeType: mime, data: b64 } }, { text: 'Bu hujjatning to\'liq matnini AYNAN, asl tilida chiqarib ber. Jadvallarni | belgisi bilan qator-qator yoz. Hech qanday izoh qo\'shma.' }] }], generationConfig: { temperature: 0 } }) }, 180000);
+      const t = await r.text(); if (!r.ok) return { error: r.status + ' ' + t.slice(0, 160) };
+      const parts = (((JSON.parse(t).candidates || [])[0] || {}).content || {}).parts || []; return { text: parts.map(x => x.text || '').join('') };
+    } catch (err) { return { error: err.message }; }
+  }
+
+  async function lens({ b64, mime }) {
+    if (isNative && Http) {
+      try {
+        const r = await Http.request({ url: 'https://lens.google.com/v3/upload?hl=uz&re=df&ep=gsbubb&st=' + Date.now(), method: 'POST', headers: { 'User-Agent': UAD, 'Content-Type': 'multipart/form-data' }, dataType: 'formData', responseType: 'text', readTimeout: 30000,
+          data: [{ type: 'base64File', key: 'encoded_image', value: b64, fileName: 'image.jpg', contentType: mime || 'image/jpeg' }, { type: 'string', key: 'processed_image_dimensions', value: '1000,1000' }] });
+        let u = r.url && /lens\.google\.com\/search/.test(r.url) ? r.url : null;
+        if (!u) { const t = typeof r.data === 'string' ? r.data : ''; const m = /(https:\/\/lens\.google\.com\/search\?[^"'<\s]+)/.exec(t) || /URL='?([^"'>]+)/i.exec(t); if (m) u = ent(m[1]); }
+        if (u) return { url: u.startsWith('/') ? 'https://lens.google.com' + u : u, site: 'lens.google.com' };
+      } catch (e) { logw('LENS: ' + e.message); }
+      try {
+        const r = await Http.request({ url: 'https://yandex.ru/images/search?rpt=imageview&format=json&request=' + encodeURIComponent('{"blocks":[{"block":"b-page_type_search-by-image__link"}]}'), method: 'POST', headers: { 'User-Agent': UAD, 'Content-Type': 'multipart/form-data' }, dataType: 'formData', readTimeout: 30000,
+          data: [{ type: 'base64File', key: 'upfile', value: b64, fileName: 'image.jpg', contentType: mime || 'image/jpeg' }] });
+        const j = typeof r.data === 'string' ? JSON.parse(r.data) : r.data; const u = j.blocks && j.blocks[0] && j.blocks[0].params && j.blocks[0].params.url; if (u) return { url: 'https://yandex.ru/images/search?' + u, site: 'yandex.ru' };
+      } catch (e) { logw('YANDEX-IMG: ' + e.message); }
+    }
+    return { error: 'Rasm bo\'yicha qidiruv xizmatlari javob bermadi' };
+  }
+  async function saveFile({ b64, name, share }) {
+    const Fs = reg('Filesystem'), Sh = reg('Share'); if (!Fs) return { error: 'Saqlash faqat ilovada' };
+    const nm = String(name || 'fayl').replace(/[\\/:*?"<>|]+/g, ' ');
+    let uri = null, where = '';
+    try { uri = (await Fs.writeFile({ path: 'Jarvis/' + nm, data: b64, directory: 'DOCUMENTS', recursive: true })).uri; where = 'Hujjatlar/Jarvis/' + nm; }
+    catch (e) { try { uri = (await Fs.writeFile({ path: nm, data: b64, directory: 'CACHE' })).uri; share = true; } catch (er) { return { error: er.message }; } }
+    if (share && Sh) { try { await Sh.share({ title: nm, files: [uri], dialogTitle: 'Ulashish yoki ochish' }); } catch (e) {} }
+    return { ok: true, path: where || nm, uri };
+  }
 
   /* ---------- TELEFONNI BOSHQARISH (kompyuterdagi "pc" o'rniga) ---------- */
   const APPS = { telegram: 'tg://resolve', youtube: 'https://www.youtube.com', 'yutub': 'https://www.youtube.com', xarita: 'geo:0,0', maps: 'geo:0,0', 'google xarita': 'geo:0,0', chrome: 'https://www.google.com', brauzer: 'https://www.google.com', google: 'https://www.google.com',
@@ -626,7 +680,7 @@
     gLogin: A(gLogin), keysSync: A(keysSync), gLogout: A(() => { LS.set('gtok', null); return true; }), gPull: A(gPull), gPush: A(gPush),
     ttsGemini: A(ttsGemini), ttsCfg: A(ttsCfg), secExport: A(secExport), secImport: A(secImport),
     pc: A(pc), web: A(web), http: A(async x => { try { return await httpReq(x || {}); } catch (er) { return { error: er.message }; } }),
-    openInApp: A(u => openExt(u)), share: A(async o => { const Sh = reg('Share'); try { if (Sh) { await Sh.share({ title: o.title, text: o.text, url: o.url, dialogTitle: 'Ulashish' }); return true; } } catch (er) { if (/cancel/i.test(er.message || '')) return true; } return false; }), gapiList: A(gapiList), gapiDescribe: A(gapiDescribe), gapiCall: A(gapiCall),
+    openInApp: A(u => openExt(u)), lens: A(lens), imgEdit: A(imgEdit), docRead: A(docRead), saveFile: A(saveFile), share: A(async o => { const Sh = reg('Share'); try { if (Sh) { await Sh.share({ title: o.title, text: o.text, url: o.url, dialogTitle: 'Ulashish' }); return true; } } catch (er) { if (/cancel/i.test(er.message || '')) return true; } return false; }), gapiList: A(gapiList), gapiDescribe: A(gapiDescribe), gapiCall: A(gapiCall),
     diag: A(diag), log: A(m => { logw(m); return true; }), logRead: A(() => LS.get('log', []).join('\n')),
     liveCfg: A(liveCfg), liveSet: A(liveSet), screenshot: A(() => ({ error: 'Telefonda ekran rasmini olish yo\'q — kamerani ishlating.' })),
     tgGet: A(() => { const t = tgCfg(); return { hasToken: !!t.token, on: TG.on, owner: !!t.owner, ownerName: t.ownerName || '', code: TG.code, enabled: t.enabled !== false }; }),

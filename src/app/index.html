@@ -117,7 +117,7 @@ body{background:
 .grow{flex:1;min-height:0;display:flex;flex-direction:column}
 .toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--mut);user-select:none}
 .toggle input{accent-color:var(--cy)}
-.toast{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:rgba(30,18,0,.95);border:1px solid var(--amber);color:#ffe2b0;padding:12px 18px;font-size:17px;z-index:50;box-shadow:0 0 25px rgba(255,181,71,.4);display:none;max-width:90vw}
+.toast{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:rgba(30,18,0,.95);border:1px solid var(--amber);color:#ffe2b0;padding:12px 18px;font-size:17px;z-index:72;box-shadow:0 0 25px rgba(255,181,71,.4);display:none;max-width:90vw}
 .toast b{font-family:Orbitron;font-size:11px;letter-spacing:.2em;color:var(--amber);display:block;margin-bottom:3px}
 .tabs{display:none}
 @media (max-width:1000px){
@@ -173,6 +173,32 @@ body{background:
 .envbox{border:1px solid var(--amber);background:rgba(40,25,0,.6);padding:10px 12px;font-size:15px;line-height:1.4}
 .envbox b{color:var(--amber)} .envbox .link{margin-right:6px}
 
+
+/* ===== biriktirma, muharrir, hujjat ===== */
+#attBar{display:none;gap:6px;padding:6px 8px 0;flex-wrap:wrap}
+.att{position:relative;border:1px solid var(--line2);border-radius:10px;background:rgba(63,210,255,.06);display:flex;align-items:center;gap:6px;font-size:13px}
+.att.img{width:74px;height:74px;overflow:hidden;cursor:pointer}.att.img img{width:100%;height:100%;object-fit:cover}
+.att.img .aa{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-around;background:rgba(0,0,0,.65)}
+.att .aa button,.att.doc button{background:none;border:0;color:#fff;font-size:14px;padding:3px 4px;cursor:pointer}
+.att.doc{padding:6px 4px 6px 10px;max-width:100%}.att.doc small{color:var(--mut)}
+#attMenu{position:fixed;left:10px;bottom:150px;z-index:65;background:#071523;border:1px solid var(--line2);border-radius:14px;display:none;flex-direction:column;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.6);min-width:260px}
+#attMenu.open{display:flex}#attMenu button{background:none;border:0;border-bottom:1px solid var(--line);color:var(--txt);text-align:left;padding:13px 16px;font:600 15px Rajdhani,sans-serif;cursor:pointer}
+#attMenu button:hover{background:rgba(63,210,255,.1)}
+.msg.u .uimgs{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.msg.u .uimgs img{width:84px;height:84px;object-fit:cover;border-radius:8px}
+.msg.u .udoc{margin-top:4px;font-size:12px;opacity:.85}
+#imgEd{position:fixed;inset:0;z-index:68;background:#02060c;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#imgEd .et{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line)}#imgEd .et b{font:700 12px Orbitron;letter-spacing:.15em;color:var(--cy2)}
+#imgEd .et .hint{flex:1;font-size:12px;color:var(--mut)}#imgEd .et button{background:none;border:1px solid var(--line);color:var(--txt);width:38px;height:34px;border-radius:17px}
+#imgEd .ec{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:6px}
+#imgEd .wrap{position:relative}#imgEd .wrap canvas{display:block}#imgEd .ov{position:absolute;left:0;top:0;touch-action:none;cursor:crosshair}
+#imgEd .etools,#imgEd .esl,#imgEd .eact,#imgEd .ep{display:flex;gap:6px;padding:6px 8px;flex-wrap:wrap;align-items:center;justify-content:center}
+#imgEd button{background:rgba(63,210,255,.08);border:1px solid var(--line2);color:var(--txt);padding:8px 11px;border-radius:10px;font:600 13px Rajdhani,sans-serif;cursor:pointer}
+#imgEd button.on,#imgEd button.w{background:rgba(63,210,255,.25);border-color:var(--cy);color:var(--cy2)}
+#imgEd input[type=color]{width:38px;height:34px;border:0;background:none;padding:0}
+#imgEd .esl label{display:flex;align-items:center;gap:4px;font-size:15px}#imgEd .esl input{width:80px}
+#imgEd .ep input{flex:1;min-width:200px;background:#071523;border:1px solid var(--line2);color:var(--txt);padding:10px 12px;border-radius:10px;font-size:15px}
+.docCard{display:flex;align-items:center;gap:10px;border:1px solid var(--line2);border-radius:12px;padding:10px 12px;background:rgba(63,210,255,.06)}
+.docCard .di{font-size:30px}.docCard .dn{display:flex;flex-direction:column}.docCard small{color:var(--mut)}
 /* ===== MEDIA: rasm, video, sahifa natijalari ===== */
 .media{margin-top:8px;display:flex;flex-direction:column;gap:8px}
 .media .mh{display:flex;align-items:center;gap:6px;font:700 10px Orbitron;letter-spacing:.15em;color:var(--mut)}
@@ -657,21 +683,25 @@ Qoidalar:
 - Oddiy suhbatda tabiiy, jonli, ravon gapir — xuddi odam gapirgandek: qisqa gaplar, ro'yxat va belgilarsiz, "xo'p", "albatta", "tushunarli" kabi so'zlar bilan. Ro'yxat/jadval faqat foydalanuvchi hujjat yoki batafsil ma'lumot so'raganda.`;
 
 async function ask(text,opt){
-  text=text.trim();if(!text)return;const typed=!!(opt&&opt.typed);
-  if(voiceControl(text))return;
-  if(text.startsWith('/')&&runCommand(text))return;
-  stopSpeak();addMsg('u',text);$('inp').value='';
+  text=String(text||'').trim();if(!text&&!ATT.items.length)return;const typed=!!(opt&&opt.typed);
+  let imgs=(opt&&opt.images)||[],extra='',shownAtt=[];
+  if(ATT.items.length){const t=takeAttachments(text);imgs=imgs.concat(t.imgs);extra=t.extra;shownAtt=t.shown;text=t.text}
+  if(!shownAtt.length&&!imgs.length){if(voiceControl(text))return;if(text.startsWith('/')&&runCommand(text))return}
+  stopSpeak();const um=addMsg('u',text);$('inp').value='';
+  if(imgs.length){const g=document.createElement('div');g.className='uimgs';imgs.forEach(b=>{const im=document.createElement('img');im.src=URL.createObjectURL(b);im.onclick=()=>imgEditor(b);g.appendChild(im)});um.appendChild(g)}
+  shownAtt.filter(x=>x.kind==='doc').forEach(x=>{const d2=document.createElement('div');d2.className='udoc';d2.textContent='📄 '+x.name+(x.err?' (o\'qilmadi)':'');um.appendChild(d2)});
   S.jobs=(S.jobs||0)+1;S.busy=true;$('stop').style.display='';setMode('thinking');
   const myCtl=new AbortController();CTLS.add(myCtl);
   const d=addMsg('j','…');S.curMsg=d;pendingLinks=[];
   let answer='';
   try{
     if(sample){
-      S.history.push({role:'user',content:text});
+      S.history.push({role:'user',content:text+extra});
       const hist=S.history.slice(-14);if(hist[0].role!=='user')hist.shift();
       const now=new Date();
       const msgs=hist.map((m,i)=>i===0?{role:'user',content:sysPrompt()+`\n\n[Hozir: ${fmtDate(now)}, ${pad(now.getHours())}:${pad(now.getMinutes())}]\n\n---\nFoydalanuvchi: `+m.content}:m);
-      const r=await sample(msgs,{tools:allTools(),cache:false,signal:myCtl.signal,modelTier:'default',onText:({text})=>{answer=text;setBody(d,text)}});
+      const r=await sample(msgs,{tools:allTools(),cache:false,signal:myCtl.signal,modelTier:'default',...(imgs.length?{images:imgs}:{}),onText:({text})=>{answer=text;setBody(d,text)}});
+      if(extra){const h=S.history.findLast(m=>m.role==='user');if(h)h.content=text+' [biriktirilgan: '+shownAtt.map(x=>x.name).join(', ')+']'}
       answer=r.text||answer;
       S.history.push({role:'assistant',content:answer||'(javob yo\'q)'});noteExchange();
     } else {
@@ -762,8 +792,8 @@ function localTools(){
     inputSchema:{type:'object',properties:{site:{type:'string'},search:{type:'string'},youtube_search:{type:'string'},weather_city:{type:'string'},media_search:{type:'string'},kind:{type:'string',enum:['images','videos','pages']}}},
     execute:i=>{if(i.media_search){window.showMedia('results',window.searchLinks(i.media_search,i.kind),i.media_search);return 'Foydalanuvchiga qidiruv kartochkalari ko\'rsatildi (bosilsa ochiladi, nusxalash va ulashish tugmalari bor). Texnik xato haqida gapirma.'}
       return i.weather_city?by('weather_link').execute({city:i.weather_city}):by('open_website').execute(i)}};
-  return[by('get_datetime'),by('calculate'),notes,rem,web,by('remember_fact'),by('google_status'),by('open_app'),by('second_brain'),by('recall'),by('routines'),by('run_code'),(()=>{const t=by('my_tools');return t&&Object.assign({},t,{description:t.description+(myTools().map(x=>x.name+(x.params?'('+x.params+')':'')+' — '+x.text).join('; ')||'hali yo\'q')})})(),by('pc'),by('web')].filter(Boolean)}
-function allTools(){return localTools().concat(connectorTools()).slice(0,window.JARVIS_DESKTOP?40:16)}
+  return[by('get_datetime'),by('calculate'),notes,rem,web,by('remember_fact'),by('google_status'),by('open_app'),by('second_brain'),by('recall'),by('routines'),by('run_code'),by('make_document'),(()=>{const t=by('my_tools');return t&&Object.assign({},t,{description:t.description+(myTools().map(x=>x.name+(x.params?'('+x.params+')':'')+' — '+x.text).join('; ')||'hali yo\'q')})})(),by('pc'),by('web')].filter(Boolean)}
+function allTools(){let t=localTools().concat(connectorTools());if(!window.JARVIS_DESKTOP){const drop=['google_status','recall','routines','second_brain','remember_fact'];while(t.length>16&&drop.length){const d=drop.shift();t=t.filter(x=>x.name!==d)}}return t.slice(0,window.JARVIS_DESKTOP?40:16)}
 /* ===== ISHONCH REJIMI: AI amallarini tasdiqsiz bajarish (foydalanuvchi o'zi yoqadi) ===== */
 const DANGER=/format-volume|\bformat\s+[a-z]:|diskpart|bcdedit|cipher\s+\/w|vssadmin\s+delete|reg(\.exe)?\s+delete\s+hklm|\b(Remove-Item|rm|del|erase|rmdir|rd|ri)\b[^\n]*?\s['"]?[a-z]:\\?(\*|\\\*)?['"]?(\s|$|;)|\\windows(\\|\b)|\\program files|Stop-Computer|Restart-Computer|shutdown(\.exe)?\s+[\/-][srp]|Clear-Disk|Initialize-Disk|Remove-Partition/i;
 function trustMode(){try{return localStorage.getItem('jarvis_trust')||'ask'}catch(e){return'ask'}}
@@ -1661,6 +1691,174 @@ function openBatch(){openWin('batch','⚡ OMMAVIY BUYRUQLAR',w=>{w.el.style.widt
         done++;upd()}};
     await Promise.all(Array.from({length:Math.min(par,cmds.length)},worker));w.running=false;dockRender();showToast(`${done} ta buyruq bajarildi`,'OMMAVIY');act(`⚡ ommaviy: ${ok}/${cmds.length}`)}})}
 
+
+/* ============ FAYL VA RASM: biriktirish, o'qish, rasm muharriri, rasm bo'yicha qidiruv, hujjat yaratish ============ */
+let DLS=null;try{window.claude&&window.claude.use&&window.claude.use('downloads').then(d=>{DLS=d}).catch(()=>{})}catch(e){}
+const ATT={items:[]};
+const b2b64=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]);r.onerror=rej;r.readAsDataURL(b)});
+const b64toBlob=(b,mime)=>{const s=atob(b);const u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return new Blob([u],{type:mime||'application/octet-stream'})};
+/* --- ZIP o'qish (docx/xlsx/pptx) --- */
+async function unzip(buf){const dv=new DataView(buf),u8=new Uint8Array(buf);let e=-1;for(let i=u8.length-22;i>=Math.max(0,u8.length-70000);i--)if(dv.getUint32(i,true)===0x06054b50){e=i;break}
+  if(e<0)throw new Error('ZIP emas');const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const out={};
+  for(let k=0;k<n;k++){const method=dv.getUint16(p+10,true),csize=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),lo=dv.getUint32(p+42,true);
+    const name=new TextDecoder().decode(u8.subarray(p+46,p+46+nl));p+=46+nl+xl+cl;
+    out[name]=async()=>{const ln=dv.getUint16(lo+26,true),lx=dv.getUint16(lo+28,true);const data=u8.subarray(lo+30+ln+lx,lo+30+ln+lx+csize);
+      if(method===0)return new TextDecoder().decode(data);const ds=new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));return await new Response(ds).text()}}
+  return out}
+const xmlText=s=>s.replace(/<w:tab\/>/g,'\t').replace(/<w:br[^>]*\/>/g,'\n').replace(/<[^>]+>/g,'').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&');
+async function readDocx(z){const x=await z['word/document.xml']();const body=x.replace(/<w:tbl>([\s\S]*?)<\/w:tbl>/g,(m,t)=>'\n'+t.split(/<\/w:tr>/).map(r=>r.split(/<\/w:tc>/).map(c=>xmlText(c.replace(/<\/w:p>/g,' ')).trim()).filter((c,i,a)=>i<a.length-1||c).join(' | ')).filter(Boolean).join('\n')+'\n');
+  return body.split(/<\/w:p>/).map(p=>xmlText(p)).join('\n').replace(/\n{3,}/g,'\n\n').trim()}
+async function readXlsx(z){const ss=z['xl/sharedStrings.xml']?(await z['xl/sharedStrings.xml']()).split(/<\/si>/).map(s=>xmlText(s)):[];let out='';
+  const sheets=Object.keys(z).filter(k=>/^xl\/worksheets\/sheet\d+\.xml$/.test(k)).sort((a,b)=>parseInt(a.match(/\d+/))-parseInt(b.match(/\d+/)));
+  for(const sh of sheets){const x=await z[sh]();out+=`\n### ${sh.replace(/.*\//,'').replace('.xml','')}\n`;
+    for(const row of x.split(/<\/row>/)){const cells=[];row.replace(/<c\s([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g,(m,attr,inner)=>{const r=(attr.match(/r="([A-Z]+)/)||[])[1];const t=(attr.match(/t="(\w+)"/)||[])[1];let v=inner?(inner.match(/<v>([\s\S]*?)<\/v>/)||[])[1]:'';if(t==='s')v=ss[+v]||'';else if(t==='inlineStr')v=xmlText(inner||'');
+        if(r){let ci=0;for(const ch of r)ci=ci*26+ch.charCodeAt(0)-64;cells[ci-1]=v}return''});if(cells.length)out+=Array.from(cells,c=>c==null?'':String(c).replace(/[\t\n]/g,' ')).join('\t')+'\n'}}
+  return out.trim()}
+async function readPptx(z){const sl=Object.keys(z).filter(k=>/^ppt\/slides\/slide\d+\.xml$/.test(k)).sort((a,b)=>parseInt(a.match(/\d+/))-parseInt(b.match(/\d+/)));let o='';for(const s of sl){o+=`\n--- ${s.match(/slide\d+/)[0]} ---\n`+(await z[s]()).split(/<\/a:p>/).map(xmlText).filter(t=>t.trim()).join('\n')}return o.trim()}
+async function extractText(f){const nm=(f.name||'').toLowerCase(),ext=nm.split('.').pop();
+  if(/^(txt|csv|tsv|md|json|xml|html?|js|py|log|ini|sql|srt)$/.test(ext)||/^text\//.test(f.type))return await f.text();
+  if(/^(docx|xlsx|pptx|docm|xlsm)$/.test(ext)){const z=await unzip(await f.arrayBuffer());return ext.startsWith('doc')?readDocx(z):ext.startsWith('xls')?readXlsx(z):readPptx(z)}
+  const N=NAT();if(N&&N.docRead){const r=await N.docRead({b64:await b2b64(f),mime:f.type||(ext==='pdf'?'application/pdf':''),name:f.name});if(r.error)throw new Error(r.error);return r.text}
+  throw new Error(ext==='pdf'?'PDF faylni o\'qish telefon yoki kompyuter ilovasida ishlaydi':'Bu fayl turini o\'qib bo\'lmadi ('+ext+'). Word (.docx), Excel (.xlsx), PDF yoki matn fayl yuboring')}
+/* --- biriktirma paneli --- */
+function attBar(){let b=$('attBar');if(!b){b=document.createElement('div');b.id='attBar';const bar=document.querySelector('.chat .bar');bar.parentNode.insertBefore(b,bar)}
+  b.style.display=ATT.items.length?'flex':'none';
+  b.innerHTML=ATT.items.map((x,i)=>x.kind==='image'?`<div class="att img" data-i="${i}"><img src="${x.url}"><div class="aa"><button data-a="edit" title="Tahrirlash">✏</button><button data-a="find" title="Rasm bo'yicha qidirish">🔍</button><button data-a="x" title="Olib tashlash">✕</button></div></div>`
+    :`<div class="att doc" data-i="${i}"><span>${x.err?'⚠':'📄'} ${esc(x.name)}${x.text?` <small>${Math.round(x.text.length/100)/10}k belgi</small>`:x.err?'':' <small>o\'qilmoqda…</small>'}</span><button data-a="x">✕</button></div>`).join('');
+  b.onclick=e=>{const c=e.target.closest('[data-i]'),bt=e.target.closest('button');if(!c)return;const i=+c.dataset.i,it=ATT.items[i];
+    if(!bt){if(it.kind==='image')imgEditor(it.blob,nb=>{it.blob=nb;it.url=URL.createObjectURL(nb);attBar()});return}
+    if(bt.dataset.a==='x'){ATT.items.splice(i,1);attBar()}if(bt.dataset.a==='edit')imgEditor(it.blob,nb=>{it.blob=nb;it.url=URL.createObjectURL(nb);attBar()});
+    if(bt.dataset.a==='find'){ATT.items.splice(i,1);attBar();imageSearch(it.blob)}}}
+async function addFiles(files){for(const f of files){if(/^image\//.test(f.type)){ATT.items.push({kind:'image',name:f.name||'rasm.png',blob:f,url:URL.createObjectURL(f)});continue}
+    const it={kind:'doc',name:f.name||'fayl',file:f};ATT.items.push(it);attBar();
+    try{it.text=(await extractText(f)).slice(0,60000);if(!it.text.trim())throw new Error('faylda matn topilmadi')}catch(e){it.err=e.message;showToast(e.message,'FAYL')}}
+  attBar();$('inp').focus()}
+function pick(accept,capture){const i=document.createElement('input');i.type='file';i.accept=accept;i.multiple=!capture;if(capture)i.capture='environment';i.onchange=()=>{if(i.files.length)addFiles([...i.files])};i.click()}
+(function(){const bar=document.querySelector('.chat .bar');if(!bar)return;const b=document.createElement('button');b.className='btn';b.id='attBtn';b.title='Fayl yoki rasm biriktirish';b.textContent='📎';bar.insertBefore(b,$('inp'));
+  const menu=document.createElement('div');menu.id='attMenu';menu.innerHTML='<button data-k="cam">📷 Kamera — suratga olish</button><button data-k="img">🖼 Rasm tanlash</button><button data-k="file">📄 Fayl (Word, Excel, PDF, matn)</button><button data-k="lens">🔍 Rasm bo\'yicha qidirish</button>';document.body.appendChild(menu);
+  b.onclick=e=>{e.stopPropagation();menu.classList.toggle('open')};document.addEventListener('click',()=>menu.classList.remove('open'));
+  menu.onclick=e=>{const k=e.target.closest('button')?.dataset.k;menu.classList.remove('open');
+    if(k==='cam')pick('image/*',true);if(k==='img')pick('image/*');if(k==='file')pick('.docx,.xlsx,.pptx,.pdf,.txt,.csv,.md,.json,.xml,.html,image/*');
+    if(k==='lens'){const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=()=>{if(i.files[0])imgEditor(i.files[0],null,{lens:true})};i.click()}};
+  $('inp').addEventListener('paste',e=>{const fs=[...(e.clipboardData?.files||[])];if(fs.length){e.preventDefault();addFiles(fs)}});
+  document.addEventListener('dragover',e=>{if(e.dataTransfer?.types?.includes('Files'))e.preventDefault()});
+  document.addEventListener('drop',e=>{if(e.dataTransfer?.files?.length){e.preventDefault();addFiles([...e.dataTransfer.files])}})})();
+function takeAttachments(text){const imgs=ATT.items.filter(x=>x.kind==='image').map(x=>x.blob),docs=ATT.items.filter(x=>x.kind==='doc'&&x.text);
+  const shown=ATT.items.slice();ATT.items=[];attBar();
+  let extra='';docs.forEach(d=>{extra+=`\n\n[Biriktirilgan fayl: ${d.name}]\n"""\n${d.text}\n"""`});
+  return{imgs,extra,shown,text:text||(imgs.length?'Bu rasmda nima bor? Batafsil tushuntir.':docs.length?'Bu faylni o\'qib, qisqa mazmunini ayt va nima qilish kerakligini so\'ra.':'')}}
+/* --- rasm bo'yicha qidiruv (Google Lens kabi) --- */
+async function imageSearch(blob){const N=NAT();
+  ask('Bu rasmdagi narsani aniq aniqla (nima ekanligi, nomi, modeli, joyi). Keyin shunga o\'xshash rasmlarni web.images, ma\'lumot va narxlarni web.search bilan top va menga ko\'rsat. Eng yaxshi 3 variantni qisqa izohla.',{typed:true,images:[blob]});
+  if(N&&N.lens){try{const r=await N.lens({b64:await b2b64(blob),mime:blob.type||'image/jpeg'});if(r&&r.url)window.showMedia('results',[{title:'Google Lens — aynan shu rasm bo\'yicha natijalar',url:r.url,site:r.site||'lens.google.com',snippet:'O\'xshash rasmlar, mahsulotlar va saytlar'}],'rasm bo\'yicha')}catch(e){}}}
+/* --- rasm muharriri --- */
+function imgEditor(blob,onDone,o){o=o||{};const img=new Image();img.onload=()=>openEd(img);img.onerror=()=>showToast('Rasmni ochib bo\'lmadi','RASM');img.src=URL.createObjectURL(blob);
+  function openEd(im){let ed=$('imgEd');if(ed)ed.remove();ed=document.createElement('div');ed.id='imgEd';
+    ed.innerHTML=`<div class="et"><b>✏ RASM MUHARRIRI</b><span class="hint">Barmoq/sichqoncha bilan kerakli joyni belgilang</span><button data-a="close">✕</button></div>
+    <div class="ec"><div class="wrap"><canvas class="cv"></canvas><canvas class="ov"></canvas></div></div>
+    <div class="etools"><button data-m="sel" class="on">⬚ Belgilash</button><button data-m="draw">✏ Chizish</button><button data-m="text">🅣 Matn</button><input type="color" value="#ff3b3b" data-col><button data-a="crop">✂ Kesish</button><button data-a="rot">↻</button><button data-a="flip">⇋</button><button data-a="undo">↶</button></div>
+    <div class="esl"><label>☀<input type="range" min="50" max="160" value="100" data-f="brightness"></label><label>◐<input type="range" min="50" max="180" value="100" data-f="contrast"></label><label>🎨<input type="range" min="0" max="200" value="100" data-f="saturate"></label><button data-a="bw">Oq-qora</button><button data-a="applyf">Qo'llash</button></div>
+    <div class="ep"><input data-q placeholder="Savol yoki AI tahrir buyrug'i (masalan: fonni olib tashla)"></div>
+    <div class="eact"><button data-a="find" class="w">🔍 Qidirish</button><button data-a="ask">🤖 Tahlil</button><button data-a="ai">🪄 AI tahrir</button><button data-a="save">💾 Saqlash</button><button data-a="share">📤</button>${onDone?'<button data-a="done" class="w">✓ Tayyor</button>':''}</div>`;
+    document.body.appendChild(ed);
+    const cv=ed.querySelector('.cv'),ov=ed.querySelector('.ov'),ctx=cv.getContext('2d'),oc=ov.getContext('2d');
+    const MAX=2400;let sc=Math.min(1,MAX/Math.max(im.width,im.height));cv.width=Math.round(im.width*sc);cv.height=Math.round(im.height*sc);ctx.drawImage(im,0,0,cv.width,cv.height);
+    const hist=[];const snap=()=>{hist.push(ctx.getImageData(0,0,cv.width,cv.height));if(hist.length>12)hist.shift()};
+    let mode='sel',sel=null,drag=null,col='#ff3b3b',bw=false;const F={brightness:100,contrast:100,saturate:100};
+    function fit(){const box=ed.querySelector('.ec');const k=Math.min(box.clientWidth/cv.width,box.clientHeight/cv.height,1)||1;
+      [cv,ov].forEach(c=>{c.style.width=cv.width*k+'px';c.style.height=cv.height*k+'px'});ov.width=cv.width;ov.height=cv.height;
+      cv.style.filter=`brightness(${F.brightness}%) contrast(${F.contrast}%) saturate(${F.saturate}%)${bw?' grayscale(1)':''}`;drawOv()}
+    function drawOv(){oc.clearRect(0,0,ov.width,ov.height);if(!sel)return;const{x,y,w,h}=norm(sel);oc.fillStyle='rgba(0,0,0,.45)';oc.fillRect(0,0,ov.width,ov.height);oc.clearRect(x,y,w,h);
+      oc.strokeStyle='#3fd2ff';oc.lineWidth=Math.max(2,cv.width/300);oc.setLineDash([12,8]);oc.strokeRect(x,y,w,h)}
+    const norm=s=>({x:Math.min(s.x0,s.x1),y:Math.min(s.y0,s.y1),w:Math.abs(s.x1-s.x0),h:Math.abs(s.y1-s.y0)});
+    const pt=e=>{const r=ov.getBoundingClientRect();return{x:(e.clientX-r.left)*ov.width/r.width,y:(e.clientY-r.top)*ov.height/r.height}};
+    ov.addEventListener('pointerdown',e=>{ov.setPointerCapture(e.pointerId);const p=pt(e);
+      if(mode==='sel'){sel={x0:p.x,y0:p.y,x1:p.x,y1:p.y};drag='sel'}
+      else if(mode==='draw'){snap();drag='draw';ctx.strokeStyle=col;ctx.lineWidth=Math.max(3,cv.width/150);ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(p.x,p.y)}
+      else if(mode==='text'){const t=prompt('Matn:');if(t){snap();const fs=Math.max(18,cv.width/18);ctx.font=`bold ${fs}px sans-serif`;ctx.fillStyle=col;ctx.strokeStyle='rgba(0,0,0,.7)';ctx.lineWidth=fs/10;ctx.strokeText(t,p.x,p.y);ctx.fillText(t,p.x,p.y)}}});
+    ov.addEventListener('pointermove',e=>{if(!drag)return;const p=pt(e);if(drag==='sel'){sel.x1=p.x;sel.y1=p.y;drawOv()}else{ctx.lineTo(p.x,p.y);ctx.stroke()}});
+    ov.addEventListener('pointerup',()=>{if(drag==='sel'&&sel){const n=norm(sel);if(n.w<12||n.h<12)sel=null;drawOv()}drag=null});
+    function bake(){const t=document.createElement('canvas');t.width=cv.width;t.height=cv.height;const c=t.getContext('2d');c.filter=cv.style.filter||'none';c.drawImage(cv,0,0);return t}
+    function region(){const b=bake();if(!sel)return b;const{x,y,w,h}=norm(sel);const t=document.createElement('canvas');t.width=Math.round(w);t.height=Math.round(h);t.getContext('2d').drawImage(b,x,y,w,h,0,0,w,h);return t}
+    const toBlob=(c,q)=>new Promise(r=>c.toBlob(r,'image/jpeg',q||.9));
+    function setCanvas(src){snap();cv.width=src.width;cv.height=src.height;ctx.drawImage(src,0,0);Object.assign(F,{brightness:100,contrast:100,saturate:100});bw=false;ed.querySelectorAll('[data-f]').forEach(s=>s.value=100);sel=null;fit()}
+    ed.addEventListener('input',e=>{const f=e.target.dataset.f;if(f){F[f]=+e.target.value;fit()}if(e.target.hasAttribute('data-col'))col=e.target.value});
+    ed.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;
+      if(b.dataset.m){mode=b.dataset.m;ed.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x===b));return}
+      const a=b.dataset.a,q=ed.querySelector('[data-q]').value.trim();
+      if(a==='close'){ed.remove();return}
+      if(a==='crop'){if(!sel){showToast('Avval kesiladigan joyni belgilang (⬚ Belgilash)','RASM');return}setCanvas(region());return}
+      if(a==='rot'){const t=document.createElement('canvas');t.width=cv.height;t.height=cv.width;const c=t.getContext('2d');c.translate(t.width,0);c.rotate(Math.PI/2);c.drawImage(cv,0,0);setCanvas(t);return}
+      if(a==='flip'){const t=document.createElement('canvas');t.width=cv.width;t.height=cv.height;const c=t.getContext('2d');c.translate(t.width,0);c.scale(-1,1);c.drawImage(cv,0,0);setCanvas(t);return}
+      if(a==='undo'){const h=hist.pop();if(h){cv.width=h.width;cv.height=h.height;ctx.putImageData(h,0,0);fit()}return}
+      if(a==='bw'){bw=!bw;fit();return}
+      if(a==='applyf'){setCanvas(bake());return}
+      if(a==='find'){const bl=await toBlob(region());ed.remove();imageSearch(bl);return}
+      if(a==='ask'){const bl=await toBlob(region());ed.remove();ask(q||'Bu rasmda nima bor? Batafsil tushuntir; matn bo\'lsa o\'qib ber.',{typed:true,images:[bl]});return}
+      if(a==='ai'){const N=NAT();if(!N||!N.imgEdit){showToast('AI tahrir telefon yoki kompyuter ilovasida ishlaydi','RASM');return}if(!q){showToast('Pastdagi maydonga nima qilishni yozing (masalan: fonni oq qil)','RASM');return}
+        b.textContent='⏳…';const r=await N.imgEdit({b64:await b2b64(await toBlob(bake())),mime:'image/jpeg',prompt:q});b.textContent='🪄 AI tahrir';
+        if(r.error){showToast('AI tahrir: '+r.error,'RASM');return}const ni=new Image();ni.onload=()=>setCanvas(ni);ni.src='data:'+(r.mime||'image/png')+';base64,'+r.b64;return}
+      if(a==='save'||a==='share'){const bl=await toBlob(bake(),.95);saveBlob(bl,'jarvis-rasm-'+Date.now()+'.jpg',a==='share');return}
+      if(a==='done'){const bl=await toBlob(bake(),.92);ed.remove();onDone&&onDone(bl)}});
+    addEventListener('resize',fit);setTimeout(fit,30);if(o.lens)showToast('Kerakli joyni belgilang va 🔍 Qidirish ni bosing','RASM')}}
+/* --- faylni saqlash / ulashish --- */
+async function saveBlob(blob,name,share){const N=NAT();
+  if(N&&N.saveFile){const r=await N.saveFile({b64:await b2b64(blob),name,mime:blob.type,share:!!share});if(r&&r.error)showToast(r.error,'SAQLASH');else showToast((share?'Ulashish oynasi ochildi':'Saqlandi: '+(r&&r.path||name)),'SAQLASH');return r}
+  if(DLS){try{await DLS.save({filename:name,data:blob});return{ok:true}}catch(e){if(e&&e.code==='declined')return}}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove()}
+/* --- DOCX yaratish (Word) --- */
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return u=>{let c=0xFFFFFFFF;for(let i=0;i<u.length;i++)c=t[(c^u[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0}})();
+function zipStore(files){const enc=new TextEncoder();const parts=[],cent=[];let off=0;
+  for(const[name,content]of files){const nb=enc.encode(name),data=typeof content==='string'?enc.encode(content):content,crc=CRC(data);
+    const h=new DataView(new ArrayBuffer(30));h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,nb.length,true);
+    parts.push(new Uint8Array(h.buffer),nb,data);
+    const c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);c.setUint16(28,nb.length,true);c.setUint32(42,off,true);
+    cent.push(new Uint8Array(c.buffer),nb);off+=30+nb.length+data.length}
+  const cl=cent.reduce((a,b)=>a+b.length,0);const e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cl,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...cent,new Uint8Array(e.buffer)],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})}
+const xe=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function runs(t,base){base=base||{};const out=[];t.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/).forEach(p=>{if(!p)return;let b=base.b,i=base.i,s=p;if(/^\*\*.*\*\*$/.test(p)){b=true;s=p.slice(2,-2)}else if(/^\*.*\*$/.test(p)){i=true;s=p.slice(1,-1)}
+  out.push(`<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>${b?'<w:b/>':''}${i?'<w:i/>':''}<w:sz w:val="${base.sz||28}"/></w:rPr><w:t xml:space="preserve">${xe(s)}</w:t></w:r>`)});return out.join('')}
+function para(t,o){o=o||{};return `<w:p><w:pPr>${o.jc?`<w:jc w:val="${o.jc}"/>`:'<w:jc w:val="both"/>'}<w:spacing w:after="${o.after==null?80:o.after}" w:line="276" w:lineRule="auto"/>${o.ind?'<w:ind w:firstLine="709"/>':''}${o.left?`<w:ind w:left="${o.left}" w:hanging="300"/>`:''}</w:pPr>${runs(t,o)}</w:p>`}
+function mdToDocx(md){const L=String(md).replace(/\r/g,'').split('\n');let body='',i=0;
+  while(i<L.length){let l=L[i];
+    if(/^\s*\|.*\|\s*$/.test(l)){const rows=[];while(i<L.length&&/^\s*\|.*\|\s*$/.test(L[i])){if(!/^\s*\|[\s:|-]+\|\s*$/.test(L[i]))rows.push(L[i].trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim()));i++}
+      const nc=Math.max(...rows.map(r=>r.length));const bd='<w:tblBorders>'+['top','left','bottom','right','insideH','insideV'].map(k=>`<w:${k} w:val="single" w:sz="4" w:color="000000"/>`).join('')+'</w:tblBorders>';
+      body+=`<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/>${bd}</w:tblPr><w:tblGrid>${'<w:gridCol/>'.repeat(nc)}</w:tblGrid>`+rows.map((r,ri)=>'<w:tr>'+Array.from({length:nc},(_,k)=>`<w:tc><w:tcPr><w:tcW w:w="0" w:type="auto"/></w:tcPr>${para(r[k]||'',{jc:ri===0?'center':'left',b:ri===0,sz:24,after:0})}</w:tc>`).join('')+'</w:tr>').join('')+'</w:tbl>'+para('',{after:0});continue}
+    let m;
+    if(m=l.match(/^(#{1,3})\s+(.*)/))body+=para(m[2],{jc:m[1].length===1?'center':'left',b:true,sz:m[1].length===1?30:28,after:160});
+    else if(m=l.match(/^\s*[-*•]\s+(.*)/))body+=para('• '+m[1],{left:709});
+    else if(m=l.match(/^\s*(\d+[.)])\s+(.*)/))body+=para(m[1]+' '+m[2],{left:709});
+    else if(/^\s*(---|___)\s*$/.test(l))body+=para('',{after:120});
+    else if(m=l.match(/^>>\s*(.*)/))body+=para(m[1],{jc:'right'});
+    else if(m=l.match(/^::\s*(.*)/))body+=para(m[1],{jc:'center'});
+    else if(l.trim())body+=para(l.trim(),{ind:true});
+    i++}
+  const doc=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="850" w:bottom="1134" w:left="1701" w:header="709" w:footer="709" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+  return zipStore([['[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'],
+    ['_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'],
+    ['word/document.xml',doc]])}
+function docCard(title,blob,fname,mdText){const host=S.curMsg&&S.curMsg.isConnected?S.curMsg:addMsg('j','');const box=document.createElement('div');box.className='media';
+  box.innerHTML=`<div class="docCard"><div class="di">📄</div><div class="dn"><b>${esc(fname)}</b><small>${Math.max(1,Math.round(blob.size/1024))} KB · tayyor</small></div></div><div class="mact" style="padding:0"><button data-a="save">💾 Saqlash</button><button data-a="view">👁 Ko'rish</button><button data-a="share">📤 Ulashish</button>${connectorTools().some(t=>t.name==='gdrive')?'<button data-a="drive">☁ Drive\'ga</button>':''}<button data-a="copy">⧉ Matn</button></div>`;
+  host.appendChild(box);$('log').scrollTop=1e9;
+  box.onclick=async e=>{const a=e.target.closest('button')?.dataset.a;if(!a)return;
+    if(a==='save')saveBlob(blob,fname);if(a==='share')saveBlob(blob,fname,true);
+    if(a==='copy')copyLink(mdText);
+    if(a==='view')openWin('doc'+Date.now(),'📄 '+title,w=>{w.body.innerHTML='<div style="background:#fff;color:#000;padding:28px 30px;font:15px/1.5 \'Times New Roman\',serif;min-height:100%"></div>';w.body.firstChild.innerHTML=window.mdRender(mdText)});
+    if(a==='drive'){try{e.target.textContent='⏳…';await gCall('Google Drive','create_file',{title,textContent:mdText.replace(/\*\*/g,''),contentMimeType:'text/plain'},true);e.target.textContent='✓ Drive\'da (Google Doc)'}catch(er){e.target.textContent='☁ Drive\'ga';showToast(er.message,'DRIVE')}}}}
+window.mdRender=t=>md(t);
+TOOLS.push({name:'make_document',description:'Tayyor fayl (hujjat) yaratadi va foydalanuvchiga saqlash, ko\'rish, ulashish, Drive\'ga yuklash tugmalari bilan ko\'rsatadi. Foydalanuvchi hujjat, dalolatnoma, xat, ariza, hisobot, jadval yarat desa yoki biriktirilgan fayl asosida hujjat so\'rasa — matnni to\'liq yozib SHU vosita bilan fayl qil. format: docx (Word, standart), txt, md, html, csv. content — markdown: # sarlavha (markazda), ## bo\'lim, **qalin**, - ro\'yxat, | jadval | qatorlari |, ">> matn" — o\'ngga, ":: matn" — markazga.',
+  inputSchema:{type:'object',properties:{title:{type:'string'},content:{type:'string'},format:{type:'string',enum:['docx','txt','md','html','csv']}},required:['title','content']},
+  execute:async a=>{const f=a.format||'docx';const safe=String(a.title||'hujjat').replace(/[\\/:*?"<>|]+/g,' ').trim().slice(0,80)||'hujjat';let blob;
+    if(f==='docx')blob=mdToDocx(a.content);else if(f==='html')blob=new Blob([`<!doctype html><meta charset="utf-8"><title>${esc(a.title)}</title><body style="font:16px/1.5 'Times New Roman',serif;max-width:800px;margin:30px auto">${md(a.content)}</body>`],{type:'text/html'});
+    else blob=new Blob(['﻿'+a.content],{type:f==='csv'?'text/csv':'text/plain'});
+    const fname=safe+'.'+f;docCard(a.title,blob,fname,a.content);act('📄 hujjat yaratildi: '+fname);return `"${fname}" fayli tayyor va foydalanuvchiga ko'rsatildi (saqlash, ko'rish, ulashish tugmalari bilan). Javobda qisqa ayt: hujjat tayyor.`}});
+/* --- "Jarvis" chaqirilganda javob --- */
+const WAKE_REPLY=['Labbay, ser! Nima xohlaysiz?','Labbay, ser. Nima ish qilay?','Eshitaman, ser. Nimani topib beray?','Labbay! Buyuring, ser.','Xizmatingizdaman, ser. Nima qilamiz?','Labbay, ser. Qanday yordam kerak?'];
+let lastWR=-1;
+window.wakeGreet=async function(){let i;do{i=Math.floor(Math.random()*WAKE_REPLY.length)}while(i===lastWR&&WAKE_REPLY.length>1);lastWR=i;const t=WAKE_REPLY[i];
+  wakeHint(t,true);W.muteUntil=Date.now()+15000;try{await speak(t)}catch(e){}W.muteUntil=Date.now()+350;return t};
+
 /* ============ INPUT ============ */
 $('send').onclick=()=>ask($('inp').value,{typed:true});
 $('inp').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask($('inp').value,{typed:true})}};
@@ -1690,11 +1888,11 @@ function wakeStart(){ // must be called directly from a click, or best-effort af
   return dict.start().then(()=>{W.running=true;W.restartFails=0;wakeUI();return true})
     .catch(e=>{micErr(e);W.running=false;wakeUI();return false})}
 function wakeOn(){W.on=true;W.await=false;try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();actx.resume&&actx.resume()}catch(e){}
-  try{localStorage.setItem('jarvis_wake','1')}catch(e){}
+  try{localStorage.setItem('jarvis_wake','1');localStorage.setItem('jarvis_wake_auto','1')}catch(e){}
   stopSpeak();wakeStart();wakeUI()}
 function wakeOff(){W.on=false;W.await=false;clearTimeout(W.awaitTimer);try{localStorage.removeItem('jarvis_wake')}catch(e){}
   if(listening&&dict)dict.stop().catch(()=>{});W.running=false;wakeUI()}
-$('wake').onclick=()=>{if(W.on&&W.running)wakeOff();else wakeOn()};
+$('wake').onclick=()=>{if(W.on&&W.running){wakeOff();try{localStorage.setItem('jarvis_wake_auto','0')}catch(e){}}else wakeOn()};
 $('core').onclick=()=>{if(!dict)return;if(!W.on||!W.running)wakeOn()};
 async function wakeCommand(cmd){
   W.await=false;clearTimeout(W.awaitTimer);beep(1320,990);
@@ -1705,13 +1903,16 @@ async function wakeCommand(cmd){
 }
 function handleWakeFinal(text){
   const t=text.trim();if(!t)return;
+  if(Date.now()<(W.muteUntil||0)||S.mode==='speaking')return;
+  if(W.await&&Date.now()-(W.greetAt||0)<5000&&/labbay|xohlaysiz|ish qilay|topib beray|eshitaman|buyuring|xizmatingiz|yordam kerak/i.test(t))return;
   if($('modal').classList.contains('on')){voiceControl(t);return}
   if(W.await){wakeCommand(t);return}
   const m=t.match(WAKE);if(!m)return;
   const rest=t.slice(m.index+m[0].length).trim();
   if(rest.length>2){wakeCommand(rest);return}
-  W.await=true;beep();setMode('listening');wakeUI();
-  clearTimeout(W.awaitTimer);W.awaitTimer=setTimeout(()=>{W.await=false;if(S.mode==='listening')setMode('idle');wakeUI()},9000);
+  W.await=true;W.greetAt=Date.now();wakeUI();clearTimeout(W.awaitTimer);
+  (async()=>{await window.wakeGreet();W.greetAt=Date.now();setMode('listening');wakeUI();
+    clearTimeout(W.awaitTimer);W.awaitTimer=setTimeout(()=>{W.await=false;if(S.mode==='listening')setMode('idle');wakeUI()},10000)})();
 }
 
 /* ============ TABS (mobile) ============ */
@@ -1745,6 +1946,10 @@ greet();
   sample=sm?wrapSample(sm):null;dict=dc;tts=tt;db=dbb;mcp=mc;initGoogle().then(()=>{memUI();if(GM.on)gmLoad(false)}).then(preloadSchemas).catch(()=>{});
   setStat('Ai',sample?(window.JARVIS_DESKTOP?'bepul modellar':'Claude'):'oflayn',!!sample);
   if(dict){$('mic').style.display='';$('wake').style.display='';setStat('Mic','tayyor',true);
+    // doim tayyor: ilovada "Jarvis" tinglash o'zi yoqiladi va uzilsa qayta ulanadi
+    if(window.JARVIS_DESKTOP){const auto=()=>{try{return localStorage.getItem('jarvis_wake_auto')!=='0'}catch(e){return true}};
+      setTimeout(()=>{if(auto()&&!W.on)wakeOn()},1500);
+      setInterval(()=>{if(auto()&&!document.hidden&&!S.busy&&!listening&&S.mode!=='speaking'&&!W.await){if(!W.on)wakeOn();else if(!W.running){W.restartFails=0;wakeStart()}}},8000)}
     dict.onPartial(({text})=>{
       if(W.on){if(W.await)$('inp').value=text;else if(WAKE.test(text)){setMode('listening');wakeHint('Labbay, ser…',true)}return}
       $('inp').value=dictBase+dictText+text});

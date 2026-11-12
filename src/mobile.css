@@ -79,7 +79,7 @@ body.mob .modal{align-items:flex-end}
 body.mob .modal .box{width:100vw;max-width:none;border-radius:20px 20px 0 0;padding:20px 18px calc(18px + var(--sb));border-width:1px 0 0}
 body.mob .modal .bt{display:flex;gap:10px}
 body.mob .modal .bt button{flex:1;min-height:50px;font-size:16px;border-radius:12px}
-body.mob .toast{left:10px!important;right:10px!important;top:calc(var(--topH) + var(--st) + 8px)!important;bottom:auto!important;max-width:none!important}
+body.mob .toast{transform:none!important;z-index:72!important;left:10px!important;right:10px!important;top:calc(var(--topH) + var(--st) + 8px)!important;bottom:auto!important;max-width:none!important}
 body.mob .lockbar{top:calc(var(--topH) + var(--st))!important}
 
 /* ilovalar varag'i */

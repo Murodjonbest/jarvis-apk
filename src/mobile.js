@@ -127,7 +127,7 @@
   card.addEventListener('click', async e => {
     const b = e.target.closest('[data-w]'); if (!b || !WakeP) return; const a = b.dataset.w;
     try {
-      if (a === 'toggle') { const st = await wst(); if (st && st.running) await WakeP.stop(); else { await WakeP.start(); toast("🌙 Endi ekran o'chiq bo'lsa ham \"Jarvis\" deng"); } }
+      if (a === 'toggle') { const st = await wst(); if (st && st.running) { await WakeP.stop(); try { localStorage.setItem('jn_wake_auto', '0'); } catch (e) {} } else { try { localStorage.setItem('jn_wake_auto', '1'); } catch (e) {} await WakeP.start(); toast("🌙 Endi ekran o'chiq bo'lsa ham \"Jarvis\" deng"); } }
       if (a === 'overlay') await WakeP.askOverlay(); if (a === 'battery') await WakeP.askBattery(); if (a === 'app') await WakeP.appSettings();
     } catch (er) { toast(er.message || String(er)); }
     setTimeout(drawWake, 800);
@@ -136,11 +136,15 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(drawWake, 500); });
   drawWake();
   // xizmat "Jarvis"ni eshitib ilovani ochganda — buyruqni tinglashni boshlaymiz
-  window.onNativeWake = function () {
+  window.onNativeWake = async function () {
     show('center');
-    try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}
+    try { if (typeof W !== 'undefined' && W.on && W.running && typeof handleWakeFinal === 'function') { handleWakeFinal('Jarvis'); return; } } catch (e) {}
+    try { if (window.wakeGreet) await window.wakeGreet(); } catch (e) {}
     const mic = $('mic'); if (mic && !mic.classList.contains('rec')) mic.click();
   };
+  // doim tayyor: fon xizmati o'zi yoqiladi (o'chirib qo'ymagan bo'lsangiz)
+  setTimeout(async () => { if (!WakeP) return; let off = false; try { off = localStorage.getItem('jn_wake_auto') === '0'; } catch (e) {}
+    const st = await wst(); if (st && st.mic && !st.running && !off) { try { await WakeP.start(); } catch (e) {} drawWake(); } }, 4000);
 
   show('center'); syncState();
   addEventListener('resize', () => { if (view && !$({ left: 'leftCol', center: 'centerCol', right: 'rightCol' }[view])?.classList.contains('show')) show(view); });
