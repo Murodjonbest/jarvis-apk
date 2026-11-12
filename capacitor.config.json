@@ -1,0 +1,8 @@
+{
+  "appId": "uz.murodjon.jarvis",
+  "appName": "JARVIS",
+  "webDir": "www",
+  "android": { "allowMixedContent": false, "backgroundColor": "#03080f" },
+  "server": { "androidScheme": "https" },
+  "plugins": { "CapacitorHttp": { "enabled": false } }
+}

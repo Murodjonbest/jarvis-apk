@@ -1,0 +1,66 @@
+name: APK yig'ish
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - name: Veb qismini yig'ish
+        run: |
+          npm ci
+          npm run build
+          npx cap sync android
+      - name: Imzo kaliti (doimiy — yangilanishlar ustidan o'rnatilsin)
+        uses: actions/cache@v4
+        with:
+          path: ~/jarvis-key
+          key: jarvis-signing-key-v1
+      - name: Imzo kalitini tayyorlash
+        env:
+          KS_B64: ${{ secrets.JARVIS_KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.JARVIS_KEY_PASS }}
+        run: |
+          mkdir -p ~/jarvis-key
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > ~/jarvis-key/jarvis.keystore; echo "$KS_PASS" > ~/jarvis-key/pass
+          elif [ ! -f ~/jarvis-key/jarvis.keystore ]; then
+            P=$(openssl rand -hex 16); echo "$P" > ~/jarvis-key/pass
+            keytool -genkeypair -keystore ~/jarvis-key/jarvis.keystore -alias jarvis -keyalg RSA -keysize 2048 -validity 10000 -storepass "$P" -keypass "$P" -dname "CN=Jarvis, C=UZ"
+          fi
+          echo "::add-mask::$(cat ~/jarvis-key/pass)"
+          echo "JARVIS_KEYSTORE=$HOME/jarvis-key/jarvis.keystore" >> $GITHUB_ENV
+          echo "JARVIS_KEY_PASS=$(cat ~/jarvis-key/pass)" >> $GITHUB_ENV
+      - name: APK yig'ish
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+          cp app/build/outputs/apk/release/app-release.apk ../Jarvis.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Jarvis-apk
+          path: Jarvis.apk
+      - name: Telefon uchun yuklab olish sahifasi (Releases)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v2.0.${{ github.run_number }}
+          name: JARVIS v2.0.${{ github.run_number }}
+          make_latest: true
+          files: Jarvis.apk
+          body: |
+            📱 Telefonga o'rnatish: pastdagi **Jarvis.apk** ni bosing → yuklab oling → oching → "Noma'lum manbalardan o'rnatish"ga ruxsat bering → O'rnatish.
+            Eng so'nggi versiya doim: https://github.com/${{ github.repository }}/releases/latest/download/Jarvis.apk
