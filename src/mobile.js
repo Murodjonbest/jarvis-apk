@@ -6,13 +6,13 @@
 
   /* ---- yuqori panel ---- */
   const top = document.createElement('header'); top.id = 'mTop';
-  top.innerHTML = '<div class="mb"><b>J.A.R.V.I.S.</b><small id="mState">TAYYOR</small></div><button id="mLive" title="Gemini bilan jonli suhbat">🎙 Jonli</button><button id="mStop" title="Hammasini to\'xtatish">⛔</button>';
+  top.innerHTML = '<div id="mOrb"></div><div class="mb"><b>JARVIS</b><small id="mState">tayyor</small></div><button id="mLive" title="Gemini bilan jonli suhbat">🎙</button><button id="mStop" title="Hammasini to\'xtatish">⛔</button>';
   document.body.appendChild(top);
   $('mStop').onclick = () => $('estop') && $('estop').click();
   $('mLive').onclick = () => { const b = $('liveBtn'); if (b) b.click(); else toast('Jonli suhbat uchun Gemini kaliti kerak (⚙ Sozlash)'); };
 
   /* ---- pastki menyu ---- */
-  const NAV = [['center', '💬', 'Jarvis'], ['left', '🛰', 'Tizim'], ['right', '📋', 'Eslatma'], ['apps', '🧰', 'Ilovalar'], ['set', '⚙', 'Sozlash']];
+  const NAV = [['center', '💬', 'Suhbat'], ['right', '📋', 'Eslatma'], ['apps', '🧩', 'Ilovalar'], ['left', '📊', 'Holat'], ['set', '⚙', 'Sozlash']];
   const nav = document.createElement('nav'); nav.id = 'mNav';
   nav.innerHTML = NAV.map(([v, i, t]) => `<button data-v="${v}"><span class="i">${i}</span>${t}<span class="badge"></span></button>`).join('');
   document.body.appendChild(nav);
@@ -61,14 +61,29 @@
   function syncState() {
     const s = $('stateTxt'); const m = $('mState'); if (!s || !m) return;
     const t = (s.textContent || 'TAYYOR').trim(); if (m.textContent !== t) m.textContent = t; m.classList.toggle('busy', !/TAYYOR|KUTISH|READY/i.test(t));
+    const o = $('mOrb'); if (o) { const md = (typeof S !== 'undefined' && S.mode) || 'idle'; o.className = /think/.test(md) ? 'thinking' : /listen/.test(md) ? 'listening' : /speak/.test(md) ? 'speaking' : ''; }
     const lb = $('liveBtn'); $('mLive').classList.toggle('on', !!(lb && /\b(on|active|rec)\b/.test(lb.className)));
   }
   setTimeout(() => { const s = $('stateTxt'); if (s) new MutationObserver(syncState).observe(s, { subtree: true, childList: true, characterData: true });
     const lb = $('liveBtn'); if (lb) new MutationObserver(syncState).observe(lb, { attributes: true, attributeFilter: ['class'] }); syncState(); }, 1200);
 
   /* ---- oynalar: orqaga tugmasi, ochilganda menyu holati ---- */
+  /* Sozlamalar oynasi: bo'limlar yig'iladigan (akkordeon), eng muhimi tepada */
+  function accordion(w) {
+    const wb = w.querySelector('.wb'); if (!wb) return;
+    const wt = w.querySelector('.wt'); if (wt && /MODELLAR/.test(wt.textContent)) wt.textContent = '⚙ SOZLAMALAR';
+    const run = () => {
+      const g = wb.querySelector('[data-gbox]'); if (g && wb.firstElementChild !== g) wb.prepend(g);
+      wb.querySelectorAll(':scope > .wmsg').forEach(m => {
+        if (m.dataset.acc) return; const h = m.querySelector(':scope > .h'); if (!h) return;
+        m.dataset.acc = 1; m.classList.add('acc'); if (m.hasAttribute('data-gbox') && !/ulangan/.test(m.textContent)) m.classList.add('open');
+        h.addEventListener('click', e => { if (e.target.closest('button,input,select,a')) return; m.classList.toggle('open'); });
+      });
+    };
+    run(); new MutationObserver(() => setTimeout(run, 30)).observe(wb, { childList: true });
+  }
   function decorate(w) {
-    if (w.dataset.mob) return; w.dataset.mob = 1;
+    if (w.dataset.mob) return; w.dataset.mob = 1; setTimeout(() => accordion(w), 60);
     const wh = w.querySelector('.wh'); if (!wh) return;
     const b = document.createElement('button'); b.className = 'mBack'; b.textContent = '‹'; b.title = 'Orqaga';
     b.onclick = e => { e.stopPropagation(); const x = wh.querySelectorAll('button'); x[x.length - 1].click(); };
@@ -90,7 +105,8 @@
   compact();
 
   /* ---- matn maydoni o'zi kattalashadi ---- */
-  const inp = $('inp'); if (inp) inp.addEventListener('input', () => { inp.style.height = 'auto'; inp.style.height = Math.min(inp.scrollHeight, innerHeight * 0.3) + 'px'; });
+  const inp = $('inp'); const hasT = () => document.body.classList.toggle('hastext', !!(inp && inp.value.trim()) || (typeof ATT !== 'undefined' && ATT.items && ATT.items.length > 0));
+  if (inp) { inp.placeholder = 'Xabar yozing…'; inp.addEventListener('input', () => { inp.style.height = 'auto'; inp.style.height = Math.min(inp.scrollHeight, innerHeight * 0.3) + 'px'; hasT(); }); setInterval(hasT, 500); }
 
   /* ---- telefonning "orqaga" tugmasi ---- */
   window.mobBack = function () {
