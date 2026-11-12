@@ -377,13 +377,21 @@
         if(r.results)return shortJSON({korsatildi:r.results.length+' ta sahifa kartochka bo\'lib ko\'rsatildi',natijalar:r.results},8000);
         return shortJSON(r,10000)}});
     // Telegram: incoming messages from phone
-    if(N.onTg)N.onTg(async m=>{addMsg('u','📱 '+m.text);let ans='';
-      try{if(voiceControl(m.text)){N.tgReply(m.id,'✓ Bajarildi.');return}
-        const now=new Date();const d=addMsg('j','…');
-        const r=await sample(sysPrompt()+`\n\n[Hozir: ${fmtDate(now)}, ${pad(now.getHours())}:${pad(now.getMinutes())}]\n[Foydalanuvchi Telegram orqali telefondan yozmoqda — javobni qisqa, markdown belgilarsiz yoz.]\n\n---\nFoydalanuvchi: `+m.text,{tools:allTools(),cache:false,modelTier:'default'});
-        ans=(r.text||'').replace(/\*\*/g,'');setBody(d,r.text||'');S.history.push({role:'user',content:m.text},{role:'assistant',content:ans});noteExchange()}
+    if(N.onTg)N.onTg(async m=>{const um=addMsg('u','📱 '+m.text);let ans='';const imgs=[];let extra='';window.__madeFiles=[];
+      try{if(!m.file&&voiceControl(m.text)){N.tgReply(m.id,'✓ Bajarildi.');return}
+        if(m.file){const bl=b64toBlob(m.file.b64,m.file.mime||'');
+          if(/^image\//.test(m.file.mime)||/\.(jpe?g|png|webp)$/i.test(m.file.name)){imgs.push(bl);const im=document.createElement('img');im.src=URL.createObjectURL(bl);im.style.cssText='width:84px;height:84px;object-fit:cover;border-radius:8px;display:block;margin-top:6px';um.appendChild(im)}
+          else{const fl=new File([bl],m.file.name,{type:m.file.mime||''});try{regFile(m.file.name,new Uint8Array(await bl.arrayBuffer()),m.file.mime)}catch(e){}
+            let tx='';try{tx=(await extractText(fl)).slice(0,60000)}catch(e){tx='(o\'qib bo\'lmadi: '+e.message+')'}
+            extra='\n\n[Biriktirilgan fayl: '+m.file.name+(/\.(docx|xlsx)$/i.test(m.file.name)?' — asl formatida tahrirlash uchun documents vositasida file="'+m.file.name+'"':'')+']\n"""\n'+tx+'\n"""';
+            const d2=document.createElement('div');d2.className='udoc';d2.textContent='📄 '+m.file.name;um.appendChild(d2)}}
+        const now=new Date();const d=addMsg('j','…');S.curMsg=d;
+        const r=await sample(sysPrompt()+`\n\n[Hozir: ${fmtDate(now)}, ${pad(now.getHours())}:${pad(now.getMinutes())}]\n[Foydalanuvchi Telegram orqali telefondan yozmoqda — javobni qisqa, markdown belgilarsiz yoz. Yaratilgan yoki tahrirlangan fayllar unga Telegram'da avtomatik yuboriladi.]\n\n---\nFoydalanuvchi: `+m.text+extra,{tools:allTools(),cache:false,modelTier:'default',...(imgs.length?{images:imgs}:{})});
+        ans=(r.text||'').replace(/\*\*/g,'');setBody(d,r.text||'');S.history.push({role:'user',content:m.text+(m.file?' [fayl: '+m.file.name+']':'')},{role:'assistant',content:ans});noteExchange()}
       catch(e){ans=e&&e.code==='offline'?'📴 Internet yo\'q: '+localBrain(m.text):'✕ '+(e&&e.message||e)}
-      N.tgReply(m.id,ans||'…')});
+      N.tgReply(m.id,ans||'…');
+      const made=window.__madeFiles||[];window.__madeFiles=null;
+      for(const f of made){try{const b64=await b2b64(f.blob);await N.tgSendFile({name:f.name,b64,mime:f.blob.type,caption:'📄 '+f.name})}catch(e){}}});
     if(N.onTgPaired)N.onTgPaired(n=>{try{showToast('Telegram ulandi: '+n,'TELEGRAM');act('📱 Telegram ulandi')}catch(e){}if(WINS.models){closeWin('models');window.openModelSettings()}});
   });
   // settings section

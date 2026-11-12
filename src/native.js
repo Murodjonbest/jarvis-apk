@@ -396,6 +396,27 @@
     return { ok: true, path: where || nm, uri };
   }
 
+  /* ---------- NAMUNALAR: Google Drive'da (hamma qurilmada) ---------- */
+  const tplFile = n => 'namuna__' + String(n).replace(/['\\\/:*?"<>|]+/g, '_').slice(0, 80) + '.json';
+  async function tplFind(folder, n) { const q = encodeURIComponent(`name = '${tplFile(n)}' and '${folder}' in parents and trashed = false`); return ((await (await gfetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)&pageSize=3`)).json()).files || [])[0]; }
+  async function tplPut({ name, json }) {
+    try { const folder = await memFolder(); const ex = await tplFind(folder, name); let desc = ''; try { desc = (JSON.parse(json).desc || '').slice(0, 200); } catch (e) {}
+      if (ex) { await gfetch(`https://www.googleapis.com/upload/drive/v3/files/${ex.id}?uploadType=media`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: json }); return { ok: true }; }
+      const bd = 'jrv' + Date.now();
+      await gfetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', { method: 'POST', headers: { 'Content-Type': 'multipart/related; boundary=' + bd },
+        body: `--${bd}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name: tplFile(name), parents: [folder], mimeType: 'application/json', description: name + (desc ? ' — ' + desc : ''), appProperties: { jarvisTpl: '1' } })}\r\n--${bd}\r\nContent-Type: application/json\r\n\r\n${json}\r\n--${bd}--` });
+      return { ok: true };
+    } catch (e) { return { error: e.message }; }
+  }
+  async function tplList() {
+    try { const folder = await memFolder(); const q = encodeURIComponent(`name contains 'namuna__' and '${folder}' in parents and trashed = false`);
+      const fl = ((await (await gfetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,description,modifiedTime)&pageSize=100`)).json()).files || []);
+      return { items: fl.map(f => { const d = f.description || ''; const i = d.indexOf(' — '); return { name: i > 0 ? d.slice(0, i) : (d || f.name.replace(/^namuna__|\.json$/g, '')), desc: i > 0 ? d.slice(i + 3) : '', at: Date.parse(f.modifiedTime) || 0 }; }) };
+    } catch (e) { return { error: e.message }; }
+  }
+  async function tplGet({ name }) { try { const folder = await memFolder(); const ex = await tplFind(folder, name); if (!ex) return { error: 'yo\'q' }; return { json: await (await gfetch(`https://www.googleapis.com/drive/v3/files/${ex.id}?alt=media`)).text() }; } catch (e) { return { error: e.message }; } }
+  async function tplDel({ name }) { try { const folder = await memFolder(); const ex = await tplFind(folder, name); if (ex) await gfetch(`https://www.googleapis.com/drive/v3/files/${ex.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trashed: true }) }); return { ok: true }; } catch (e) { return { error: e.message }; } }
+
   /* ---------- TELEFONNI BOSHQARISH (kompyuterdagi "pc" o'rniga) ---------- */
   const APPS = { telegram: 'tg://resolve', youtube: 'https://www.youtube.com', 'yutub': 'https://www.youtube.com', xarita: 'geo:0,0', maps: 'geo:0,0', 'google xarita': 'geo:0,0', chrome: 'https://www.google.com', brauzer: 'https://www.google.com', google: 'https://www.google.com',
     gmail: 'https://mail.google.com', pochta: 'https://mail.google.com', kalendar: 'https://calendar.google.com', drive: 'https://drive.google.com', whatsapp: 'whatsapp://send', instagram: 'https://instagram.com', 'play market': 'market://search?q=', 'sozlamalar': 'intent:#Intent;action=android.settings.SETTINGS;end', settings: 'intent:#Intent;action=android.settings.SETTINGS;end',
@@ -540,13 +561,18 @@
           if (!owner) { if (TG.code && txt0 === TG.code) { tgSave({ owner: chat, ownerName: m.from.first_name || '' }); TG.code = ''; await tgSend(chat, '✅ Ulandingiz, ser. Endi menga yozing yoki ovozli xabar yuboring.'); TG.onPaired && TG.onPaired(m.from.first_name || ''); }
             else await tgSend(chat, 'Jarvis: ulanish kodini yuboring (Jarvis → ⚙ Modellar → Telegram).'); continue; }
           if (chat !== owner) { await tgSend(chat, '⛔ Bu Jarvis faqat egasi uchun ishlaydi.'); continue; }
-          let text = txt0;
-          try { if (m.voice || m.audio) { await tgApi('sendChatAction', { chat_id: chat, action: 'typing' }); text = await tgVoiceToText((m.voice || m.audio).file_id); if (text) await tgSend(chat, '🎙 ' + text); } }
+          let text = txt0 || (m.caption || '').trim(); let file = null;
+          try { if (m.voice || m.audio) { await tgApi('sendChatAction', { chat_id: chat, action: 'typing' }); text = await tgVoiceToText((m.voice || m.audio).file_id); if (text) await tgSend(chat, '🎙 ' + text); }
+            else if (m.photo || m.document) { const fo = m.photo ? m.photo[m.photo.length - 1] : m.document; if ((fo.file_size || 0) > 20e6) throw new Error('Fayl 20 MB dan katta'); await tgApi('sendChatAction', { chat_id: chat, action: 'upload_document' });
+              const fi = await tgApi('getFile', { file_id: fo.file_id }); if (!fi.ok) throw new Error('Faylni olib bo\'lmadi');
+              const buf = await fetchBin(`https://api.telegram.org/file/bot${tgCfg().token}/${fi.result.file_path}`, 60000);
+              file = { name: m.document ? (m.document.file_name || 'fayl') : 'rasm.jpg', mime: m.document ? (m.document.mime_type || '') : 'image/jpeg', b64: bytesToB64(buf) };
+              if (!text) text = m.photo ? 'Bu rasmda nima bor?' : 'Shu faylni o\'qib, qisqa mazmunini ayt.'; } }
           catch (er) { await tgSend(chat, '✕ ' + er.message); continue; }
           if (!text) continue; await tgApi('sendChatAction', { chat_id: chat, action: 'typing' });
           const id = 'tg' + up.update_id;
           const p = new Promise(res => { TG.pending.set(id, res); setTimeout(() => { if (TG.pending.has(id)) { TG.pending.delete(id); res('⌛ Jarvis javob bermadi (ilova ochiqmi?).'); } }, 180000); });
-          if (TG.onIn) TG.onIn({ id, text }); else TG.pending.get(id)('Jarvis tayyor emas.');
+          if (TG.onIn) TG.onIn({ id, text, file }); else TG.pending.get(id)('Jarvis tayyor emas.');
           p.then(ans => tgSend(chat, ans).catch(() => {}));
         }
       } catch (er) { await new Promise(r => setTimeout(r, 8000)); }

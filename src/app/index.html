@@ -461,8 +461,8 @@ function draw(now){
 requestAnimationFrame(draw);
 
 /* ============ STORAGE ============ */
-function lsSave(){try{localStorage.setItem('jarvis_state',JSON.stringify({notes:S.notes,reminders:S.reminders,knowledge:S.knowledge,locked:S.locked,convos:S.convos||[],skills:S.skills,brain:S.brain||[],tomb:S.tomb||{},secrets:S.secrets||null,routines:S.routines||[],soul:S.soul||null}))}catch(e){}}
-function lsLoad(){try{const v=JSON.parse(localStorage.getItem('jarvis_state')||'null');if(v){S.notes=v.notes||[];S.reminders=v.reminders||[];if(v.knowledge)S.knowledge=Object.assign(S.knowledge,v.knowledge);S.locked=!!v.locked;S.convos=v.convos||[];if(v.skills)S.skills=v.skills;if(v.brain)S.brain=v.brain;S.tomb=v.tomb||{};S.secrets=v.secrets||null;S.routines=v.routines||[];S.soul=v.soul||null}}catch(e){}}
+function lsSave(){try{localStorage.setItem('jarvis_state',JSON.stringify({notes:S.notes,reminders:S.reminders,knowledge:S.knowledge,locked:S.locked,convos:S.convos||[],skills:S.skills,brain:S.brain||[],tomb:S.tomb||{},secrets:S.secrets||null,routines:S.routines||[],soul:S.soul||null,measures:S.measures||[]}))}catch(e){}}
+function lsLoad(){try{const v=JSON.parse(localStorage.getItem('jarvis_state')||'null');if(v){S.notes=v.notes||[];S.reminders=v.reminders||[];if(v.knowledge)S.knowledge=Object.assign(S.knowledge,v.knowledge);S.locked=!!v.locked;S.convos=v.convos||[];if(v.skills)S.skills=v.skills;if(v.brain)S.brain=v.brain;S.tomb=v.tomb||{};S.secrets=v.secrets||null;S.routines=v.routines||[];S.soul=v.soul||null;S.measures=v.measures||[]}}catch(e){}}
 let saveTimer=null;
 function save(){lsSave();renderLists();try{renderKB()}catch(e){}clearTimeout(saveTimer);
   if(typeof GM!=='undefined'&&GM.on){S.memUpdated=Date.now();gmSchedule();return}
@@ -679,6 +679,8 @@ Qoidalar:
 - HAR QANDAY ISHNI O'ZING BAJAR. Hech qachon "qila olmayman", "imkonim yo'q", "kira olmayman", "havolani yuboraman — o'zingiz qarang" dema. Buning o'rniga: "Xo'p, ser, hozir hal qilaman" deb, darhol vositalar bilan ishga kirish.
 - Biror narsani qidir/top/ko'rsat deyilsa — web vositasining search (sahifalar), images (rasmlar), videos (videolar) amallari bilan O'ZING top; natijalar foydalanuvchiga Jarvis ichida rasm, video va kartochka bo'lib avtomatik ko'rsatiladi (havolasi ham yonida). Sen javobda eng yaxshi 2–4 variantni qisqa izohla va nega yaxshi ekanini ayt. Kerak bo'lsa fetch_url bilan sahifani o'qib, aniq ma'lumot ber.
 - Vosita xato bersa — taslim bo'lma: boshqa yo'l bilan qayta urin (boshqa so'z, boshqa amal, run_code, my_tools). Mavjud vositalar yetmasa — my_tools.create bilan o'zingga yangi vosita yoz (masalan, kerakli sayt yoki bepul API'dan ma'lumot oluvchi), run bilan sinab ko'r, xato bo'lsa tuzat. Muvaffaqiyatli usulni keyingi safar ham ishlat — sen har safar o'rganib, kuchayib borasan.
+- HUJJATLAR: fayl (Word/Excel) tashlab "tahrirlab ber", "shu namuna asosida X ob'ekt bo'yicha tayyorla" deyilsa — DARHOL documents vositasi bilan asl faylni tahrirla (format, shtamp, jadvallar saqlanadi): kerak bo'lsa read, keyin bitta edit chaqiruvida barcha o'zgarishlar (replace, set_cells, add_rows). Natijada "TOPILMADI" bo'lsa — darhol to'g'rilab qayta edit qil, foydalanuvchiga xato haqida gapirma. Raqamlarni calculate yoki run_code bilan tekshir — hisobda xato bo'lmasin. Yangi hujjat kerak bo'lsa — make_document (docx yoki xlsx). Javobda qisqa: nima o'zgartirilganini 1–3 gapda ayt.
+- Ob'ektda o'lchov aytilsa (loyiha va haqiqiy qiymat) — measures.add; "o'lchovlar jadvalini ber" — measures.export.
 - Faqat haqiqatan ilojsiz bo'lsa (masalan, jismoniy ish), qisqa aytib, eng yaqin muqobilini o'zing bajarib ber.
 - Oddiy suhbatda tabiiy, jonli, ravon gapir — xuddi odam gapirgandek: qisqa gaplar, ro'yxat va belgilarsiz, "xo'p", "albatta", "tushunarli" kabi so'zlar bilan. Ro'yxat/jadval faqat foydalanuvchi hujjat yoki batafsil ma'lumot so'raganda.`;
 
@@ -686,7 +688,8 @@ async function ask(text,opt){
   text=String(text||'').trim();if(!text&&!ATT.items.length)return;const typed=!!(opt&&opt.typed);
   let imgs=(opt&&opt.images)||[],extra='',shownAtt=[];
   if(ATT.items.length){const t=takeAttachments(text);imgs=imgs.concat(t.imgs);extra=t.extra;shownAtt=t.shown;text=t.text}
-  if(!shownAtt.length&&!imgs.length){if(voiceControl(text))return;if(text.startsWith('/')&&runCommand(text))return}
+  if(!shownAtt.length&&!imgs.length){if(voiceControl(text))return;if(text.startsWith('/')&&runCommand(text))return;
+    if(/xato hisobot|hisobotni yubor.*xato|^\/xato/i.test(text)){addMsg('u',text);$('inp').value='';const d0=addMsg('j','⏳ Xato hisoboti tayyorlanmoqda…');setBody(d0,await errorReport());return}}
   stopSpeak();const um=addMsg('u',text);$('inp').value='';
   if(imgs.length){const g=document.createElement('div');g.className='uimgs';imgs.forEach(b=>{const im=document.createElement('img');im.src=URL.createObjectURL(b);im.onclick=()=>imgEditor(b);g.appendChild(im)});um.appendChild(g)}
   shownAtt.filter(x=>x.kind==='doc').forEach(x=>{const d2=document.createElement('div');d2.className='udoc';d2.textContent='📄 '+x.name+(x.err?' (o\'qilmadi)':'');um.appendChild(d2)});
@@ -792,8 +795,8 @@ function localTools(){
     inputSchema:{type:'object',properties:{site:{type:'string'},search:{type:'string'},youtube_search:{type:'string'},weather_city:{type:'string'},media_search:{type:'string'},kind:{type:'string',enum:['images','videos','pages']}}},
     execute:i=>{if(i.media_search){window.showMedia('results',window.searchLinks(i.media_search,i.kind),i.media_search);return 'Foydalanuvchiga qidiruv kartochkalari ko\'rsatildi (bosilsa ochiladi, nusxalash va ulashish tugmalari bor). Texnik xato haqida gapirma.'}
       return i.weather_city?by('weather_link').execute({city:i.weather_city}):by('open_website').execute(i)}};
-  return[by('get_datetime'),by('calculate'),notes,rem,web,by('remember_fact'),by('google_status'),by('open_app'),by('second_brain'),by('recall'),by('routines'),by('run_code'),by('make_document'),(()=>{const t=by('my_tools');return t&&Object.assign({},t,{description:t.description+(myTools().map(x=>x.name+(x.params?'('+x.params+')':'')+' — '+x.text).join('; ')||'hali yo\'q')})})(),by('pc'),by('web')].filter(Boolean)}
-function allTools(){let t=localTools().concat(connectorTools());if(!window.JARVIS_DESKTOP){const drop=['google_status','recall','routines','second_brain','remember_fact'];while(t.length>16&&drop.length){const d=drop.shift();t=t.filter(x=>x.name!==d)}}return t.slice(0,window.JARVIS_DESKTOP?40:16)}
+  return[by('get_datetime'),by('calculate'),notes,rem,web,by('remember_fact'),by('google_status'),by('open_app'),by('second_brain'),by('recall'),by('routines'),by('run_code'),by('make_document'),by('documents'),by('measures'),(()=>{const t=by('my_tools');return t&&Object.assign({},t,{description:t.description+(myTools().map(x=>x.name+(x.params?'('+x.params+')':'')+' — '+x.text).join('; ')||'hali yo\'q')})})(),by('pc'),by('web')].filter(Boolean)}
+function allTools(){let t=localTools().concat(connectorTools());if(!window.JARVIS_DESKTOP){const drop=['google_status','recall','routines','second_brain','remember_fact','measures'];while(t.length>16&&drop.length){const d=drop.shift();t=t.filter(x=>x.name!==d)}}return t.slice(0,window.JARVIS_DESKTOP?40:16)}
 /* ===== ISHONCH REJIMI: AI amallarini tasdiqsiz bajarish (foydalanuvchi o'zi yoqadi) ===== */
 const DANGER=/format-volume|\bformat\s+[a-z]:|diskpart|bcdedit|cipher\s+\/w|vssadmin\s+delete|reg(\.exe)?\s+delete\s+hklm|\b(Remove-Item|rm|del|erase|rmdir|rd|ri)\b[^\n]*?\s['"]?[a-z]:\\?(\*|\\\*)?['"]?(\s|$|;)|\\windows(\\|\b)|\\program files|Stop-Computer|Restart-Computer|shutdown(\.exe)?\s+[\/-][srp]|Clear-Disk|Initialize-Disk|Remove-Partition/i;
 function trustMode(){try{return localStorage.getItem('jarvis_trust')||'ask'}catch(e){return'ask'}}
@@ -1138,18 +1141,18 @@ document.querySelectorAll('[data-app]').forEach(b=>b.onclick=()=>b.dataset.app==
 
 /* ============ SYNC MERGE (web + desktop, oflayn tahrirlar bilan) ============ */
 function tomb(k){S.tomb=S.tomb||{};S.tomb[k]=Date.now()}
-const MKEY={routines:x=>'o:'+x.id,notes:x=>'n:'+x.id,reminders:x=>'r:'+x.id,brain:x=>'b:'+x.id,convos:x=>'c:'+x.at,skills:x=>'s:'+x.name};
+const MKEY={routines:x=>'o:'+x.id,notes:x=>'n:'+x.id,reminders:x=>'r:'+x.id,brain:x=>'b:'+x.id,convos:x=>'c:'+x.at,skills:x=>'s:'+x.name,measures:x=>'m:'+x.id};
 const stamp=x=>x&&(x.u||x.at||0)||0;
 function mergeMem(rm){
   if(!rm||rm.app!=='JARVIS')return false;
   const T=S.tomb=S.tomb||{};for(const k in rm.tomb||{})T[k]=Math.max(T[k]||0,rm.tomb[k]);
   const alive=(k,x)=>!(T[k]&&T[k]>=stamp(x));
-  const lists={routines:S.routines||[],notes:S.notes,reminders:S.reminders,brain:S.brain||[],convos:S.convos||[],skills:S.skills||null};
+  const lists={routines:S.routines||[],notes:S.notes,reminders:S.reminders,brain:S.brain||[],convos:S.convos||[],skills:S.skills||null,measures:S.measures||[]};
   for(const name in MKEY){const kf=MKEY[name];const rl=rm[name];if(!Array.isArray(rl)&&!lists[name])continue;
     const map=new Map();(lists[name]||[]).forEach(x=>map.set(kf(x),x));
     (rl||[]).forEach(x=>{const k=kf(x),l=map.get(k);if(!l||stamp(x)>stamp(l))map.set(k,x)});
     const out=[...map.entries()].filter(([k,x])=>alive(k,x)).map(([,x])=>x);
-    if(name==='routines')S.routines=out;else if(name==='notes')S.notes=out;else if(name==='reminders')S.reminders=out;else if(name==='brain')S.brain=out;else if(name==='convos')S.convos=out.sort((a,b)=>a.at-b.at).slice(-60);else if(name==='skills'&&(rl||lists.skills))S.skills=out}
+    if(name==='routines')S.routines=out;else if(name==='notes')S.notes=out;else if(name==='reminders')S.reminders=out;else if(name==='brain')S.brain=out;else if(name==='convos')S.convos=out.sort((a,b)=>a.at-b.at).slice(-60);else if(name==='skills'&&(rl||lists.skills))S.skills=out;else if(name==='measures')S.measures=out}
   const rk=rm.knowledge;if(rk){const lk=S.knowledge;const lf=lk.facts||[];
     if((rk.updated||0)>(lk.updated||0)){['profile','projects','people','recurring','terms','sources','updated'].forEach(f=>{if(rk[f]!==undefined)lk[f]=rk[f]})}
     const fm=new Map();[...lf,...(rk.facts||[])].forEach(f=>{const k='f:'+f.text;const o=fm.get(k);if(!o||stamp(f)>stamp(o))fm.set(k,f)});
@@ -1164,7 +1167,7 @@ function mergeMem(rm){
 const MEM_FILE='jarvis_xotira.json',MEM_FOLDER='Jarvis xotira';
 const GM=Object.assign({on:false,folderId:'',fileId:'',lastSync:0,status:'o\'chiq',movedFromClaude:false},(()=>{try{return JSON.parse(localStorage.getItem('jarvis_gmem')||'{}')}catch(e){return{}}})());
 function gmSave(){try{localStorage.setItem('jarvis_gmem',JSON.stringify(GM))}catch(e){}memUI()}
-function memSnapshot(){return{app:'JARVIS',version:3,updated:Date.now(),tomb:S.tomb||{},secrets:S.secrets||null,routines:S.routines||[],soul:S.soul||null,notes:S.notes,reminders:S.reminders,knowledge:S.knowledge,convos:S.convos||[],skills:S.skills,brain:S.brain||[]}}
+function memSnapshot(){return{app:'JARVIS',version:3,updated:Date.now(),tomb:S.tomb||{},secrets:S.secrets||null,routines:S.routines||[],soul:S.soul||null,notes:S.notes,reminders:S.reminders,knowledge:S.knowledge,convos:S.convos||[],skills:S.skills,brain:S.brain||[],measures:S.measures||[]}}
 function memApply(m){if(!m||m.app!=='JARVIS')return false;
   S.notes=m.notes||S.notes;S.reminders=m.reminders||S.reminders;if(m.knowledge)S.knowledge=Object.assign(S.knowledge,m.knowledge);S.convos=m.convos||S.convos||[];if(m.skills)S.skills=m.skills;if(m.brain)S.brain=m.brain;
   lsSave();renderLists();renderKB();return true}
@@ -1706,7 +1709,7 @@ async function unzip(buf){const dv=new DataView(buf),u8=new Uint8Array(buf);let 
       if(method===0)return new TextDecoder().decode(data);const ds=new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));return await new Response(ds).text()}}
   return out}
 const xmlText=s=>s.replace(/<w:tab\/>/g,'\t').replace(/<w:br[^>]*\/>/g,'\n').replace(/<[^>]+>/g,'').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&');
-async function readDocx(z){const x=await z['word/document.xml']();const body=x.replace(/<w:tbl>([\s\S]*?)<\/w:tbl>/g,(m,t)=>'\n'+t.split(/<\/w:tr>/).map(r=>r.split(/<\/w:tc>/).map(c=>xmlText(c.replace(/<\/w:p>/g,' ')).trim()).filter((c,i,a)=>i<a.length-1||c).join(' | ')).filter(Boolean).join('\n')+'\n');
+async function readDocx(z){const x=await z['word/document.xml']();let TN=0;const body=x.replace(/<w:tbl>([\s\S]*?)<\/w:tbl>/g,(m,t)=>'\n[JADVAL '+(++TN)+']\n'+t.split(/<\/w:tr>/).map((r,ri)=>(r.includes('<w:tc')?'r'+(ri+1)+': ':'')+r.split(/<\/w:tc>/).map(c=>xmlText(c.replace(/<\/w:p>/g,' ')).trim()).filter((c,i,a)=>i<a.length-1||c).join(' | ')).filter(Boolean).join('\n')+'\n');
   return body.split(/<\/w:p>/).map(p=>xmlText(p)).join('\n').replace(/\n{3,}/g,'\n\n').trim()}
 async function readXlsx(z){const ss=z['xl/sharedStrings.xml']?(await z['xl/sharedStrings.xml']()).split(/<\/si>/).map(s=>xmlText(s)):[];let out='';
   const sheets=Object.keys(z).filter(k=>/^xl\/worksheets\/sheet\d+\.xml$/.test(k)).sort((a,b)=>parseInt(a.match(/\d+/))-parseInt(b.match(/\d+/)));
@@ -1724,13 +1727,13 @@ async function extractText(f){const nm=(f.name||'').toLowerCase(),ext=nm.split('
 function attBar(){let b=$('attBar');if(!b){b=document.createElement('div');b.id='attBar';const bar=document.querySelector('.chat .bar');bar.parentNode.insertBefore(b,bar)}
   b.style.display=ATT.items.length?'flex':'none';
   b.innerHTML=ATT.items.map((x,i)=>x.kind==='image'?`<div class="att img" data-i="${i}"><img src="${x.url}"><div class="aa"><button data-a="edit" title="Tahrirlash">✏</button><button data-a="find" title="Rasm bo'yicha qidirish">🔍</button><button data-a="x" title="Olib tashlash">✕</button></div></div>`
-    :`<div class="att doc" data-i="${i}"><span>${x.err?'⚠':'📄'} ${esc(x.name)}${x.text?` <small>${Math.round(x.text.length/100)/10}k belgi</small>`:x.err?'':' <small>o\'qilmoqda…</small>'}</span><button data-a="x">✕</button></div>`).join('');
+    :`<div class="att doc" data-i="${i}"><span>${x.err?'⚠':'📄'} ${esc(x.name)}${x.text?` <small>${Math.round(x.text.length/100)/10}k belgi</small>`:x.err?'':' <small>o\'qilmoqda…</small>'}</span>${/\.(docx|xlsx)$/i.test(x.name)?'<button data-a="tpl" title="Namuna sifatida saqlash">📌</button>':''}<button data-a="x">✕</button></div>`).join('');
   b.onclick=e=>{const c=e.target.closest('[data-i]'),bt=e.target.closest('button');if(!c)return;const i=+c.dataset.i,it=ATT.items[i];
     if(!bt){if(it.kind==='image')imgEditor(it.blob,nb=>{it.blob=nb;it.url=URL.createObjectURL(nb);attBar()});return}
-    if(bt.dataset.a==='x'){ATT.items.splice(i,1);attBar()}if(bt.dataset.a==='edit')imgEditor(it.blob,nb=>{it.blob=nb;it.url=URL.createObjectURL(nb);attBar()});
+    if(bt.dataset.a==='x'){ATT.items.splice(i,1);attBar()}if(bt.dataset.a==='tpl'){const f=findFile(it.name);if(f){const nm=prompt('Namuna nomi (masalan: Dalolatnoma MTT):',it.name.replace(/\.\w+$/,''));if(nm)tplSave(nm.trim(),f,'').then(()=>showToast('"'+nm+'" namuna sifatida saqlandi. Endi "'+nm+' namunasi asosida ... ob\'ekt bo\'yicha hujjat tayyorla" deng','NAMUNA')).catch(e=>showToast(e.message,'NAMUNA'))}}if(bt.dataset.a==='edit')imgEditor(it.blob,nb=>{it.blob=nb;it.url=URL.createObjectURL(nb);attBar()});
     if(bt.dataset.a==='find'){ATT.items.splice(i,1);attBar();imageSearch(it.blob)}}}
 async function addFiles(files){for(const f of files){if(/^image\//.test(f.type)){ATT.items.push({kind:'image',name:f.name||'rasm.png',blob:f,url:URL.createObjectURL(f)});continue}
-    const it={kind:'doc',name:f.name||'fayl',file:f};ATT.items.push(it);attBar();
+    const it={kind:'doc',name:f.name||'fayl',file:f};ATT.items.push(it);attBar();try{regFile(it.name,new Uint8Array(await f.arrayBuffer()),f.type)}catch(e){}
     try{it.text=(await extractText(f)).slice(0,60000);if(!it.text.trim())throw new Error('faylda matn topilmadi')}catch(e){it.err=e.message;showToast(e.message,'FAYL')}}
   attBar();$('inp').focus()}
 function pick(accept,capture){const i=document.createElement('input');i.type='file';i.accept=accept;i.multiple=!capture;if(capture)i.capture='environment';i.onchange=()=>{if(i.files.length)addFiles([...i.files])};i.click()}
@@ -1745,7 +1748,7 @@ function pick(accept,capture){const i=document.createElement('input');i.type='fi
   document.addEventListener('drop',e=>{if(e.dataTransfer?.files?.length){e.preventDefault();addFiles([...e.dataTransfer.files])}})})();
 function takeAttachments(text){const imgs=ATT.items.filter(x=>x.kind==='image').map(x=>x.blob),docs=ATT.items.filter(x=>x.kind==='doc'&&x.text);
   const shown=ATT.items.slice();ATT.items=[];attBar();
-  let extra='';docs.forEach(d=>{extra+=`\n\n[Biriktirilgan fayl: ${d.name}]\n"""\n${d.text}\n"""`});
+  let extra='';docs.forEach(d=>{extra+=`\n\n[Biriktirilgan fayl: ${d.name}${/\.(docx|xlsx)$/i.test(d.name)?' — asl formatida tahrirlash uchun documents vositasida file="'+d.name+'"':''}]\n"""\n${d.text}\n"""`});
   return{imgs,extra,shown,text:text||(imgs.length?'Bu rasmda nima bor? Batafsil tushuntir.':docs.length?'Bu faylni o\'qib, qisqa mazmunini ayt va nima qilish kerakligini so\'ra.':'')}}
 /* --- rasm bo'yicha qidiruv (Google Lens kabi) --- */
 async function imageSearch(blob){const N=NAT();
@@ -1820,7 +1823,9 @@ const xe=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&
 function runs(t,base){base=base||{};const out=[];t.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/).forEach(p=>{if(!p)return;let b=base.b,i=base.i,s=p;if(/^\*\*.*\*\*$/.test(p)){b=true;s=p.slice(2,-2)}else if(/^\*.*\*$/.test(p)){i=true;s=p.slice(1,-1)}
   out.push(`<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>${b?'<w:b/>':''}${i?'<w:i/>':''}<w:sz w:val="${base.sz||28}"/></w:rPr><w:t xml:space="preserve">${xe(s)}</w:t></w:r>`)});return out.join('')}
 function para(t,o){o=o||{};return `<w:p><w:pPr>${o.jc?`<w:jc w:val="${o.jc}"/>`:'<w:jc w:val="both"/>'}<w:spacing w:after="${o.after==null?80:o.after}" w:line="276" w:lineRule="auto"/>${o.ind?'<w:ind w:firstLine="709"/>':''}${o.left?`<w:ind w:left="${o.left}" w:hanging="300"/>`:''}</w:pPr>${runs(t,o)}</w:p>`}
-function mdToDocx(md){const L=String(md).replace(/\r/g,'').split('\n');let body='',i=0;
+function mdToDocx(md){const body=mdBodyXml(md);
+  return mdWrapDocx(body)}
+function mdBodyXml(md){const L=String(md).replace(/\r/g,'').split('\n');let body='',i=0;
   while(i<L.length){let l=L[i];
     if(/^\s*\|.*\|\s*$/.test(l)){const rows=[];while(i<L.length&&/^\s*\|.*\|\s*$/.test(L[i])){if(!/^\s*\|[\s:|-]+\|\s*$/.test(L[i]))rows.push(L[i].trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim()));i++}
       const nc=Math.max(...rows.map(r=>r.length));const bd='<w:tblBorders>'+['top','left','bottom','right','insideH','insideV'].map(k=>`<w:${k} w:val="single" w:sz="4" w:color="000000"/>`).join('')+'</w:tblBorders>';
@@ -1834,6 +1839,8 @@ function mdToDocx(md){const L=String(md).replace(/\r/g,'').split('\n');let body=
     else if(m=l.match(/^::\s*(.*)/))body+=para(m[1],{jc:'center'});
     else if(l.trim())body+=para(l.trim(),{ind:true});
     i++}
+  return body}
+function mdWrapDocx(body){
   const doc=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="850" w:bottom="1134" w:left="1701" w:header="709" w:footer="709" w:gutter="0"/></w:sectPr></w:body></w:document>`;
   return zipStore([['[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'],
     ['_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'],
@@ -1847,17 +1854,195 @@ function docCard(title,blob,fname,mdText){const host=S.curMsg&&S.curMsg.isConnec
     if(a==='view')openWin('doc'+Date.now(),'📄 '+title,w=>{w.body.innerHTML='<div style="background:#fff;color:#000;padding:28px 30px;font:15px/1.5 \'Times New Roman\',serif;min-height:100%"></div>';w.body.firstChild.innerHTML=window.mdRender(mdText)});
     if(a==='drive'){try{e.target.textContent='⏳…';await gCall('Google Drive','create_file',{title,textContent:mdText.replace(/\*\*/g,''),contentMimeType:'text/plain'},true);e.target.textContent='✓ Drive\'da (Google Doc)'}catch(er){e.target.textContent='☁ Drive\'ga';showToast(er.message,'DRIVE')}}}}
 window.mdRender=t=>md(t);
-TOOLS.push({name:'make_document',description:'Tayyor fayl (hujjat) yaratadi va foydalanuvchiga saqlash, ko\'rish, ulashish, Drive\'ga yuklash tugmalari bilan ko\'rsatadi. Foydalanuvchi hujjat, dalolatnoma, xat, ariza, hisobot, jadval yarat desa yoki biriktirilgan fayl asosida hujjat so\'rasa — matnni to\'liq yozib SHU vosita bilan fayl qil. format: docx (Word, standart), txt, md, html, csv. content — markdown: # sarlavha (markazda), ## bo\'lim, **qalin**, - ro\'yxat, | jadval | qatorlari |, ">> matn" — o\'ngga, ":: matn" — markazga.',
-  inputSchema:{type:'object',properties:{title:{type:'string'},content:{type:'string'},format:{type:'string',enum:['docx','txt','md','html','csv']}},required:['title','content']},
+TOOLS.push({name:'make_document',description:'Tayyor fayl (hujjat) yaratadi va foydalanuvchiga saqlash, ko\'rish, ulashish, Drive\'ga yuklash tugmalari bilan ko\'rsatadi. Foydalanuvchi hujjat, dalolatnoma, xat, ariza, hisobot, jadval yarat desa yoki biriktirilgan fayl asosida hujjat so\'rasa — matnni to\'liq yozib SHU vosita bilan fayl qil. format: docx (Word, standart), xlsx (Excel — content ichidagi | jadval |lar varaqlarga aylanadi, ## sarlavha — varaq nomi; =SUM(D2:D9) kabi formulalar ham bo\'ladi), txt, md, html, csv. Mavjud faylni TAHRIRLASH kerak bo\'lsa — documents vositasi (asl format saqlanadi). content — markdown: # sarlavha (markazda), ## bo\'lim, **qalin**, - ro\'yxat, | jadval | qatorlari |, ">> matn" — o\'ngga, ":: matn" — markazga.',
+  inputSchema:{type:'object',properties:{title:{type:'string'},content:{type:'string'},format:{type:'string',enum:['docx','xlsx','txt','md','html','csv']}},required:['title','content']},
   execute:async a=>{const f=a.format||'docx';const safe=String(a.title||'hujjat').replace(/[\\/:*?"<>|]+/g,' ').trim().slice(0,80)||'hujjat';let blob;
-    if(f==='docx')blob=mdToDocx(a.content);else if(f==='html')blob=new Blob([`<!doctype html><meta charset="utf-8"><title>${esc(a.title)}</title><body style="font:16px/1.5 'Times New Roman',serif;max-width:800px;margin:30px auto">${md(a.content)}</body>`],{type:'text/html'});
+    if(f==='docx')blob=mdToDocx(a.content);else if(f==='xlsx')blob=makeXlsx(a.content);else if(f==='html')blob=new Blob([`<!doctype html><meta charset="utf-8"><title>${esc(a.title)}</title><body style="font:16px/1.5 'Times New Roman',serif;max-width:800px;margin:30px auto">${md(a.content)}</body>`],{type:'text/html'});
     else blob=new Blob(['﻿'+a.content],{type:f==='csv'?'text/csv':'text/plain'});
-    const fname=safe+'.'+f;docCard(a.title,blob,fname,a.content);act('📄 hujjat yaratildi: '+fname);return `"${fname}" fayli tayyor va foydalanuvchiga ko'rsatildi (saqlash, ko'rish, ulashish tugmalari bilan). Javobda qisqa ayt: hujjat tayyor.`}});
+    const fname=safe+'.'+f;await showFile(blob,fname,a.title,a.content);act('📄 hujjat yaratildi: '+fname);return `"${fname}" fayli tayyor va foydalanuvchiga ko'rsatildi (saqlash, ko'rish, ulashish tugmalari bilan). Javobda qisqa ayt: hujjat tayyor.`}});
 /* --- "Jarvis" chaqirilganda javob --- */
 const WAKE_REPLY=['Labbay, ser! Nima xohlaysiz?','Labbay, ser. Nima ish qilay?','Eshitaman, ser. Nimani topib beray?','Labbay! Buyuring, ser.','Xizmatingizdaman, ser. Nima qilamiz?','Labbay, ser. Qanday yordam kerak?'];
 let lastWR=-1;
 window.wakeGreet=async function(){let i;do{i=Math.floor(Math.random()*WAKE_REPLY.length)}while(i===lastWR&&WAKE_REPLY.length>1);lastWR=i;const t=WAKE_REPLY[i];
   wakeHint(t,true);W.muteUntil=Date.now()+15000;try{await speak(t)}catch(e){}W.muteUntil=Date.now()+350;return t};
+
+
+/* ============ HUJJATLARNI ASL FORMATIDA TAHRIRLASH (Word/Excel), NAMUNALAR, EXCEL YARATISH, O'LCHOVLAR ============ */
+const FILES={};   // sessiyadagi fayllar: nom → {name, mime, bytes:Uint8Array}
+const MIME_DOCX='application/vnd.openxmlformats-officedocument.wordprocessingml.document',MIME_XLSX='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+function regFile(name,bytes,mime){FILES[name]={name,mime:mime||(/\.xlsx$/i.test(name)?MIME_XLSX:/\.docx$/i.test(name)?MIME_DOCX:'application/octet-stream'),bytes:bytes instanceof Uint8Array?bytes:new Uint8Array(bytes),at:Date.now()};return FILES[name]}
+function findFile(n){if(!n){const all=Object.values(FILES).sort((a,b)=>b.at-a.at);return all[0]||null}
+  if(FILES[n])return FILES[n];const l=String(n).toLowerCase();return Object.values(FILES).find(f=>f.name.toLowerCase()===l)||Object.values(FILES).find(f=>f.name.toLowerCase().includes(l))||null}
+async function inflate(u8){const ds=new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw'));return new Uint8Array(await new Response(ds).arrayBuffer())}
+async function unzipAll(bytes){const buf=bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength);const dv=new DataView(buf),u8=new Uint8Array(buf);let e=-1;
+  for(let i=u8.length-22;i>=Math.max(0,u8.length-70000);i--)if(dv.getUint32(i,true)===0x06054b50){e=i;break}if(e<0)throw new Error('Fayl buzilgan yoki ZIP emas');
+  const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const out=[];
+  for(let k=0;k<n;k++){const method=dv.getUint16(p+10,true),cs=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),lo=dv.getUint32(p+42,true);
+    const name=new TextDecoder().decode(u8.subarray(p+46,p+46+nl));p+=46+nl+xl+cl;const ln=dv.getUint16(lo+26,true),lx=dv.getUint16(lo+28,true);const raw=u8.slice(lo+30+ln+lx,lo+30+ln+lx+cs);
+    out.push([name,method===0?raw:await inflate(raw)])}return out}
+const TD=new TextDecoder(),TE=new TextEncoder();
+const xUn=s=>s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&#(\d+);/g,(m,n)=>String.fromCharCode(+n)).replace(/&amp;/g,'&');
+const xEs=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const norm=s=>String(s).replace(/ /g,' ').replace(/[’‘ʻʼ`]/g,"'");
+/* --- Word: paragraf ichida (bir necha "run"ga bo'lingan bo'lsa ham) matnni almashtirish, formatni saqlab --- */
+function paraReplace(px,find,rep){const T=[];const re=/<w:t(\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:t(\s[^>]*)?\/>/g;let m;
+  while(m=re.exec(px))T.push({s:m.index,e:m.index+m[0].length,txt:m[2]!=null?xUn(m[2]):''});if(!T.length)return{px,n:0};
+  let full='';T.forEach(t=>{t.off=full.length;full+=t.txt});const F=norm(full),f=norm(find);if(!f)return{px,n:0};
+  const hits=[];let i=F.indexOf(f);while(i>=0){hits.push(i);i=F.indexOf(f,i+f.length)}if(!hits.length)return{px,n:0};
+  for(let h=hits.length-1;h>=0;h--){const st=hits[h],en=st+f.length;let first=true;
+    for(const t of T){const a=t.off,b=t.off+t.txt.length;if(b<=st||a>=en&&!(a===en&&false))continue;if(a>=en)continue;
+      const ls=Math.max(st-a,0),le=Math.min(en-a,t.txt.length);
+      t.txt=t.txt.slice(0,ls)+(first?rep:'')+t.txt.slice(le);first=false}
+    let o=0;T.forEach(t=>{t.off=o;o+=t.txt.length})}
+  let out='',last=0;T.forEach(t=>{out+=px.slice(last,t.s)+`<w:t xml:space="preserve">${xEs(t.txt)}</w:t>`;last=t.e});out+=px.slice(last);return{px:out,n:hits.length}}
+function xmlReplaceAll(xml,find,rep){let n=0;const out=xml.replace(/<w:p[ >][\s\S]*?<\/w:p>|<w:p\/>/g,px=>{const r=paraReplace(px,find,rep);n+=r.n;return r.px});return{xml:out,n}}
+/* jadvallar (ichma-ich bo'lsa ham) */
+function tblSpans(xml){const sp=[];const re=/<w:tbl>|<\/w:tbl>/g;let m,st=[];while(m=re.exec(xml)){if(m[0]==='<w:tbl>')st.push(m.index);else{const s=st.pop();if(!st.length)sp.push([s,m.index+8])}}return sp}
+function rowSpans(tx){const sp=[];const re=/<w:tr[ >]|<\/w:tr>|<w:tbl>|<\/w:tbl>/g;let m,d=0,s=-1;while(m=re.exec(tx)){if(m[0]==='<w:tbl>')d++;else if(m[0]==='</w:tbl>')d--;else if(d===1){if(m[0]!=='</w:tr>')s=m.index;else sp.push([s,m.index+7])}}return sp}
+function cellSpans(rx){const sp=[];const re=/<w:tc[ >]|<\/w:tc>|<w:tbl>|<\/w:tbl>/g;let m,d=0,s=-1;while(m=re.exec(rx)){if(m[0]==='<w:tbl>')d++;else if(m[0]==='</w:tbl>')d--;else if(d===0){if(m[0]!=='</w:tc>')s=m.index;else sp.push([s,m.index+7])}}return sp}
+function setCellText(cx,val){const lines=String(val==null?'':val).split('\n');let done=false;
+  cx=cx.replace(/<w:p[ >][\s\S]*?<\/w:p>|<w:p\/>/g,px=>{if(done)return /<w:t[ >]/.test(px)?px.replace(/<w:t(\s[^>]*)?>[\s\S]*?<\/w:t>/g,'<w:t xml:space="preserve"></w:t>'):px;done=true;
+    if(px==='<w:p/>')px='<w:p></w:p>';
+    const tx=lines.map((l,i)=>(i?'<w:br/>':'')+`<w:t xml:space="preserve">${xEs(l)}</w:t>`).join('');let first=true;
+    if(/<w:t[ >]/.test(px))return px.replace(/<w:t(\s[^>]*)?>[\s\S]*?<\/w:t>/g,()=>{if(first){first=false;return tx}return '<w:t xml:space="preserve"></w:t>'});
+    const rpr=(px.match(/<w:pPr>[\s\S]*?<w:rPr>([\s\S]*?)<\/w:rPr>[\s\S]*?<\/w:pPr>/)||[])[1]||'';return px.replace(/<\/w:p>$/,`<w:r>${rpr?'<w:rPr>'+rpr+'</w:rPr>':''}${tx}</w:r></w:p>`)});return cx}
+function tableOp(xml,ti,fn){const sp=tblSpans(xml);const t=sp[ti-1];if(!t)throw new Error(`${ti}-jadval yo'q (hujjatda ${sp.length} ta jadval bor)`);return xml.slice(0,t[0])+fn(xml.slice(t[0],t[1]))+xml.slice(t[1])}
+function addRows(tx,rows,after){const rs=rowSpans(tx);if(!rs.length)throw new Error('Jadvalda qator yo\'q');const ai=Math.min(Math.max(after||rs.length,1),rs.length);const tpl=tx.slice(rs[ai-1][0],rs[ai-1][1]);
+  const add=rows.map(r=>{let rx=tpl;const cs=cellSpans(rx);for(let c=cs.length-1;c>=0;c--){rx=rx.slice(0,cs[c][0])+setCellText(rx.slice(cs[c][0],cs[c][1]),r[c]!=null?r[c]:'')+rx.slice(cs[c][1])}return rx}).join('');
+  return tx.slice(0,rs[ai-1][1])+add+tx.slice(rs[ai-1][1])}
+function delRows(tx,idx){const rs=rowSpans(tx);[...new Set(idx)].sort((a,b)=>b-a).forEach(i=>{const r=rs[i-1];if(r)tx=tx.slice(0,r[0])+tx.slice(r[1])});return tx}
+function setCell(tx,row,col,val){const rs=rowSpans(tx);const r=rs[row-1];if(!r)throw new Error(row+'-qator yo\'q');let rx=tx.slice(r[0],r[1]);const cs=cellSpans(rx);const c=cs[col-1];if(!c)throw new Error(col+'-ustun yo\'q');
+  rx=rx.slice(0,c[0])+setCellText(rx.slice(c[0],c[1]),val)+rx.slice(c[1]);return tx.slice(0,r[0])+rx+tx.slice(r[1])}
+async function editDocx(bytes,ops){const files=await unzipAll(bytes);const rep=[];
+  const parts=files.filter(([n])=>/^word\/(document|header\d*|footer\d*|footnotes|endnotes)\.xml$/.test(n));
+  let doc=files.find(([n])=>n==='word/document.xml');if(!doc)throw new Error('Bu Word hujjat emas');
+  const get=n=>TD.decode(files.find(f=>f[0]===n)[1]),put=(n,s)=>{files.find(f=>f[0]===n)[1]=TE.encode(s)};
+  for(const r of ops.replace||[]){let total=0;for(const[n]of parts){const res=xmlReplaceAll(get(n),String(r.find),String(r.replace==null?'':r.replace));if(res.n){put(n,res.xml);total+=res.n}}rep.push(`"${String(r.find).slice(0,40)}" → ${total?total+' joyda almashtirildi':'TOPILMADI'}`)}
+  let x=get('word/document.xml');
+  for(const s of ops.set_cells||[]){x=tableOp(x,+s.table||1,t=>setCell(t,+s.row,+s.col,s.value));rep.push(`jadval ${s.table||1} [${s.row},${s.col}] = ${String(s.value).slice(0,30)}`)}
+  for(const d of ops.delete_rows||[]){x=tableOp(x,+d.table||1,t=>delRows(t,(d.rows||[]).map(Number)));rep.push(`jadval ${d.table||1}: ${(d.rows||[]).length} qator o'chirildi`)}
+  for(const a of ops.add_rows||[]){x=tableOp(x,+a.table||1,t=>addRows(t,a.rows||[],a.after_row?+a.after_row:0));rep.push(`jadval ${a.table||1}: ${(a.rows||[]).length} qator qo'shildi`)}
+  if(ops.append){const body=mdBodyXml(ops.append);x=x.replace(/(<w:sectPr[\s\S]*?<\/w:sectPr>\s*<\/w:body>)/,body+'$1');if(!x.includes(body))x=x.replace('</w:body>',body+'</w:body>');rep.push('oxiriga matn qo\'shildi')}
+  if(ops.delete_paragraphs){for(const d of ops.delete_paragraphs){let k=0;x=x.replace(/<w:p[ >][\s\S]*?<\/w:p>/g,px=>{const t=norm(xmlText(px));if(d&&t.includes(norm(d))&&!/<w:tbl>/.test(px)){k++;return''}return px});rep.push(`"${String(d).slice(0,30)}" bor ${k} ta paragraf o'chirildi`)}}
+  put('word/document.xml',x);
+  return{blob:await zipStoreTyped(files,MIME_DOCX),report:rep}}
+/* --- Excel --- */
+const colN=s=>{let n=0;for(const ch of s.toUpperCase())n=n*26+ch.charCodeAt(0)-64;return n},colL=n=>{let s='';while(n>0){const m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=Math.floor((n-1)/26)}return s};
+async function xlsxSheets(files){const get=n=>{const f=files.find(x=>x[0]===n);return f?TD.decode(f[1]):''};const wb=get('xl/workbook.xml'),rels=get('xl/_rels/workbook.xml.rels');
+  const out=[];wb.replace(/<sheet\b[^>]*?name="([^"]*)"[^>]*?r:id="([^"]+)"[^>]*\/?>/g,(m,nm,rid)=>{const t=(new RegExp('Id="'+rid+'"[^>]*Target="([^"]+)"').exec(rels)||new RegExp('Target="([^"]+)"[^>]*Id="'+rid+'"').exec(rels)||[])[1];if(t)out.push({name:xUn(nm),path:'xl/'+t.replace(/^\/?xl\//,'').replace(/^\//,'')});return''});return out}
+function xlSetCell(sx,ref,val){const m=/^([A-Z]+)(\d+)$/i.exec(ref);if(!m)throw new Error('Katak manzili noto\'g\'ri: '+ref);const R=+m[2],C=colN(m[1]);ref=m[1].toUpperCase()+R;
+  const num=typeof val==='number'||(/^-?\d+([.,]\d+)?$/.test(String(val).trim())&&!/^0\d/.test(String(val).trim()));
+  const isF=typeof val==='string'&&val.startsWith('=');
+  const mk=s=>`<c r="${ref}"${s?` s="${s}"`:''}${isF?'':num?'':' t="inlineStr"'}>${isF?`<f>${xEs(val.slice(1))}</f>`:num?`<v>${String(val).trim().replace(',','.')}</v>`:`<is><t xml:space="preserve">${xEs(val)}</t></is>`}</c>`;
+  const cre=new RegExp(`<c r="${ref}"(\\s[^>]*?)?(?:/>|>[\\s\\S]*?</c>)`);const ex=cre.exec(sx);
+  if(ex){const s=(/\ss="(\d+)"/.exec(ex[0])||[])[1];return sx.replace(cre,mk(s))}
+  const rre=new RegExp(`<row r="${R}"(\\s[^>]*)?(?:/>|>([\\s\\S]*?)</row>)`);const rx=rre.exec(sx);
+  if(rx){let inner=rx[2]||'';const cells=[...inner.matchAll(/<c r="([A-Z]+)\d+"/g)];let pos=inner.length;for(const c of cells){if(colN(c[1])>C){pos=c.index;break}}
+    inner=inner.slice(0,pos)+mk()+inner.slice(pos);return sx.replace(rre,`<row r="${R}"${(rx[1]||'').replace(/\/$/,'')}>${inner}</row>`)}
+  const rows=[...sx.matchAll(/<row r="(\d+)"/g)];let at=-1;for(const r of rows){if(+r[1]>R){at=r.index;break}}const nr=`<row r="${R}">${mk()}</row>`;
+  if(at>=0)return sx.slice(0,at)+nr+sx.slice(at);if(/<sheetData\/>/.test(sx))return sx.replace('<sheetData/>',`<sheetData>${nr}</sheetData>`);return sx.replace('</sheetData>',nr+'</sheetData>')}
+async function editXlsx(bytes,ops){let files=await unzipAll(bytes);const rep=[];const sheets=await xlsxSheets(files);
+  const get=n=>TD.decode(files.find(f=>f[0]===n)[1]),put=(n,s)=>{files.find(f=>f[0]===n)[1]=TE.encode(s)};
+  const pick=s=>{if(s==null||s==='')return sheets[0];if(typeof s==='number'||/^\d+$/.test(s))return sheets[+s-1];return sheets.find(x=>x.name===s)||sheets.find(x=>x.name.toLowerCase().includes(String(s).toLowerCase()))};
+  for(const c of ops.set_cells||[]){const sh=pick(c.sheet);if(!sh)throw new Error('Varaq topilmadi: '+c.sheet);put(sh.path,xlSetCell(get(sh.path),String(c.cell),c.value));rep.push(`${sh.name}!${c.cell} = ${String(c.value).slice(0,30)}`)}
+  if(ops.replace&&ops.replace.length){const ssN='xl/sharedStrings.xml';const has=files.some(f=>f[0]===ssN);
+    for(const r of ops.replace){let k=0;const f=norm(r.find);const fx=s=>s.replace(/<t(\s[^>]*)?>([\s\S]*?)<\/t>/g,(m,a,t)=>{const v=xUn(t);if(norm(v).includes(f)){k++;return `<t xml:space="preserve">${xEs(norm(v).split(f).join(r.replace))}</t>`}return m});
+      if(has)put(ssN,fx(get(ssN)));sheets.forEach(sh=>put(sh.path,fx(get(sh.path))));rep.push(`"${String(r.find).slice(0,40)}" → ${k?k+' joyda':'TOPILMADI'}`)}}
+  // formulalar qayta hisoblansin
+  files=files.filter(f=>f[0]!=='xl/calcChain.xml');const ct=files.find(f=>f[0]==='[Content_Types].xml');if(ct)ct[1]=TE.encode(TD.decode(ct[1]).replace(/<Override[^>]*calcChain[^>]*\/>/,''));
+  const wr=files.find(f=>f[0]==='xl/_rels/workbook.xml.rels');if(wr)wr[1]=TE.encode(TD.decode(wr[1]).replace(/<Relationship[^>]*calcChain[^>]*\/>/,''));
+  let wb=get('xl/workbook.xml');wb=/<calcPr\b/.test(wb)?wb.replace(/<calcPr\b([^>]*?)\/?>/,(m,a)=>`<calcPr${a.replace(/\sfullCalcOnLoad="[^"]*"/,'')} fullCalcOnLoad="1"/>`):wb.replace('</workbook>','<calcPr fullCalcOnLoad="1"/></workbook>');put('xl/workbook.xml',wb);
+  return{blob:await zipStoreTyped(files,MIME_XLSX),report:rep}}
+async function deflate(u8){const cs=new Blob([u8]).stream().pipeThrough(new CompressionStream('deflate-raw'));return new Uint8Array(await new Response(cs).arrayBuffer())}
+async function zipStoreTyped(entries,mime){const enc=new TextEncoder();const parts=[],cent=[];let off=0;
+  for(const[name,content]of entries){const nb=enc.encode(name),raw=typeof content==='string'?enc.encode(content):content,crc=CRC(raw);let data=raw,method=0;
+    if(raw.length>256&&typeof CompressionStream!=='undefined'){try{const c=await deflate(raw);if(c.length<raw.length){data=c;method=8}}catch(e){}}
+    const h=new DataView(new ArrayBuffer(30));h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,method,true);h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,raw.length,true);h.setUint16(26,nb.length,true);
+    parts.push(new Uint8Array(h.buffer),nb,data);
+    const c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,method,true);c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,raw.length,true);c.setUint16(28,nb.length,true);c.setUint32(42,off,true);
+    cent.push(new Uint8Array(c.buffer),nb);off+=30+nb.length+data.length}
+  const cl=cent.reduce((a,b)=>a+b.length,0);const e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,entries.length,true);e.setUint16(10,entries.length,true);e.setUint32(12,cl,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...cent,new Uint8Array(e.buffer)],{type:mime})}
+/* --- yangi Excel yaratish --- */
+function mdTables(md){const out=[];let name='Varaq1',cur=null;String(md).replace(/\r/g,'').split('\n').forEach(l=>{const h=/^#{1,3}\s+(.*)/.exec(l);if(h){name=h[1].trim().slice(0,31).replace(/[\\/*?:\[\]]/g,' ');return}
+    if(/^\s*\|.*\|\s*$/.test(l)){if(/^\s*\|[\s:|-]+\|\s*$/.test(l))return;if(!cur){cur={name,rows:[]};out.push(cur)}cur.rows.push(l.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim().replace(/\*\*/g,'')))}else cur=null});
+  if(!out.length){const rows=String(md).trim().split('\n').filter(Boolean).map(l=>l.split(/\t|;|,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(c=>c.trim().replace(/^"|"$/g,'')));out.push({name:'Varaq1',rows})}
+  const seen={};out.forEach(t=>{let n=t.name||'Varaq';while(seen[n])n=(n+' 2').slice(-31);seen[n]=1;t.name=n});return out}
+function makeXlsx(md){const tabs=mdTables(md);
+  const sheet=t=>{const w=[];const rows=t.rows.map((r,ri)=>`<row r="${ri+1}">`+r.map((v,ci)=>{w[ci]=Math.max(w[ci]||8,Math.min(60,String(v).length+2));const ref=colL(ci+1)+(ri+1);const st=ri===0?1:2;
+      if(typeof v==='string'&&v.startsWith('='))return `<c r="${ref}" s="${st}"><f>${xEs(v.slice(1))}</f></c>`;
+      const nv=String(v).replace(/\s/g,'').replace(',','.');if(ri>0&&/^-?\d+(\.\d+)?$/.test(nv)&&!/^0\d/.test(nv))return `<c r="${ref}" s="3"><v>${nv}</v></c>`;
+      return `<c r="${ref}" s="${st}" t="inlineStr"><is><t xml:space="preserve">${xEs(v)}</t></is></c>`}).join('')+'</row>').join('');
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${w.map((x,i)=>`<col min="${i+1}" max="${i+1}" width="${x}" customWidth="1"/>`).join('')}</cols><sheetData>${rows}</sheetData></worksheet>`};
+  const ents=[['[Content_Types].xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${tabs.map((t,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`],
+    ['_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+    ['xl/workbook.xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${tabs.map((t,i)=>`<sheet name="${xEs(t.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets><calcPr fullCalcOnLoad="1"/></workbook>`],
+    ['xl/_rels/workbook.xml.rels',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${tabs.map((t,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')}<Relationship Id="rId${tabs.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+    ['xl/styles.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="12"/><name val="Times New Roman"/></font><font><b/><sz val="12"/><name val="Times New Roman"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFDDEBF7"/></patternFill></fill></fills><borders count="2"><border/><border><left style="thin"/><right style="thin"/><top style="thin"/><bottom style="thin"/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf><xf numFmtId="4" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>'],
+    ...tabs.map((t,i)=>['xl/worksheets/sheet'+(i+1)+'.xml',sheet(t)])];
+  return new Blob([zipStore(ents)],{type:MIME_XLSX})}
+/* --- tayyor faylni ko'rsatish --- */
+async function showFile(blob,fname,title,mdText){const bytes=new Uint8Array(await blob.arrayBuffer());regFile(fname,bytes,blob.type);let txt=mdText;
+  if(txt==null){try{txt=await extractText(new File([blob],fname,{type:blob.type}))}catch(e){txt=''}}docCard(title||fname,blob,fname,txt||'');window.__madeFiles&&window.__madeFiles.push({name:fname,blob})}
+/* --- NAMUNALAR (shablonlar): kompyuter va telefonda umumiy (Google Drive orqali) --- */
+const TPL={get list(){try{return JSON.parse(localStorage.getItem('jarvis_tpl_idx')||'[]')}catch(e){return[]}},set list(v){try{localStorage.setItem('jarvis_tpl_idx',JSON.stringify(v))}catch(e){}}};
+async function tplSave(name,file,desc){const b64=btoa(Array.from(file.bytes,c=>String.fromCharCode(c)).join(''));
+  try{localStorage.setItem('jarvis_tpl_'+name,JSON.stringify({name,file:file.name,mime:file.mime,b64,desc}))}catch(e){throw new Error('Telefon/brauzer xotirasi to\'ldi — eski namunalarni o\'chiring')}
+  TPL.list=TPL.list.filter(t=>t.name!==name).concat([{name,file:file.name,desc:desc||'',at:Date.now()}]);
+  const N=NAT();if(N&&N.tplPut){N.tplPut({name,json:JSON.stringify({name,file:file.name,mime:file.mime,b64,desc,at:Date.now()})}).catch(()=>{})}}
+async function tplLoad(name){let v=null;try{v=JSON.parse(localStorage.getItem('jarvis_tpl_'+name)||'null')}catch(e){}
+  if(!v){const N=NAT();if(N&&N.tplGet){const r=await N.tplGet({name});if(r&&r.json){v=JSON.parse(r.json);try{localStorage.setItem('jarvis_tpl_'+name,r.json)}catch(e){}}}}
+  if(!v)throw new Error('Namuna topilmadi: '+name);const bin=atob(v.b64);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return regFile(v.file,u,v.mime)}
+async function tplSync(){const N=NAT();if(!N||!N.tplList)return;try{const r=await N.tplList();if(!r||!r.items)return;const idx=TPL.list;
+  r.items.forEach(it=>{if(!idx.some(t=>t.name===it.name))idx.push({name:it.name,file:it.file||'',desc:it.desc||'',at:it.at||0,remote:true})});TPL.list=idx}catch(e){}}
+setTimeout(tplSync,9000);
+TOOLS.push({name:'documents',description:`HUJJATLAR bilan ishlash (Word/Excel ASL FORMATINI saqlagan holda). Biriktirilgan, yaratilgan va namuna fayllar shu yerda. action:
+- files — sessiyadagi fayllar ro'yxati;
+- read (file) — fayl matni: Word'da jadvallar [JADVAL n] va qatorlar r1, r2… bilan raqamlangan;
+- edit (file, output_name, replace:[{find,replace}], set_cells, add_rows:[{table,after_row?,rows:[[...]]}], delete_rows:[{table,rows:[..]}], delete_paragraphs:[matn], append: markdown) — Word: set_cells [{table,row,col,value}]; Excel: set_cells [{sheet,cell:'B5',value}] (raqam, matn yoki =formula), replace. ASL fayl o'zgarmaydi, YANGI fayl yaratilib foydalanuvchiga ko'rsatiladi. find — hujjatdagi matn bo'lagi AYNAN (bitta paragraf ichida); topilmasa — qisqaroq bo'lak bilan qayta urin.
+- template_save (file, name, description) — faylni NAMUNA sifatida saqlash (hamma qurilmada); templates — namunalar ro'yxati; template_use (name) — namunani ochib matnini olish (keyin edit bilan yangi ob'ektga moslab o'zgartir).
+NAMUNA ASOSIDA YANGI HUJJAT: template_use → read → edit (ob'ekt nomi, sanalar, hajmlar, summalarni replace/set_cells/add_rows bilan almashtir) — formatlash, shtamp va jadvallar aynan saqlanadi. Hujjat yangidan kerak bo'lsa — make_document.`,
+  inputSchema:{type:'object',properties:{action:{type:'string',enum:['files','read','edit','template_save','templates','template_use','template_delete']},file:{type:'string'},output_name:{type:'string'},name:{type:'string'},description:{type:'string'},
+    replace:{type:'array',items:{type:'object',properties:{find:{type:'string'},replace:{type:'string'}}}},
+    set_cells:{type:'array',items:{type:'object',properties:{table:{type:'number'},row:{type:'number'},col:{type:'number'},sheet:{type:'string'},cell:{type:'string'},value:{type:'string'}}}},
+    add_rows:{type:'array',items:{type:'object',properties:{table:{type:'number'},after_row:{type:'number'},rows:{type:'array',items:{type:'array',items:{type:'string'}}}}}},
+    delete_rows:{type:'array',items:{type:'object',properties:{table:{type:'number'},rows:{type:'array',items:{type:'number'}}}}},
+    delete_paragraphs:{type:'array',items:{type:'string'}},append:{type:'string'}},required:['action']},
+  execute:async a=>{
+    if(a.action==='files'){const l=Object.values(FILES).sort((x,y)=>y.at-x.at).map(f=>`${f.name} (${Math.round(f.bytes.length/1024)} KB)`);return l.length?l.join('\n'):'Sessiyada fayl yo\'q. Foydalanuvchidan 📎 orqali fayl tashlashni so\'ra yoki namunadan foydalan.'}
+    if(a.action==='templates'){await tplSync();const l=TPL.list;return l.length?l.map(t=>`${t.name} — ${t.desc||t.file}`).join('\n'):'Namunalar yo\'q. Foydalanuvchi fayl tashlab "namuna sifatida saqla" desa — template_save.'}
+    if(a.action==='template_delete'){TPL.list=TPL.list.filter(t=>t.name!==a.name);try{localStorage.removeItem('jarvis_tpl_'+a.name)}catch(e){}const N=NAT();if(N&&N.tplDel)await N.tplDel({name:a.name});return 'o\'chirildi'}
+    if(a.action==='template_use'){const f=await tplLoad(a.name||a.file);act('📌 namuna ochildi: '+a.name);return `"${f.name}" namunasi ochildi. Matni:\n`+(await fileText(f)).slice(0,40000)}
+    const f=findFile(a.file);if(!f)throw new Error('Fayl topilmadi: '+(a.file||'')+'. Mavjud: '+(Object.keys(FILES).join(', ')||'yo\'q'));
+    if(a.action==='read')return (await fileText(f)).slice(0,50000);
+    if(a.action==='template_save'){const nm=(a.name||f.name.replace(/\.\w+$/,'')).trim();await tplSave(nm,f,a.description);act('📌 namuna saqlandi: '+nm);return `"${nm}" namuna sifatida saqlandi (kompyuter va telefonda ham ishlaydi).`}
+    if(a.action==='edit'){const isX=/\.xlsx$/i.test(f.name)||f.mime===MIME_XLSX,isD=/\.docx$/i.test(f.name)||f.mime===MIME_DOCX;if(!isX&&!isD)throw new Error('Faqat Word (.docx) va Excel (.xlsx) fayllarni asl formatida tahrirlash mumkin. Boshqa turdagi fayl uchun make_document bilan yangisini yarat.');
+      const t0=Date.now();const r=isX?await editXlsx(f.bytes,a):await editDocx(f.bytes,a);
+      let out=(a.output_name||'').trim()||f.name.replace(/(\.\w+)$/,' (tahrirlangan)$1');out=out.replace(/[\\/:*?"<>|]+/g,' ');if(!/\.(docx|xlsx)$/i.test(out))out+=isX?'.xlsx':'.docx';
+      await showFile(r.blob,out,out);act('✏ hujjat tahrirlandi: '+out+' ('+(Date.now()-t0)+' ms)');
+      const miss=r.report.filter(x=>/TOPILMADI/.test(x));
+      return `Tayyor: "${out}" foydalanuvchiga ko'rsatildi.\n`+r.report.join('\n')+(miss.length?`\nDIQQAT: ${miss.length} ta bo'lak topilmadi — read bilan aniq matnni ko'rib, qisqaroq bo'lak bilan yana edit qil (natijani "${out}" fayli ustida davom ettir).`:'')}
+    throw new Error('noma\'lum action')}});
+async function fileText(f){const fl=new File([f.bytes],f.name,{type:f.mime});return await extractText(fl)}
+TOOLS.push({name:'measures',description:'Ob\'ektdagi NAZORAT-O\'LCHOV yozuvlari (ovoz bilan ham). action: add (object*, item* — ish/element nomi, unit, project — loyiha/akt bo\'yicha hajm, actual — haqiqiy o\'lchangan, note), list (object), delete (id), export (object, format: xlsx|docx) — jadval fayl qilib beradi (farq ustuni bilan). Foydalanuvchi ob\'ektda "devor qalinligi loyihada 51, haqiqatda 38 sm" kabi aytsa — add.',
+  inputSchema:{type:'object',properties:{action:{type:'string',enum:['add','list','delete','export']},object:{type:'string'},item:{type:'string'},unit:{type:'string'},project:{type:'number'},actual:{type:'number'},note:{type:'string'},id:{type:'string'},format:{type:'string',enum:['xlsx','docx']}},required:['action']},
+  execute:async a=>{S.measures=S.measures||[];const L=S.measures;
+    if(a.action==='add'){const r={id:Math.random().toString(36).slice(2,8),object:a.object||'Ob\'ekt',item:a.item||'',unit:a.unit||'',project:a.project??null,actual:a.actual??null,note:a.note||'',at:Date.now()};L.push(r);save();act('📏 o\'lchov: '+r.item);
+      const d=r.project!=null&&r.actual!=null?Math.round((r.actual-r.project)*1000)/1000:null;return `Yozildi (${r.id}): ${r.item} — loyiha ${r.project??'?'}, haqiqiy ${r.actual??'?'} ${r.unit}${d!=null?', farq '+d:''}`}
+    if(a.action==='delete'){const i=L.findIndex(x=>x.id===a.id);if(i<0)return'topilmadi';tomb('m:'+a.id);L.splice(i,1);save();return'o\'chirildi'}
+    const rows=L.filter(x=>!a.object||x.object.toLowerCase().includes(a.object.toLowerCase()));
+    if(a.action==='list')return rows.length?rows.map((x,i)=>`${i+1}. [${x.id}] ${x.object}: ${x.item} — loyiha ${x.project??'?'} / haqiqiy ${x.actual??'?'} ${x.unit} ${x.note}`).join('\n'):'Yozuv yo\'q';
+    if(a.action==='export'){if(!rows.length)return 'Yozuv yo\'q';const obj=a.object||rows[0].object;
+      const tbl='## O\'lchovlar\n| № | Ish (element) nomi | O\'lchov birligi | Loyiha bo\'yicha | Haqiqatda | Farq | Izoh |\n|---|---|---|---|---|---|---|\n'+rows.map((x,i)=>`| ${i+1} | ${x.item} | ${x.unit} | ${x.project??''} | ${x.actual??''} | ${x.project!=null&&x.actual!=null?Math.round((x.actual-x.project)*1000)/1000:''} | ${x.note} |`).join('\n');
+      const nm=('Nazorat-o\'lchov — '+obj).replace(/[\\/:*?"<>|]+/g,' ');
+      if((a.format||'xlsx')==='xlsx')await showFile(makeXlsx(tbl),nm+'.xlsx',nm,tbl);else await showFile(mdToDocx(`# NAZORAT-O'LCHOV NATIJALARI\n:: ${obj}\n>> ${fmtDate(new Date())}\n`+tbl.replace('## O\'lchovlar\n','')),nm+'.docx',nm,tbl);
+      return 'Jadval fayli tayyor va ko\'rsatildi.'}}});
+/* --- xato hisoboti --- */
+async function errorReport(){const N=NAT();let log='',dg='';try{log=N&&N.logRead?(await N.logRead()).split('\n').slice(-60).join('\n'):''}catch(e){}
+  try{if(N&&N.diag){const r=await N.diag();dg=(r.items||[]).map(i=>(i.ok?'✓ ':'✕ ')+i.name+': '+i.msg).join('\n')}}catch(e){}
+  const txt=`JARVIS XATO HISOBOTI ${new Date().toLocaleString('ru-RU')}\nQurilma: ${navigator.userAgent.slice(0,120)}\n\n${dg}\n\n--- jurnal ---\n${log||'(bo\'sh)'}\n\n--- faollik ---\n${[...$('actLog').children].slice(0,25).map(x=>x.textContent).join('\n')}`.replace(/(key=|Bearer |gsk_|AIza|sk-)[\w-]{6,}/g,'$1***');
+  let sent=false;try{sent=N&&N.tgNotify?await N.tgNotify(txt.slice(0,3900)):false}catch(e){}try{await navigator.clipboard.writeText(txt)}catch(e){}
+  return sent?'Xato hisoboti Telegram\'ingizga yuborildi va nusxalandi — uni Claude\'ga yuboring.':'Xato hisoboti nusxalandi — uni Claude\'ga joylang.'}
 
 /* ============ INPUT ============ */
 $('send').onclick=()=>ask($('inp').value,{typed:true});
