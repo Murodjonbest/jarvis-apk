@@ -758,9 +758,10 @@ function localTools(){
   const rem={name:'reminders',description:'Eslatmalar. action: set (text*, at_iso — mahalliy vaqt masalan 2026-11-12T09:00, yoki minutes_from_now; avval get_datetime), list, delete (id*).',
     inputSchema:{type:'object',properties:{action:{type:'string',enum:['set','list','delete']},text:{type:'string'},at_iso:{type:'string'},minutes_from_now:{type:'number'},id:{type:'string'}},required:['action']},
     execute:i=>i.action==='set'?by('set_reminder').execute(i):i.action==='delete'?by('delete_reminder').execute(i):by('list_reminders').execute()};
-  const web={name:'open_link',description:'Foydalanuvchiga bosiladigan havola chiqaradi: site (sayt nomi/URL), search (Google qidiruv), youtube_search, yoki weather_city (ob-havo havolasi; jonli ob-havoni bilmaysan).',
-    inputSchema:{type:'object',properties:{site:{type:'string'},search:{type:'string'},youtube_search:{type:'string'},weather_city:{type:'string'}}},
-    execute:i=>i.weather_city?by('weather_link').execute({city:i.weather_city}):by('open_website').execute(i)};
+  const web={name:'open_link',description:'Foydalanuvchiga bosiladigan havola chiqaradi: site (sayt nomi/URL), search (Google qidiruv), youtube_search, weather_city (ob-havo havolasi), yoki media_search + kind (images|videos|pages) — rasm/video/sahifa qidiruvi uchun chiroyli kartochkalar (ochish, nusxa, ulashish tugmalari bilan) ko\'rsatadi.',
+    inputSchema:{type:'object',properties:{site:{type:'string'},search:{type:'string'},youtube_search:{type:'string'},weather_city:{type:'string'},media_search:{type:'string'},kind:{type:'string',enum:['images','videos','pages']}}},
+    execute:i=>{if(i.media_search){window.showMedia('results',window.searchLinks(i.media_search,i.kind),i.media_search);return 'Foydalanuvchiga qidiruv kartochkalari ko\'rsatildi (bosilsa ochiladi, nusxalash va ulashish tugmalari bor). Texnik xato haqida gapirma.'}
+      return i.weather_city?by('weather_link').execute({city:i.weather_city}):by('open_website').execute(i)}};
   return[by('get_datetime'),by('calculate'),notes,rem,web,by('remember_fact'),by('google_status'),by('open_app'),by('second_brain'),by('recall'),by('routines'),by('run_code'),(()=>{const t=by('my_tools');return t&&Object.assign({},t,{description:t.description+(myTools().map(x=>x.name+(x.params?'('+x.params+')':'')+' — '+x.text).join('; ')||'hali yo\'q')})})(),by('pc'),by('web')].filter(Boolean)}
 function allTools(){return localTools().concat(connectorTools()).slice(0,window.JARVIS_DESKTOP?40:16)}
 /* ===== ISHONCH REJIMI: AI amallarini tasdiqsiz bajarish (foydalanuvchi o'zi yoqadi) ===== */
@@ -930,7 +931,7 @@ function sysPrompt(){
   const live=Object.keys(GSVC).filter(n=>G.avail[n]).map(n=>GSVC[n].label);
   return SYS+`
 Google hisobi: ${S.locked?'HIMOYA REJIMI — kirish bloklangan, Google vositalaridan foydalanma va buni ayt.':(live.length?'ulangan xizmatlar: '+live.join(', ')+'. Foydalanuvchi fayllari, hujjatlari, xatlari yoki kalendari haqida so\'rasa — tegishli vositadan foydalan. Yaratish/o\'zgartirish amallari foydalanuvchi tasdig\'ini talab qiladi; xat yuborma, faqat qoralama yarat.':'hech qaysi xizmat ulanmagan.')}
-Muhim fakt aytilsa yoki "eslab qol" deyilsa — remember_fact.
+${(window.jarvisNative&&window.jarvisNative.web)?'':'BU BRAUZER (claude.ai) VERSIYASI: internetdan bevosita qidirish yo\'q. Rasm, video yoki sayt qidir/ko\'rsat deyilsa — open_link vositasining media_search (+kind) bilan qidiruv kartochkalarini ko\'rsat VA o\'z bilimingdan eng yaxshi 3–4 aniq variantni tavsiya qil. "Xato", "Failed to fetch", "yopiq", "qila olmayman" kabi texnik gaplarni aytma; kerak bo\'lsa bir jumla bilan: "Rasmlar va videolarni to\'g\'ridan-to\'g\'ri shu yerning o\'zida ko\'rsatish uchun telefon yoki kompyuterdagi Jarvis ilovasidan foydalaning". my_tools\'da http ishlamaydi.\n'}Muhim fakt aytilsa yoki "eslab qol" deyilsa — remember_fact.
 Foydalanuvchi pochta/fayl/kalendarni ochib ko'rsatishni yoki bir vaqtda bir nechta ishni so'rasa — open_app (gmail/drive/calendar/connections, yoki har bir mustaqil ish uchun alohida task). Fon vazifalari parallel ishlaydi.
 ${kb?'Murodjonning ishlari haqida o\'rganilgan bilim (javoblarda foydalan):\n'+kb:''}${soul}${brainPrompt()}${(S.convos||[]).length?'\nOldingi suhbatlardan eslab qolinganlar:\n'+S.convos.slice(-10).map(c=>'- '+c.text).join('\n'):''}`}
 renderKB();
@@ -1585,6 +1586,11 @@ function bindMedia(box,kind,items){box.addEventListener('click',e=>{const card=e
   if(!b||b.dataset.a==='open'){openInside(it.url);return}
   if(b.dataset.a==='read'){ask(`Shu sahifani o'qib, menga eng muhim ma'lumotlarni qisqa va aniq aytib ber: ${it.url}`,{typed:true});return}
   if(b.dataset.a==='copy')copyLink(it.url);if(b.dataset.a==='share')shareLink(it.url,it.title)})}
+window.searchLinks=function(q,kind){const e=encodeURIComponent(q||'');
+  const L=kind==='videos'?[['YouTube',`https://www.youtube.com/results?search_query=${e}`,'Videolar'],['Google Video',`https://www.google.com/search?tbm=vid&q=${e}`,'Barcha saytlardagi videolar'],['TikTok',`https://www.tiktok.com/search?q=${e}`,'Qisqa videolar']]
+   :kind==='images'?[['Google Rasmlar',`https://www.google.com/search?tbm=isch&q=${e}`,'Eng ko\'p rasm'],['Yandex Rasmlar',`https://yandex.uz/images/search?text=${e}`,'Rus va o\'zbek saytlaridan'],['Pinterest',`https://www.pinterest.com/search/pins/?q=${e}`,'Dizayn g\'oyalari'],['Bing Rasmlar',`https://www.bing.com/images/search?q=${e}`,'Yuqori sifatli rasmlar']]
+   :[['Google',`https://www.google.com/search?q=${e}`,'Umumiy qidiruv'],['Yandex',`https://yandex.uz/search/?text=${e}`,'Mahalliy saytlar'],['Lex.uz',`https://lex.uz/search/all?searchtitle=${e}`,'Qonun va normativ hujjatlar']];
+  return L.map(([t,u,sn])=>({title:t+': '+q,url:u,site:new URL(u).hostname.replace(/^www\./,''),snippet:sn}))};
 window.showMedia=function(kind,items,query){
   if(!items||!items.length)return;const host=S.curMsg&&S.curMsg.isConnected?S.curMsg:addMsg('j','');
   const box=document.createElement('div');box.className='media';
@@ -1600,7 +1606,7 @@ window.showMedia=function(kind,items,query){
 const AsyncFn=Object.getPrototypeOf(async function(){}).constructor;
 function myTools(){return skills().filter(s=>s.code)}
 async function runMyTool(t,args){const N=NAT();
-  const http=async(url,o)=>{if(N&&N.http){const r=await N.http({url,...(o||{})});if(r.error)throw new Error(r.error);return r}const r=await fetch(url,o);const tx=await r.text();let j=null;try{j=JSON.parse(tx)}catch(e){}return{status:r.status,ok:r.ok,json:j,text:j?undefined:tx}};
+  const http=async(url,o)=>{if(N&&N.http){const r=await N.http({url,...(o||{})});if(r.error)throw new Error(r.error);return r}if(!window.JARVIS_DESKTOP)throw new Error('Brauzer versiyasida internetga chiqib bo\'lmaydi — internet kerak bo\'lmagan usulni tanla yoki open_link bilan kartochka ko\'rsat');const r=await fetch(url,o);const tx=await r.text();let j=null;try{j=JSON.parse(tx)}catch(e){}return{status:r.status,ok:r.ok,json:j,text:j?undefined:tx}};
   const web=async a=>{if(!N||!N.web)throw new Error('web faqat ilovada');const r=await N.web(a);if(r&&r.error)throw new Error(r.error);return r};
   const show=(kind,items,q)=>window.showMedia(kind,items,q);
   const fn=new AsyncFn('args','http','web','show','calc','note','remind',t.code);

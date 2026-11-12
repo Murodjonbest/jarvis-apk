@@ -411,6 +411,10 @@
           (j.results || []).slice(0, n).forEach(x => out.push({ title: x.title || '', image: x.image, thumb: x.thumbnail || x.image, page: x.url, site: host(x.url) })); }
       } catch (e) {}
     }
+    if (out.length < 4) { // zaxira: Wikimedia Commons (doim ochiq)
+      try { const j = JSON.parse((await getText('https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrnamespace=6&gsrlimit=' + n + '&prop=imageinfo&iiprop=url&iiurlwidth=360&gsrsearch=' + encodeURIComponent(q))).text);
+        Object.values((j.query && j.query.pages) || {}).forEach(pg => { const ii = (pg.imageinfo || [])[0]; if (ii && /\.(jpe?g|png|webp|gif)$/i.test(ii.url)) out.push({ title: (pg.title || '').replace(/^File:|\.\w+$/g, ''), image: ii.url, thumb: ii.thumburl || ii.url, page: ii.descriptionurl || ii.url, site: 'commons.wikimedia.org' }); }); } catch (e) {}
+    }
     return out;
   }
   async function searchVideos(q, n) {
