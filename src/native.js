@@ -174,11 +174,11 @@
   /* ---------- sozlamalar ---------- */
   function getCfg() { const c = loadCfg(); const gc = LS.get('gcfg', {}); return { ...c, google: { clientId: gc.clientId || '', hasSecret: !!gc.clientSecret }, providers: c.providers.map(p => ({ ...p, hasKey: !!p.key, key: p.key ? '••••' + p.key.slice(-4) : '' })) }; }
   function setCfg(upd) {
-    const c = loadCfg(); if (upd.sttLang) c.sttLang = upd.sttLang;
+    const c = loadCfg(); let keysChanged = false; if (upd.sttLang) c.sttLang = upd.sttLang;
     for (const u of upd.providers || []) { const p = c.providers.find(x => x.id === u.id); if (!p) continue;
-      if (typeof u.enabled === 'boolean') p.enabled = u.enabled; if (typeof u.key === 'string' && !u.key.startsWith('••••')) p.key = u.key.trim(); if (Array.isArray(u.models)) p.models = u.models.filter(Boolean); }
+      if (typeof u.enabled === 'boolean') p.enabled = u.enabled; if (typeof u.key === 'string' && !u.key.startsWith('••••') && u.key.trim() !== p.key) { p.key = u.key.trim(); keysChanged = true; } if (Array.isArray(u.models)) p.models = u.models.filter(Boolean); }
     if (upd.order) c.providers.sort((a, b) => upd.order.indexOf(a.id) - upd.order.indexOf(b.id));
-    persistProv(c); return true;
+    persistProv(c); if (keysChanged) { const r = raw(); r.keysAt = Date.now(); saveRaw(r); } return true;
   }
 
   /* ---------- tashqi havola ---------- */
@@ -255,6 +255,49 @@
       const r = await (await gfetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', { method: 'POST', headers: { 'Content-Type': 'multipart/related; boundary=' + bd }, body })).json();
       return { ok: true, id: r.id };
     } catch (e) { return { error: e.message, code: netCode(e) }; }
+  }
+
+
+  /* ---------- KALITLAR: Google hisobi bilan avtomatik (kompyuter bilan bir xil format) ---------- */
+  const KEY_FILE = 'jarvis_kalitlar.json';
+  async function autoKey(email) { const h = await crypto.subtle.digest('SHA-256', utf8('jarvis-auto-v1|' + String(email).toLowerCase().trim())); return crypto.subtle.importKey('raw', h, 'AES-GCM', false, ['encrypt', 'decrypt']); }
+  async function encAuto(email, obj) { const iv = rnd(12); const e = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await autoKey(email), utf8(JSON.stringify(obj))));
+    return { v: 1, iv: bytesToB64(iv), tag: bytesToB64(e.slice(-16)), data: bytesToB64(e.slice(0, -16)) }; }
+  async function decAuto(email, b) { const d = b64ToBytes(b.data), t = b64ToBytes(b.tag); const all = new Uint8Array(d.length + t.length); all.set(d); all.set(t, d.length);
+    return JSON.parse(unutf8(new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64ToBytes(b.iv) }, await autoKey(email), all)))); }
+  function mergeKeys(local, remote) {
+    const out = { at: Math.max(local.at || 0, remote.at || 0), keys: [], google: {} }; const newer = (remote.at || 0) > (local.at || 0) ? remote : local, older = newer === remote ? local : remote;
+    const ids = new Set([...(local.keys || []), ...(remote.keys || [])].map(k => k.id));
+    for (const id of ids) { const a = (newer.keys || []).find(k => k.id === id && k.key), b = (older.keys || []).find(k => k.id === id && k.key); if (a || b) out.keys.push(a || b); }
+    out.google = (newer.google && newer.google.clientId) ? newer.google : (older.google || {}); return out;
+  }
+  const keysSig = b => JSON.stringify((b.keys || []).map(k => [k.id, k.key, k.enabled, (k.models || []).join(',')]).sort()) + '|' + ((b.google || {}).clientId || '') + ((b.google || {}).clientSecret || '');
+  let keysBusy = null;
+  function keysSync() { if (!keysBusy) keysBusy = keysSync0().finally(() => { keysBusy = null; }); return keysBusy; }
+  async function keysSync0() {
+    const t = readTok(); if (!t || !t.refresh_token || !t.email) return { skip: true };
+    try {
+      const folder = await memFolder();
+      const q = encodeURIComponent(`name = '${KEY_FILE}' and '${folder}' in parents and trashed = false`);
+      const files = ((await (await gfetch(`https://www.googleapis.com/drive/v3/files?q=${q}&orderBy=modifiedTime desc&fields=files(id)&pageSize=5`)).json()).files || []);
+      let remote = { at: 0, keys: [], google: {} };
+      if (files[0]) { try { remote = await decAuto(t.email, JSON.parse(await (await gfetch(`https://www.googleapis.com/drive/v3/files/${files[0].id}?alt=media`)).text())); } catch (e) { logw('KEYS decrypt: ' + e.message); } }
+      const c = loadCfg(), r0 = raw(), gc = gcfg();
+      const local = { at: r0.keysAt || 0, keys: c.providers.filter(p => p.key).map(p => ({ id: p.id, key: p.key, models: p.models, enabled: p.enabled })), google: { clientId: gc.clientId || '', clientSecret: gc.clientSecret || '' } };
+      const m = mergeKeys(local, remote); let pulled = 0;
+      for (const k of m.keys) { const p = c.providers.find(x => x.id === k.id); if (!p) continue; if (p.key !== k.key) { p.key = k.key; pulled++; } if (k.models && k.models.length) p.models = k.models; if (typeof k.enabled === 'boolean') p.enabled = k.enabled; }
+      persistProv(c); const r1 = raw(); r1.keysAt = m.at; saveRaw(r1);
+      if (m.google.clientId && m.google.clientSecret) sgcfg({ ...gcfg(), clientId: m.google.clientId, clientSecret: m.google.clientSecret });
+      let pushed = false;
+      if (keysSig(m) !== keysSig(remote) && m.keys.length) {
+        const body = JSON.stringify(await encAuto(t.email, m));
+        if (files[0]) await gfetch(`https://www.googleapis.com/upload/drive/v3/files/${files[0].id}?uploadType=media`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body });
+        else { const bd = 'jrv' + Date.now(); await gfetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', { method: 'POST', headers: { 'Content-Type': 'multipart/related; boundary=' + bd },
+          body: `--${bd}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name: KEY_FILE, parents: [folder], mimeType: 'application/json' })}\r\n--${bd}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${bd}--` }); }
+        pushed = true;
+      }
+      return { ok: true, pulled, pushed, count: m.keys.length };
+    } catch (e) { logw('KEYS: ' + e.message); return { error: e.message }; }
   }
 
   /* ---------- kalitlarni parol bilan shifrlash (kompyuter bilan bir xil format: scrypt N=16384 + AES-256-GCM) ---------- */
@@ -504,9 +547,9 @@
     chat: A(chat), abort: A(id => { aborted.add(id); }), models: A(models), test: A(test), stt: A(stt),
     getCfg: A(getCfg), setCfg: A(setCfg), storeGet: A(() => LS.get('store', null)), storeSet: A(v => { LS.set('store', v); return true; }),
     open: A(openExt), net: A(online),
-    gSetClient: A(({ clientId, clientSecret }) => { const c = gcfg(); if (clientId) c.clientId = clientId.trim(); if (clientSecret && !clientSecret.startsWith('••')) c.clientSecret = clientSecret.trim(); sgcfg(c); return true; }),
+    gSetClient: A(({ clientId, clientSecret }) => { const c = gcfg(); if (/^JRV1:/.test((clientId || '').trim())) { try { const j = JSON.parse(b64d(clientId.trim().slice(5))); clientId = j.i; clientSecret = j.s; } catch (er) {} } if (clientId) c.clientId = clientId.trim(); if (clientSecret && !clientSecret.startsWith('••')) c.clientSecret = clientSecret.trim(); sgcfg(c); return true; }),
     gStatus: A(() => { const t = readTok(); const sc = (t && t.scope) || ''; const c = gcfg(); return { configured: !!(c.clientId && c.clientSecret), loggedIn: !!(t && t.refresh_token), email: t && t.email || '', gmail: /gmail/.test(sc), calendar: /calendar/.test(sc), drive: /auth\/drive/.test(sc) || (t && !t.scope) }; }),
-    gLogin: A(gLogin), gLogout: A(() => { LS.set('gtok', null); return true; }), gPull: A(gPull), gPush: A(gPush),
+    gLogin: A(gLogin), keysSync: A(keysSync), gLogout: A(() => { LS.set('gtok', null); return true; }), gPull: A(gPull), gPush: A(gPush),
     ttsGemini: A(ttsGemini), ttsCfg: A(ttsCfg), secExport: A(secExport), secImport: A(secImport),
     pc: A(pc), web: A(web), gapiList: A(gapiList), gapiDescribe: A(gapiDescribe), gapiCall: A(gapiCall),
     diag: A(diag), log: A(m => { logw(m); return true; }), logRead: A(() => LS.get('log', []).join('\n')),
@@ -519,5 +562,5 @@
   // Telegram oldin yoqilgan bo'lsa — avtomatik
   setTimeout(() => { const t = tgCfg(); if (t.token && t.owner && t.enabled !== false) { TG.on = true; tgLoop(); } }, 3000);
   // orqaga tugmasi: ilovadan chiqib ketmasin, oynalarni yopsin
-  try { isNative && AppP && AppP.addListener('backButton', () => { const m = document.querySelector('#modal.show, .win.open, .modal.show'); if (m) { const x = m.querySelector('[data-x], .x, .close'); if (x) x.click(); else m.classList.remove('show', 'open'); } else AppP.minimizeApp(); }); } catch (e) {}
+  try { isNative && AppP && AppP.addListener('backButton', () => { if (window.mobBack && window.mobBack()) return; const m = document.querySelector('#modal.show, .win.open, .modal.show'); if (m) { const x = m.querySelector('[data-x], .x, .close'); if (x) x.click(); else m.classList.remove('show', 'open'); } else AppP.minimizeApp(); }); } catch (e) {}
 })();

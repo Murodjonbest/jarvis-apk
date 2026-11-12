@@ -7,3 +7,4 @@ android/app/src/main/assets/public/
 android/local.properties
 *.keystore
 *.jks
+android/app/src/main/assets/vosk-model/

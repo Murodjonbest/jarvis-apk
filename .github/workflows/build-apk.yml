@@ -23,11 +23,27 @@ jobs:
           npm ci
           npm run build
           npx cap sync android
+      - name: Internetsiz "Jarvis" so'zini tanish modeli (Vosk)
+        run: |
+          curl -sSL -o /tmp/m.zip https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
+          unzip -q /tmp/m.zip -d /tmp/m
+          D=android/app/src/main/assets/vosk-model; rm -rf $D; mkdir -p $D
+          cp -r /tmp/m/vosk-model-small-en-us-0.15/* $D/
+          echo "en-small-015-v1" > $D/uuid
+          echo "jarvis lug'atda:"; grep -rhw -m3 "jarvis" $D/graph/words.txt $D/words.txt 2>/dev/null || echo "YO'Q (words.txt topilmadi yoki so'z yo'q)"; ls $D $D/graph
       - name: Imzo kaliti (doimiy — yangilanishlar ustidan o'rnatilsin)
         uses: actions/cache@v4
         with:
           path: ~/jarvis-key
           key: jarvis-signing-key-v1
+      - name: Internetsiz "Jarvis" so'zini tanish modeli (Vosk)
+        run: |
+          curl -sSL -o /tmp/m.zip https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
+          unzip -q /tmp/m.zip -d /tmp/m
+          D=android/app/src/main/assets/vosk-model; rm -rf $D; mkdir -p $D
+          cp -r /tmp/m/vosk-model-small-en-us-0.15/* $D/
+          echo "en-small-015-v1" > $D/uuid
+          echo "jarvis lug'atda:"; grep -rhw -m3 "jarvis" $D/graph/words.txt $D/words.txt 2>/dev/null || echo "YO'Q (words.txt topilmadi yoki so'z yo'q)"; ls $D $D/graph
       - name: Imzo kalitini tayyorlash
         env:
           KS_B64: ${{ secrets.JARVIS_KEYSTORE_B64 }}

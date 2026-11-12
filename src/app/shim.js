@@ -117,11 +117,11 @@
             if(r.error){res.textContent='✕ '+r.error;return}res.innerHTML='Bosib qo\'shing: '+r.models.slice(0,80).map(m=>`<button class="chip" style="margin:2px;font-size:11px" data-m="${esc(m)}">${esc(m)}</button>`).join('');
             res.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const inp=el.querySelector('[data-models]');const cur=inp.value.split(',').map(s=>s.trim()).filter(Boolean);if(!cur.includes(b.dataset.m))cur.push(b.dataset.m);inp.value=cur.join(', ')})};
           el.querySelector('[data-test]').onclick=async()=>{await N.setCfg(collect());res.textContent='Sinalmoqda…';const r=await N.test(id);res.textContent=r.ok?'✓ Ishlayapti ('+r.model+')':'✕ '+r.error}});
-        w.body.querySelector('[data-save]').onclick=async()=>{await N.setCfg(collect());const n=await N.getCfg();Object.assign(cfg,n);draw();try{showToast('Sozlamalar saqlandi','MODELLAR')}catch(e){}}};
+        w.body.querySelector('[data-save]').onclick=async()=>{await N.setCfg(collect());window.keysAuto&&window.keysAuto();const n=await N.getCfg();Object.assign(cfg,n);draw();try{showToast('Sozlamalar saqlandi','MODELLAR')}catch(e){}}};
       draw()})};
   document.addEventListener('DOMContentLoaded',()=>{
     const dock=document.getElementById('dock');if(dock){const b=document.createElement('button');b.textContent='⚙ Modellar';b.onclick=()=>window.openModelSettings();dock.insertBefore(b,dock.firstChild)}
-    N.getCfg().then(c=>{if(!c.providers.some(p=>p.enabled&&p.hasKey))setTimeout(()=>{try{addMsg('j','👋 Jarvis Desktop\'ga xush kelibsiz, ser! Ishlashim uchun kamida bitta **bepul API kalit** kerak. Pastdagi **⚙ Modellar** tugmasini bosing → "🔑 Kalit olish" → kalitni joylang → **Saqlash**. Eng osoni: **Groq** (ovozli buyruqlar ham shu bilan ishlaydi) va **Google Gemini**.');window.openModelSettings()}catch(e){}},800)})});
+    N.getCfg().then(c=>{if(!c.providers.some(p=>p.enabled&&p.hasKey))setTimeout(()=>{try{addMsg('j','👋 Jarvis\'ga xush kelibsiz, ser! Ishlashim uchun kamida bitta **bepul API kalit** kerak. Pastdagi **⚙ Modellar** tugmasini bosing → "🔑 Kalit olish" → kalitni joylang → **Saqlash**. Eng osoni: **Groq** (ovozli buyruqlar ham shu bilan ishlaydi) va **Google Gemini**.');window.openModelSettings()}catch(e){}},800)})});
 })();
 
 /* ================= DESKTOP: ONLAYN/OFLAYN + GOOGLE SINXRON ================= */
@@ -168,8 +168,13 @@
     // every local save → mark dirty, sync soon (offline: queued)
     const orig=window.save;window.save=function(){const r=orig.apply(this,arguments);SY.dirty=true;if(SY.online===false){SY.status='📴 oflayn · o\'zgarishlar navbatda';ui()}schedule(8000);return r};
     const gb=document.getElementById('gmBtn');if(gb)gb.onclick=()=>window.openModelSettings();
-    ui();setTimeout(()=>syncNow(),2500)});
+    ui();setTimeout(()=>syncNow(),2500);setTimeout(()=>window.keysAuto&&window.keysAuto(),4500);setInterval(()=>window.keysAuto&&window.keysAuto(),15*60*1000)});
 
+  /* kalitlar Google hisobi bilan avtomatik */
+  window.keysAuto=async function(loud){if(!N.keysSync)return;try{const r=await N.keysSync();
+    if(r&&r.pulled){try{showToast(r.pulled+' ta API kalit Google hisobingizdan yuklandi','KALITLAR')}catch(e){}if(WINS.models){closeWin('models');window.openModelSettings()}}
+    else if(loud&&r&&r.ok){try{showToast(r.count?'Kalitlar Google hisobingizga bog\'landi ('+r.count+' ta)':'Google hisobingizda hali kalit yo\'q — bir marta kiriting, keyin hamma qurilmada o\'zi chiqadi','KALITLAR')}catch(e){}}
+    return r}catch(e){}};
   /* settings: Google + kalitlar bo'limi */
   const base=window.openModelSettings;
   window.openModelSettings=async function(){await base();const w=WINS.models;if(!w||w.body.querySelector('[data-gbox]'))return;
@@ -180,9 +185,10 @@
       <div class="kbm">Holat: <b>${st.loggedIn?'✓ ulangan — '+esc(st.email):st.configured?'kirilmagan':'sozlanmagan'}</b> · ${esc(SY.status)}</div>
       <details ${st.configured?'':'open'} style="margin:6px 0"><summary style="cursor:pointer;color:var(--cy2)">1-qadam: Google Client ID (bir martalik sozlash)</summary>
         <div class="t" style="font-size:13px;color:var(--mut);margin:6px 0">1) <a href="#" data-o="https://console.cloud.google.com/projectcreate">console.cloud.google.com</a> da yangi loyiha yarating ("Jarvis").<br>2) <a href="#" data-o="https://console.cloud.google.com/apis/library/drive.googleapis.com">Google Drive API</a> ni yoqing (Enable).<br>3) <a href="#" data-o="https://console.cloud.google.com/auth/branding">OAuth consent screen</a>: ilova nomi "Jarvis", turi <b>External</b>, o'z emailingiz; "Audience" bo'limida <b>Publish app</b> (In production) ni bosing — aks holda har 7 kunda qayta kirish kerak bo'ladi.<br>4) <a href="#" data-o="https://console.cloud.google.com/auth/clients">Clients</a> → Create client → turi <b>Desktop app</b> → Client ID va Client Secret ni shu yerga qo'ying.<br>Kirishda "Google hasn't verified this app" chiqsa: <b>Advanced → Go to Jarvis</b> (bu o'zingizning ilovangiz).</div>
-        <div class="addrow"><input data-cid placeholder="Client ID (…apps.googleusercontent.com)" value="${esc(cfg.google.clientId)}"></div>
+        <div class="addrow"><input data-cid placeholder="${window.JARVIS_MOBILE?'Kompyuterdagi JRV1: kodini shu yerga joylang (yoki Client ID)':'Client ID (…apps.googleusercontent.com)'}" value="${esc(cfg.google.clientId)}"></div>
         <div class="addrow"><input data-csec type="password" placeholder="Client Secret" value="${cfg.google.hasSecret?'••••••••':''}"><button data-gsave>Saqlash</button></div></details>
-      <div class="wact">${st.loggedIn?'<button data-gsync>🔄 Hozir sinxronlash</button><button data-gout>Chiqish</button>':'<button class="w" data-glogin>🔑 Google bilan kirish</button>'}</div>
+      <div class="wact">${st.loggedIn?'<button data-gsync>🔄 Hozir sinxronlash</button><button data-gout>Chiqish</button>':'<button class="w" data-glogin>🔑 Google bilan kirish</button>'}${(!window.JARVIS_MOBILE&&st.configured&&N.gPhoneCode)?'<button data-pcode>📱 Telefon uchun kod</button>':''}</div>
+      <div class="t" style="font-size:13px;color:var(--cy2);margin-top:4px">🔑 <b>API kalitlar endi avtomatik:</b> Google hisobingiz bilan kirgan zahoti barcha kalitlar shu qurilmaga o'zi yuklanadi, yangi kalit kiritsangiz hamma qurilmaga o'zi tarqaladi. Kalitlar Drive'dagi <b>Jarvis xotira/jarvis_kalitlar.json</b> faylida shifrlangan; ularni faqat shu Google hisobga kira olgan odam ocha oladi.</div>
       <div class="h" style="margin-top:8px">🔐 KALITLAR + FACE ID'NI GOOGLE XOTIRADA SAQLASH</div>
       <div class="t" style="font-size:13px;color:var(--mut)">Kalitlar, <b>yuzingiz (Face ID)</b> va ovoz namunangiz siz tanlagan <b>parol</b> bilan shifrlanib (AES-256) xotira fayliga qo'shiladi. Parolsiz hech kim — Google ham — ularni o'qiy olmaydi. Boshqa kompyuterda Jarvisga kirib, shu parolni kiritsangiz kalitlar tiklanadi. Parolni unutmang — uni tiklab bo'lmaydi.</div>
       <div class="addrow"><input data-pass type="password" placeholder="Parol (kamida 6 belgi)"><button data-exp>⬆ Saqlash</button><button data-imp>⬇ Tiklash</button></div>
@@ -190,8 +196,9 @@
     w.body.prepend(box);
     box.querySelectorAll('[data-o]').forEach(a=>a.onclick=e=>{e.preventDefault();N.open(a.dataset.o)});
     const q=s=>box.querySelector(s),res=q('[data-sres]');
+    if(q('[data-pcode]'))q('[data-pcode]').onclick=async e=>{const r=await N.gPhoneCode();if(r.error){res.textContent='✕ '+r.error;return}try{await navigator.clipboard.writeText(r.code)}catch(er){}let tg=false;try{tg=await N.tgNotify('📱 Telefondagi Jarvis uchun ulanish kodi (Sozlash → Google → 1-qadam maydoniga joylang):\n\n'+r.code)}catch(er){}res.textContent='✓ Kod nusxalandi'+(tg?' va Telegram\'ingizga yuborildi':'')+'. Telefonda: Sozlash → GOOGLE → 1-qadam maydoniga joylang → Saqlash → Google bilan kirish.'};
     q('[data-gsave]').onclick=async()=>{await N.gSetClient({clientId:q('[data-cid]').value,clientSecret:q('[data-csec]').value});closeWin('models');window.openModelSettings()};
-    if(q('[data-glogin]'))q('[data-glogin]').onclick=async e=>{e.target.textContent='⏳ Brauzerda ruxsat bering…';const r=await N.gLogin();if(r.error){e.target.textContent='🔑 Google bilan kirish';res.textContent='✕ '+r.error;return}closeWin('models');try{await initGoogle();preloadSchemas()}catch(er){}await syncNow(true);window.openModelSettings()};
+    if(q('[data-glogin]'))q('[data-glogin]').onclick=async e=>{e.target.textContent='⏳ Brauzerda ruxsat bering…';const r=await N.gLogin();if(r.error){e.target.textContent='🔑 Google bilan kirish';res.textContent='✕ '+r.error;return}closeWin('models');try{await window.keysAuto(true)}catch(er){}try{await initGoogle();preloadSchemas()}catch(er){}await syncNow(true);window.openModelSettings()};
     if(q('[data-gsync]'))q('[data-gsync]').onclick=async e=>{e.target.textContent='⏳…';await syncNow(true);e.target.textContent='🔄 Hozir sinxronlash';res.textContent='Holat: '+SY.status};
     if(q('[data-gout]'))q('[data-gout]').onclick=async()=>{await N.gLogout();closeWin('models');window.openModelSettings()};
     q('[data-exp]').onclick=async()=>{const r=await N.secExport(q('[data-pass]').value,window.__secExtra?window.__secExtra():null);if(r.error){res.textContent='✕ '+r.error;return}

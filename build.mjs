@@ -5,7 +5,7 @@ fs.rmSync(W, { recursive: true, force: true }); fs.mkdirSync(W + '/lib', { recur
 fs.cpSync(S + '/app/vendor', W + '/vendor', { recursive: true });
 fs.copyFileSync('node_modules/@capacitor/core/dist/capacitor.js', W + '/lib/capacitor.js');
 fs.copyFileSync('node_modules/scrypt-js/scrypt.js', W + '/lib/scrypt.js');
-for (const f of ['native.js', 'tts-polyfill.js', 'mobile.css']) fs.copyFileSync(S + '/' + f, W + '/' + f);
+for (const f of ['native.js', 'tts-polyfill.js', 'mobile.css', 'mobile.js']) fs.copyFileSync(S + '/' + f, W + '/' + f);
 
 let shim = fs.readFileSync(S + '/app/shim.js', 'utf8');
 const pcA = shim.indexOf("description:'Foydalanuvchining kompyuterida ishlash (Windows)."), pcB = shim.indexOf("required:['action']}", pcA);
@@ -14,6 +14,7 @@ shim = shim.slice(0, pcA) +
   "description:'Telefonda ishlash (Android). action: open_app (name: telegram, youtube, xarita, gmail, drive, kalendar, whatsapp, instagram, sozlamalar, telefon raqami yoki istalgan URL — ochadi), call (name: telefon raqami — qo\\'ng\\'iroq oynasini ochadi), sms (name: raqam, text: matn — SMS oynasini ochadi), system_info (batareya, qurilma).',\n      inputSchema:{type:'object',properties:{action:{type:'string',enum:['open_app','call','sms','system_info']},name:{type:'string'},text:{type:'string'}}," +
   shim.slice(pcB);
 shim = shim.replace(/Windows/g, 'telefon').replace(/kompyuter(ingizda|da|ni|ga|dagi)?/g, (m, e) => 'telefon' + (e || ''));
+shim = shim.replace('Pastdagi **⚙ Modellar** tugmasini bosing', 'Pastdagi **⚙ Sozlash** tugmasini bosing (yoki u yerda Google bilan kiring — kompyuterdagi kalitlar o\\\'zi yuklanadi)');
 fs.writeFileSync(W + '/shim.js', shim);
 
 let html = fs.readFileSync(S + '/app/index.html', 'utf8');
@@ -24,5 +25,7 @@ html = html.replace(/<meta name="viewport"[^>]*>/, '<meta name="viewport" conten
 html = html.replace(/Windows'dagi ovozlar/g, 'Telefondagi ovozlar').replace(/Sozlamalar → Vaqt va til → Nutq → Ovoz qo\\'shish/g, 'Sozlamalar → Til → Matnni nutqqa aylantirish');
 html = html.replace(/shu kompyuterda/g, 'shu telefonda');
 html = html.replace("'Gemini / Windows'", "'Gemini / telefon'");
+if (!html.includes('</body>')) throw new Error('body yopilishi topilmadi');
+html = html.replace(/<\/body>(?![\s\S]*<\/body>)/, '<script src="mobile.js"></script></body>');
 fs.writeFileSync(W + '/index.html', html);
 console.log('www tayyor:', fs.readdirSync(W).join(', '));
