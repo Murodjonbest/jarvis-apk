@@ -30,7 +30,8 @@ jobs:
           D=android/app/src/main/assets/vosk-model; rm -rf $D; mkdir -p $D
           cp -r /tmp/m/vosk-model-small-en-us-0.15/* $D/
           echo "en-small-015-v1" > $D/uuid
-          echo "jarvis lug'atda:"; grep -rhw -m3 "jarvis" $D/graph/words.txt $D/words.txt 2>/dev/null || echo "YO'Q (words.txt topilmadi yoki so'z yo'q)"; ls $D $D/graph
+          pip install -q vosk
+          python3 -c "from vosk import Model, KaldiRecognizer; m=Model('$D'); KaldiRecognizer(m,16000,'[\"jarvis\", \"hey jarvis\", \"[unk]\"]'); print('GRAMMAR-CHECK-DONE')" 2>&1 | grep -i "missing\|ignor\|GRAMMAR" || true
       - name: Imzo kaliti (doimiy — yangilanishlar ustidan o'rnatilsin)
         uses: actions/cache@v4
         with:
@@ -43,7 +44,8 @@ jobs:
           D=android/app/src/main/assets/vosk-model; rm -rf $D; mkdir -p $D
           cp -r /tmp/m/vosk-model-small-en-us-0.15/* $D/
           echo "en-small-015-v1" > $D/uuid
-          echo "jarvis lug'atda:"; grep -rhw -m3 "jarvis" $D/graph/words.txt $D/words.txt 2>/dev/null || echo "YO'Q (words.txt topilmadi yoki so'z yo'q)"; ls $D $D/graph
+          pip install -q vosk
+          python3 -c "from vosk import Model, KaldiRecognizer; m=Model('$D'); KaldiRecognizer(m,16000,'[\"jarvis\", \"hey jarvis\", \"[unk]\"]'); print('GRAMMAR-CHECK-DONE')" 2>&1 | grep -i "missing\|ignor\|GRAMMAR" || true
       - name: Imzo kalitini tayyorlash
         env:
           KS_B64: ${{ secrets.JARVIS_KEYSTORE_B64 }}
