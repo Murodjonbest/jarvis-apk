@@ -172,6 +172,33 @@ body{background:
 @media (max-width:1000px){.para{grid-template-columns:1fr}}
 .envbox{border:1px solid var(--amber);background:rgba(40,25,0,.6);padding:10px 12px;font-size:15px;line-height:1.4}
 .envbox b{color:var(--amber)} .envbox .link{margin-right:6px}
+
+/* ===== MEDIA: rasm, video, sahifa natijalari ===== */
+.media{margin-top:8px;display:flex;flex-direction:column;gap:8px}
+.media .mh{display:flex;align-items:center;gap:6px;font:700 10px Orbitron;letter-spacing:.15em;color:var(--mut)}
+.media .mh span{flex:1}.media .mh button,.mact button{background:rgba(63,210,255,.08);border:1px solid var(--line);color:var(--cy2);font:600 12px Rajdhani,sans-serif;padding:4px 8px;border-radius:8px;cursor:pointer}
+.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.mgrid .mi{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#071523;cursor:pointer;border:1px solid var(--line)}
+.mgrid .mi img{width:100%;height:100%;object-fit:cover;display:block}
+.mvid{display:flex;flex-direction:column;gap:6px}
+.mv{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#071523}
+.mv .th{position:relative;aspect-ratio:16/9;cursor:pointer;background:#000}
+.mv .th img{width:100%;height:100%;object-fit:cover;display:block;opacity:.9}
+.mv .th::after{content:'▶';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:42px;color:#fff;text-shadow:0 0 18px rgba(0,0,0,.9)}
+.mv .th.playing::after{display:none}.mv iframe{width:100%;height:100%;border:0;display:block}
+.mv .dur{position:absolute;right:6px;bottom:6px;background:rgba(0,0,0,.8);color:#fff;font:600 11px sans-serif;padding:1px 5px;border-radius:4px;z-index:1}
+.mv .mt,.mres .mt{padding:7px 9px 2px;font-weight:600;font-size:14px;line-height:1.25}
+.mv .ms,.mres .ms{padding:0 9px 6px;font-size:12px;color:var(--mut)}
+.mres{border:1px solid var(--line);border-left:2px solid var(--cy);border-radius:8px;background:rgba(63,210,255,.03)}
+.mres .mt{cursor:pointer;color:var(--cy2)}
+.mact{display:flex;gap:5px;flex-wrap:wrap;padding:0 9px 8px}
+#mView{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:70;display:none;flex-direction:column}
+#mView.open{display:flex}#mView .vi{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:8px}
+#mView .vi img{max-width:100%;max-height:100%;object-fit:contain;border-radius:6px}
+#mView .vt{color:#ddd;font-size:13px;padding:4px 14px;text-align:center}
+#mView .vb{display:flex;gap:8px;justify-content:center;padding:10px 10px calc(14px + env(safe-area-inset-bottom));flex-wrap:wrap}
+#mView .vb button{background:rgba(63,210,255,.12);border:1px solid var(--cy);color:var(--cy2);padding:10px 14px;border-radius:12px;font:600 14px Rajdhani,sans-serif}
+#mView .nv{position:absolute;top:45%;font-size:34px;color:#fff;background:rgba(0,0,0,.4);border:0;width:44px;height:64px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -623,16 +650,20 @@ Qoidalar:
 - Vaqt/sana uchun get_datetime; eslatma uchun avval get_datetime, keyin set_reminder; qayd uchun add_note; saytlar uchun open_website; ob-havo uchun weather_link (jonli ob-havoni bilmasligingni ayt).
 - Rasmiy hujjat matnlarini rasmiy o'zbek uslubida yoz. Normativ hujjat raqamlarini aniq bilmasang — taxmin qilma, tekshirishni maslahat ber.
 - Bilmagan narsangni o'ylab topma.
+- HAR QANDAY ISHNI O'ZING BAJAR. Hech qachon "qila olmayman", "imkonim yo'q", "kira olmayman", "havolani yuboraman — o'zingiz qarang" dema. Buning o'rniga: "Xo'p, ser, hozir hal qilaman" deb, darhol vositalar bilan ishga kirish.
+- Biror narsani qidir/top/ko'rsat deyilsa — web vositasining search (sahifalar), images (rasmlar), videos (videolar) amallari bilan O'ZING top; natijalar foydalanuvchiga Jarvis ichida rasm, video va kartochka bo'lib avtomatik ko'rsatiladi (havolasi ham yonida). Sen javobda eng yaxshi 2–4 variantni qisqa izohla va nega yaxshi ekanini ayt. Kerak bo'lsa fetch_url bilan sahifani o'qib, aniq ma'lumot ber.
+- Vosita xato bersa — taslim bo'lma: boshqa yo'l bilan qayta urin (boshqa so'z, boshqa amal, run_code, my_tools). Mavjud vositalar yetmasa — my_tools.create bilan o'zingga yangi vosita yoz (masalan, kerakli sayt yoki bepul API'dan ma'lumot oluvchi), run bilan sinab ko'r, xato bo'lsa tuzat. Muvaffaqiyatli usulni keyingi safar ham ishlat — sen har safar o'rganib, kuchayib borasan.
+- Faqat haqiqatan ilojsiz bo'lsa (masalan, jismoniy ish), qisqa aytib, eng yaqin muqobilini o'zing bajarib ber.
 - Oddiy suhbatda tabiiy, jonli, ravon gapir — xuddi odam gapirgandek: qisqa gaplar, ro'yxat va belgilarsiz, "xo'p", "albatta", "tushunarli" kabi so'zlar bilan. Ro'yxat/jadval faqat foydalanuvchi hujjat yoki batafsil ma'lumot so'raganda.`;
 
-async function ask(text){
-  text=text.trim();if(!text)return;
+async function ask(text,opt){
+  text=text.trim();if(!text)return;const typed=!!(opt&&opt.typed);
   if(voiceControl(text))return;
   if(text.startsWith('/')&&runCommand(text))return;
   stopSpeak();addMsg('u',text);$('inp').value='';
   S.jobs=(S.jobs||0)+1;S.busy=true;$('stop').style.display='';setMode('thinking');
   const myCtl=new AbortController();CTLS.add(myCtl);
-  const d=addMsg('j','…');pendingLinks=[];
+  const d=addMsg('j','…');S.curMsg=d;pendingLinks=[];
   let answer='';
   try{
     if(sample){
@@ -648,7 +679,7 @@ async function ask(text){
     }
     setBody(d,answer||'Kechirasiz ser, javob topilmadi.');
     pendingLinks.forEach(([u,l])=>addLink(d,u,l));
-    setMode('idle');await speak(answer);
+    setMode('idle');if(!typed||S.speakTyped)await speak(answer);
   }catch(e){
     if(e&&e.name==='AbortError'||e?.code==='aborted'){setBody(d,(answer||'')+' _(to\'xtatildi)_')}
     else if(e?.code==='not_granted'){sample=null;setStat('Ai','ruxsat yo\'q',false);answer=localBrain(text);setBody(d,answer);speak(answer)}
@@ -730,8 +761,8 @@ function localTools(){
   const web={name:'open_link',description:'Foydalanuvchiga bosiladigan havola chiqaradi: site (sayt nomi/URL), search (Google qidiruv), youtube_search, yoki weather_city (ob-havo havolasi; jonli ob-havoni bilmaysan).',
     inputSchema:{type:'object',properties:{site:{type:'string'},search:{type:'string'},youtube_search:{type:'string'},weather_city:{type:'string'}}},
     execute:i=>i.weather_city?by('weather_link').execute({city:i.weather_city}):by('open_website').execute(i)};
-  return[by('get_datetime'),by('calculate'),notes,rem,web,by('remember_fact'),by('google_status'),by('open_app'),by('second_brain'),by('recall'),by('routines'),by('run_code'),by('pc'),by('web')].filter(Boolean)}
-function allTools(){return localTools().concat(connectorTools()).slice(0,16)}
+  return[by('get_datetime'),by('calculate'),notes,rem,web,by('remember_fact'),by('google_status'),by('open_app'),by('second_brain'),by('recall'),by('routines'),by('run_code'),(()=>{const t=by('my_tools');return t&&Object.assign({},t,{description:t.description+(myTools().map(x=>x.name+(x.params?'('+x.params+')':'')+' — '+x.text).join('; ')||'hali yo\'q')})})(),by('pc'),by('web')].filter(Boolean)}
+function allTools(){return localTools().concat(connectorTools()).slice(0,window.JARVIS_DESKTOP?40:16)}
 /* ===== ISHONCH REJIMI: AI amallarini tasdiqsiz bajarish (foydalanuvchi o'zi yoqadi) ===== */
 const DANGER=/format-volume|\bformat\s+[a-z]:|diskpart|bcdedit|cipher\s+\/w|vssadmin\s+delete|reg(\.exe)?\s+delete\s+hklm|\b(Remove-Item|rm|del|erase|rmdir|rd|ri)\b[^\n]*?\s['"]?[a-z]:\\?(\*|\\\*)?['"]?(\s|$|;)|\\windows(\\|\b)|\\program files|Stop-Computer|Restart-Computer|shutdown(\.exe)?\s+[\/-][srp]|Clear-Disk|Initialize-Disk|Remove-Partition/i;
 function trustMode(){try{return localStorage.getItem('jarvis_trust')||'ask'}catch(e){return'ask'}}
@@ -1522,6 +1553,72 @@ TOOLS.push({name:'run_code',description:'Kodni bajaradi va natijani qaytaradi �
   inputSchema:{type:'object',properties:{language:{type:'string',enum:['python','javascript']},code:{type:'string'},packages:{type:'array',items:{type:'string'}}},required:['language','code']},
   execute:async a=>{act('⚙ '+a.language+' kodi bajarilmoqda…');const r=a.language==='javascript'?await runJS(a.code):await runPython(a.code,a.packages);act((r.ok?'✓ ':'✕ ')+a.language+' kod',r.ok?'':'e');return (r.out||'(chiqish yo\'q)').slice(0,12000)}});
 
+/* ============ MEDIA: rasm, video va sahifalarni Jarvis ichida ko'rsatish ============ */
+const NAT=()=>window.jarvisNative||null;
+async function copyLink(u){try{await navigator.clipboard.writeText(u);showToast('Havola nusxalandi — xohlagan joyga joylang','NUSXA')}catch(e){prompt('Havola:',u)}}
+async function shareLink(u,t){const N=NAT();
+  if(N&&N.share&&await N.share({title:t||'JARVIS',text:t||'',url:u}))return;
+  if(navigator.share){try{await navigator.share({title:t,url:u});return}catch(e){if(e.name==='AbortError')return}}
+  if(N&&N.tgNotify&&await N.tgNotify((t?t+'\n':'')+u)){showToast('Havola Telegram\'ingizga yuborildi — u yerdan istalgan odamga jo\'nating','ULASHISH');return}
+  copyLink(u)}
+function openInside(u){const N=NAT();if(N&&N.openInApp)return N.openInApp(u);if(N&&N.open)return N.open(u);window.open(u,'_blank','noopener')}
+let VIEW={list:[],i:0};
+function viewer(list,i){VIEW={list,i};let v=$('mView');
+  if(!v){v=document.createElement('div');v.id='mView';v.innerHTML=`<div class="vi"><img alt=""></div><button class="nv" style="left:4px" data-n="-1">‹</button><button class="nv" style="right:4px" data-n="1">›</button><div class="vt"></div><div class="vb"><button data-a="open">↗ Manbasi</button><button data-a="copy">⧉ Havola</button><button data-a="share">📤 Ulashish</button><button data-a="x">✕ Yopish</button></div>`;
+    document.body.appendChild(v);
+    v.onclick=e=>{const b=e.target.closest('button');const it=VIEW.list[VIEW.i];if(!b){if(e.target===v||e.target.classList.contains('vi'))v.classList.remove('open');return}
+      if(b.dataset.n){VIEW.i=(VIEW.i+ +b.dataset.n+VIEW.list.length)%VIEW.list.length;drawV();return}
+      const a=b.dataset.a;if(a==='x')v.classList.remove('open');if(a==='open')openInside(it.page||it.image);if(a==='copy')copyLink(it.image);if(a==='share')shareLink(it.image,it.title)};
+    let sx=0;v.addEventListener('touchstart',e=>{sx=e.touches[0].clientX},{passive:true});v.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>60){VIEW.i=(VIEW.i+(dx<0?1:-1)+VIEW.list.length)%VIEW.list.length;drawV()}})}
+  drawV();v.classList.add('open')}
+function drawV(){const v=$('mView'),it=VIEW.list[VIEW.i];if(!v||!it)return;const im=v.querySelector('img');im.onerror=()=>{if(im.src!==it.thumb)im.src=it.thumb};im.src=it.image;
+  v.querySelector('.vt').textContent=`${VIEW.i+1}/${VIEW.list.length} · ${it.title||''} ${it.site?'· '+it.site:''}`}
+function mediaHTML(kind,items){
+  if(kind==='images')return `<div class="mgrid">${items.map((x,i)=>`<div class="mi" data-i="${i}"><img loading="lazy" src="${esc(x.thumb)}" alt="${esc(x.title||'')}"></div>`).join('')}</div>`;
+  if(kind==='videos')return `<div class="mvid">${items.map((x,i)=>`<div class="mv" data-i="${i}"><div class="th">${x.duration?`<span class="dur">${esc(x.duration)}</span>`:''}<img loading="lazy" src="${esc(x.thumb)}"></div><div class="mt">${esc(x.title||'Video')}</div><div class="ms">${esc([x.channel,x.views].filter(Boolean).join(' · '))}</div><div class="mact"><button data-a="open">↗ YouTube</button><button data-a="copy">⧉ Havola</button><button data-a="share">📤 Ulashish</button></div></div>`).join('')}</div>`;
+  return items.map((x,i)=>`<div class="mres" data-i="${i}"><div class="mt">${esc(x.title||x.url)}</div><div class="ms">${esc(x.site||'')}${x.snippet?' — '+esc(x.snippet):''}</div><div class="mact"><button data-a="open">↗ Ochish</button><button data-a="read">📖 Jarvis o'qisin</button><button data-a="copy">⧉ Havola</button><button data-a="share">📤 Ulashish</button></div></div>`).join('')}
+function bindMedia(box,kind,items){box.addEventListener('click',e=>{const card=e.target.closest('[data-i]');if(!card)return;const it=items[+card.dataset.i];const b=e.target.closest('button[data-a]');
+  if(kind==='images'){viewer(items,+card.dataset.i);return}
+  if(kind==='videos'){if(!b){const th=card.querySelector('.th');if(th.classList.contains('playing'))return;th.classList.add('playing');
+      th.innerHTML=`<iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(it.id)}?autoplay=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;return}
+    if(b.dataset.a==='open')openInside(it.url);if(b.dataset.a==='copy')copyLink(it.url);if(b.dataset.a==='share')shareLink(it.url,it.title);return}
+  if(!b||b.dataset.a==='open'){openInside(it.url);return}
+  if(b.dataset.a==='read'){ask(`Shu sahifani o'qib, menga eng muhim ma'lumotlarni qisqa va aniq aytib ber: ${it.url}`,{typed:true});return}
+  if(b.dataset.a==='copy')copyLink(it.url);if(b.dataset.a==='share')shareLink(it.url,it.title)})}
+window.showMedia=function(kind,items,query){
+  if(!items||!items.length)return;const host=S.curMsg&&S.curMsg.isConnected?S.curMsg:addMsg('j','');
+  const box=document.createElement('div');box.className='media';
+  const lbl={images:'🖼 RASMLAR',videos:'🎬 VIDEOLAR',results:'🔎 TOPILGAN SAHIFALAR'}[kind]||'NATIJALAR';
+  box.innerHTML=`<div class="mh"><span>${lbl}${query?' · '+esc(query):''}</span><button data-big>⛶ Kattaroq</button><button data-all>⧉ Hammasi</button></div>`+mediaHTML(kind,items);
+  host.appendChild(box);bindMedia(box,kind,items);
+  box.querySelector('[data-all]').onclick=()=>copyLink(items.map((x,i)=>`${i+1}. ${x.title||''}\n${x.url||x.page||x.image}`).join('\n\n'));
+  box.querySelector('[data-big]').onclick=()=>openWin('media'+Date.now(),lbl+(query?' — '+query:''),w=>{const b2=document.createElement('div');b2.className='media';b2.style.padding='8px';
+    b2.innerHTML=mediaHTML(kind,items).replace('class="mgrid"','class="mgrid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))"');w.body.appendChild(b2);bindMedia(b2,kind,items)});
+  $('log').scrollTop=1e9};
+
+/* ============ O'ZINI O'ZI TAKOMILLASHTIRISH: Jarvis o'ziga yangi vosita yozadi ============ */
+const AsyncFn=Object.getPrototypeOf(async function(){}).constructor;
+function myTools(){return skills().filter(s=>s.code)}
+async function runMyTool(t,args){const N=NAT();
+  const http=async(url,o)=>{if(N&&N.http){const r=await N.http({url,...(o||{})});if(r.error)throw new Error(r.error);return r}const r=await fetch(url,o);const tx=await r.text();let j=null;try{j=JSON.parse(tx)}catch(e){}return{status:r.status,ok:r.ok,json:j,text:j?undefined:tx}};
+  const web=async a=>{if(!N||!N.web)throw new Error('web faqat ilovada');const r=await N.web(a);if(r&&r.error)throw new Error(r.error);return r};
+  const show=(kind,items,q)=>window.showMedia(kind,items,q);
+  const fn=new AsyncFn('args','http','web','show','calc','note','remind',t.code);
+  return await Promise.race([fn(args||{},http,web,show,calc,x=>addNote(String(x)),(x,at)=>addReminder(String(x),at)),new Promise((_,rj)=>setTimeout(()=>rj(new Error('vaqt tugadi (45 s)')),45000))])}
+TOOLS.push({name:'my_tools',description:`O'Z-O'ZINI TAKOMILLASHTIRISH. Mavjud vositalar yetmasa — o'zingga yangi vosita yoz va darhol ishlat; u saqlanadi va keyin ham, boshqa qurilmalarda ham ishlaydi. action: list; run (name*, args); create (name* — lotin_harf_bilan, description*, code*, params — args izohi); delete (name*). code — async JavaScript funksiya TANASI; mavjud o'zgaruvchilar: args (obyekt), http(url,{method,headers,body}) → {status,ok,json,text} (CORS'siz, istalgan API/sayt), web({action:'search'|'images'|'videos'|'fetch_url'|'wiki'|'news'|'weather',...}), show(kind:'images'|'videos'|'results', items, sarlavha) — foydalanuvchiga ko'rsatish, calc(ifoda), note(matn), remind(matn, ms). Natijani return qil. Xato bo'lsa — kodni tuzatib qayta create qil (bir xil name bilan almashtiriladi). Saqlangan vositalar: ${''}`,
+  inputSchema:{type:'object',properties:{action:{type:'string',enum:['list','run','create','delete']},name:{type:'string'},description:{type:'string'},code:{type:'string'},params:{type:'string'},args:{type:'object'}},required:['action']},
+  execute:async a=>{
+    if(a.action==='list')return JSON.stringify(myTools().map(t=>({name:t.name,description:t.text,params:t.params||''})));
+    const nm=String(a.name||'').trim().replace(/\s+/g,'_');if(!nm)throw new Error('name kerak');
+    if(a.action==='delete'){const i=skills().findIndex(s=>s.name===nm&&s.code);if(i<0)return 'topilmadi';tomb('s:'+nm);skills().splice(i,1);save();act('🧩 vosita o\'chirildi: '+nm);return 'o\'chirildi'}
+    if(a.action==='create'){if(!a.code)throw new Error('code kerak');try{new AsyncFn('args','http','web','show','calc','note','remind',a.code)}catch(e){throw new Error('Kodda sintaksis xato: '+e.message+' — tuzatib qayta yubor')}
+      const ex=skills().find(s=>s.name===nm);const rec={name:nm,text:a.description||ex?.text||nm,code:a.code,params:a.params||'',auto:true,at:ex?.at||Date.now(),u:Date.now()};
+      if(ex)Object.assign(ex,rec);else skills().push(rec);save();act('🧩 Jarvis o\'ziga yangi vosita yozdi: '+nm);return `"${nm}" vositasi saqlandi. Endi uni run bilan ishlat va natijani tekshir.`}
+    if(a.action==='run'){const t=myTools().find(s=>s.name===nm);if(!t)throw new Error('Bunday vosita yo\'q. Avval create qil.');act('🧩 '+nm+' ishlamoqda…');
+      try{const r=await runMyTool(t,a.args);act('✓ '+nm);return shortJSON(r===undefined?'(natija qaytarilmadi)':r,10000)}catch(e){act('✕ '+nm+': '+e.message,'e');throw new Error(nm+' xatosi: '+e.message+' — kodni tuzatib, create bilan qayta saqla va yana sinab ko\'r')}}
+    throw new Error('noma\'lum action')}});
+
+
 /* ============ OMMAVIY BUYRUQLAR: yuzlab–minglab buyruqni navbat bilan, parallel bajarish ============ */
 function openBatch(){openWin('batch','⚡ OMMAVIY BUYRUQLAR',w=>{w.el.style.width=Math.min(innerWidth-40,820)+'px';w.el.style.height=Math.min(innerHeight-120,620)+'px';
   w.body.innerHTML=`<div class="kbm" style="margin-bottom:6px">Har qatorga bitta buyruq yozing (1000 tagacha). Jarvis ularni bir vaqtda bir nechtadan bajaradi. Bir xil turdagi ko'p ish (masalan 500 ta hajmni hisoblash) uchun bitta buyruq bilan Jarvisga <b>kod yozdirish</b> ancha tezroq — bu ham shu yerda ishlaydi.</div>
@@ -1559,8 +1656,8 @@ function openBatch(){openWin('batch','⚡ OMMAVIY BUYRUQLAR',w=>{w.el.style.widt
     await Promise.all(Array.from({length:Math.min(par,cmds.length)},worker));w.running=false;dockRender();showToast(`${done} ta buyruq bajarildi`,'OMMAVIY');act(`⚡ ommaviy: ${ok}/${cmds.length}`)}})}
 
 /* ============ INPUT ============ */
-$('send').onclick=()=>ask($('inp').value);
-$('inp').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask($('inp').value)}};
+$('send').onclick=()=>ask($('inp').value,{typed:true});
+$('inp').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask($('inp').value,{typed:true})}};
 $('stop').onclick=()=>stopCurrent();
 document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{showView('center');ask(b.dataset.q)});
 

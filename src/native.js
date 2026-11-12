@@ -366,8 +366,78 @@
   const strip = s => String(s).replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#039;|&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
   const FEEDS = { kun: 'https://kun.uz/news/rss', daryo: 'https://daryo.uz/feed/', gazeta: 'https://www.gazeta.uz/uz/rss/', uza: 'https://uza.uz/uz/rss' };
   const WMO = { 0: 'ochiq', 1: 'asosan ochiq', 2: 'qisman bulutli', 3: 'bulutli', 45: 'tuman', 48: 'qirovli tuman', 51: 'mayda shivalama', 53: 'shivalama', 55: 'kuchli shivalama', 61: 'yengil yomg\'ir', 63: 'yomg\'ir', 65: 'kuchli yomg\'ir', 71: 'yengil qor', 73: 'qor', 75: 'kuchli qor', 80: 'jala', 81: 'kuchli jala', 82: 'juda kuchli jala', 95: 'momaqaldiroq', 96: 'do\'lli momaqaldiroq', 99: 'kuchli do\'l' };
+  /* ---------- QIDIRUV: veb, rasm, video (kalitsiz) ---------- */
+  const UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36';
+  const UAD = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
+  const ent = s => String(s || '').replace(/&quot;/g, '"').replace(/&#0?39;|&#x27;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').replace(/&#(\d+);/g, (m, n) => String.fromCharCode(+n)).replace(/&amp;/g, '&');
+  const untag = s => ent(String(s || '').replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+  const host = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; } };
+  async function getText(url, headers) { const r = await fetchT(url, { headers: Object.assign({ 'User-Agent': UAD, 'Accept-Language': 'uz,ru;q=0.9,en;q=0.8' }, headers || {}) }, 20000); return { status: r.status, text: await r.text() }; }
+  async function searchWeb(q, n) {
+    n = Math.min(n || 8, 15); const out = [];
+    try { // DuckDuckGo (HTML)
+      const r = await getText('https://html.duckduckgo.com/html/?kl=wt-wt&q=' + encodeURIComponent(q));
+      const blocks = r.text.split(/<div class="result results_links/).slice(1);
+      for (const b of blocks) {
+        const a = /<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/.exec(b); if (!a) continue;
+        let url = ent(a[1]); const m = /[?&]uddg=([^&]+)/.exec(url); if (m) url = decodeURIComponent(m[1]); if (url.startsWith('//')) url = 'https:' + url;
+        if (/duckduckgo\.com\/y\.js|ad_provider/.test(url)) continue;
+        const sn = /class="result__snippet"[^>]*>([\s\S]*?)<\/(a|div)>/.exec(b);
+        out.push({ title: untag(a[2]), url, site: host(url), snippet: sn ? untag(sn[1]) : '' }); if (out.length >= n) break;
+      }
+    } catch (e) {}
+    if (out.length < 3) try { // zaxira: Bing
+      const r = await getText('https://www.bing.com/search?setlang=uz&q=' + encodeURIComponent(q));
+      for (const b of r.text.split('<li class="b_algo"').slice(1)) {
+        const a = /<h2[^>]*>\s*<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/.exec(b); if (!a) continue;
+        let url = ent(a[1]); const u = /[?&]u=a1([^&]+)/.exec(url); if (/bing\.com\/ck\//.test(url) && u) { try { url = atob(u[1].replace(/-/g, '+').replace(/_/g, '/')); } catch (e) {} }
+        const p = /<p[^>]*>([\s\S]*?)<\/p>/.exec(b) || /class="b_lineclamp\d"[^>]*>([\s\S]*?)<\/(p|div)>/.exec(b);
+        if (!out.some(x => x.url === url)) out.push({ title: untag(a[2]), url, site: host(url), snippet: p ? untag(p[1]) : '' }); if (out.length >= n) break;
+      }
+    } catch (e) {}
+    return out;
+  }
+  async function searchImages(q, n) {
+    n = Math.min(n || 12, 30); const out = [];
+    const r = await getText('https://www.bing.com/images/async?first=0&count=35&mmasync=1&q=' + encodeURIComponent(q));
+    const re = /class="iusc"[^>]*?\sm="([^"]+)"/g; let m;
+    while ((m = re.exec(r.text)) && out.length < n) {
+      try { const j = JSON.parse(ent(m[1])); if (!j.murl) continue; out.push({ title: untag(j.t || ''), image: j.murl, thumb: j.turl || j.murl, page: j.purl || j.murl, site: host(j.purl || j.murl) }); } catch (e) {}
+    }
+    if (!out.length) { // zaxira: DuckDuckGo rasmlari
+      try {
+        const p = await getText('https://duckduckgo.com/?ia=images&iax=images&q=' + encodeURIComponent(q)); const v = /vqd=["']?([\d-]+)/.exec(p.text);
+        if (v) { const j = JSON.parse((await getText('https://duckduckgo.com/i.js?o=json&l=wt-wt&p=1&q=' + encodeURIComponent(q) + '&vqd=' + v[1], { Referer: 'https://duckduckgo.com/' })).text);
+          (j.results || []).slice(0, n).forEach(x => out.push({ title: x.title || '', image: x.image, thumb: x.thumbnail || x.image, page: x.url, site: host(x.url) })); }
+      } catch (e) {}
+    }
+    return out;
+  }
+  async function searchVideos(q, n) {
+    n = Math.min(n || 6, 15); const out = [];
+    const r = await getText('https://www.youtube.com/results?hl=uz&search_query=' + encodeURIComponent(q), { Cookie: 'CONSENT=YES+1; SOCS=CAI' });
+    const m = /var ytInitialData\s*=\s*(\{[\s\S]*?\});\s*<\/script>/.exec(r.text) || /ytInitialData"\]\s*=\s*(\{[\s\S]*?\});/.exec(r.text);
+    if (m) {
+      const walk = o => { if (!o || typeof o !== 'object' || out.length >= n) return; if (o.videoRenderer) { const v = o.videoRenderer; const t = (v.title && (v.title.runs ? v.title.runs.map(x => x.text).join('') : v.title.simpleText)) || '';
+          out.push({ id: v.videoId, title: t, url: 'https://www.youtube.com/watch?v=' + v.videoId, thumb: 'https://i.ytimg.com/vi/' + v.videoId + '/hqdefault.jpg', duration: (v.lengthText && v.lengthText.simpleText) || '', channel: (v.ownerText && v.ownerText.runs && v.ownerText.runs[0].text) || '', views: (v.shortViewCountText && v.shortViewCountText.simpleText) || (v.viewCountText && v.viewCountText.simpleText) || '' }); return; }
+        for (const k in o) walk(o[k]); };
+      try { walk(JSON.parse(m[1])); } catch (e) {}
+    }
+    if (!out.length) { const re = /"videoId":"([\w-]{11})"/g; const seen = new Set(); let x; while ((x = re.exec(r.text)) && out.length < n) { if (seen.has(x[1])) continue; seen.add(x[1]); out.push({ id: x[1], title: '', url: 'https://www.youtube.com/watch?v=' + x[1], thumb: 'https://i.ytimg.com/vi/' + x[1] + '/hqdefault.jpg' }); } }
+    return out;
+  }
+  async function httpReq(a) {
+    if (!/^https?:\/\//.test(a.url || '')) return { error: 'URL noto\'g\'ri' };
+    const r = await fetchT(a.url, { method: a.method || 'GET', headers: Object.assign({ 'User-Agent': UAD }, a.headers || {}), body: a.body == null ? undefined : (typeof a.body === 'string' ? a.body : JSON.stringify(a.body)) }, Math.min(a.timeout || 30000, 60000));
+    const t = await r.text(); let json = null; try { json = JSON.parse(t); } catch (e) {}
+    return { status: r.status, ok: r.ok, json, text: json ? undefined : t.slice(0, 200000) };
+  }
+
   async function web(a) {
     try {
+      if (a.action === 'search') { const r = await searchWeb(a.query || '', a.limit); return r.length ? { results: r } : { error: 'Hech narsa topilmadi yoki qidiruv xizmati javob bermadi' }; }
+      if (a.action === 'images') { const r = await searchImages(a.query || '', a.limit); return r.length ? { images: r } : { error: 'Rasm topilmadi' }; }
+      if (a.action === 'videos') { const r = await searchVideos(a.query || '', a.limit); return r.length ? { videos: r } : { error: 'Video topilmadi' }; }
       if (a.action === 'weather') {
         const g = await (await fetchT('https://geocoding-api.open-meteo.com/v1/search?count=1&language=ru&name=' + encodeURIComponent(a.city || 'Guliston'), {}, 15000)).json();
         const pl = g.results && g.results[0]; if (!pl) return { error: 'Shahar topilmadi' };
@@ -551,7 +621,8 @@
     gStatus: A(() => { const t = readTok(); const sc = (t && t.scope) || ''; const c = gcfg(); return { configured: !!(c.clientId && c.clientSecret), loggedIn: !!(t && t.refresh_token), email: t && t.email || '', gmail: /gmail/.test(sc), calendar: /calendar/.test(sc), drive: /auth\/drive/.test(sc) || (t && !t.scope) }; }),
     gLogin: A(gLogin), keysSync: A(keysSync), gLogout: A(() => { LS.set('gtok', null); return true; }), gPull: A(gPull), gPush: A(gPush),
     ttsGemini: A(ttsGemini), ttsCfg: A(ttsCfg), secExport: A(secExport), secImport: A(secImport),
-    pc: A(pc), web: A(web), gapiList: A(gapiList), gapiDescribe: A(gapiDescribe), gapiCall: A(gapiCall),
+    pc: A(pc), web: A(web), http: A(async x => { try { return await httpReq(x || {}); } catch (er) { return { error: er.message }; } }),
+    openInApp: A(u => openExt(u)), share: A(async o => { const Sh = reg('Share'); try { if (Sh) { await Sh.share({ title: o.title, text: o.text, url: o.url, dialogTitle: 'Ulashish' }); return true; } } catch (er) { if (/cancel/i.test(er.message || '')) return true; } return false; }), gapiList: A(gapiList), gapiDescribe: A(gapiDescribe), gapiCall: A(gapiCall),
     diag: A(diag), log: A(m => { logw(m); return true; }), logRead: A(() => LS.get('log', []).join('\n')),
     liveCfg: A(liveCfg), liveSet: A(liveSet), screenshot: A(() => ({ error: 'Telefonda ekran rasmini olish yo\'q — kamerani ishlating.' })),
     tgGet: A(() => { const t = tgCfg(); return { hasToken: !!t.token, on: TG.on, owner: !!t.owner, ownerName: t.ownerName || '', code: TG.code, enabled: t.enabled !== false }; }),

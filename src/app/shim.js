@@ -17,7 +17,7 @@
     const id=Math.random().toString(36).slice(2);let onAbort=null;
     if(opts.signal){if(opts.signal.aborted)throw Object.assign(new Error('aborted'),{name:'AbortError'});onAbort=()=>N.abort(id);opts.signal.addEventListener('abort',onAbort,{once:true})}
     try{
-      for(let step=0;step<12;step++){
+      for(let step=0;step<20;step++){
         if(opts.signal&&opts.signal.aborted)throw Object.assign(new Error('aborted'),{name:'AbortError'});
         if(opts.onText&&step===0)opts.onText({text:'…',delta:''});
         const r=await N.chat({id,messages:msgs,tools:step<11?tools:[],tier:opts.modelTier});
@@ -362,9 +362,14 @@
   if(!window.jarvisNative)return;const N=window.jarvisNative;
   document.addEventListener('DOMContentLoaded',()=>{
     if(typeof TOOLS==='undefined')return;
-    TOOLS.push({name:'web',description:'Internetdan jonli ma\'lumot: weather (city — hozirgi ob-havo va 4 kunlik prognoz), news (source: kun|daryo|gazeta|uza yoki bo\'sh — so\'nggi yangiliklar), fetch_url (url — sahifa matnini o\'qish), wiki (query, lang: uz|ru|en — Vikipediya). Internet bo\'lmasa xato qaytaradi.',
-      inputSchema:{type:'object',properties:{action:{type:'string',enum:['weather','news','fetch_url','wiki']},city:{type:'string'},source:{type:'string'},limit:{type:'number'},url:{type:'string'},query:{type:'string'},lang:{type:'string'}},required:['action']},
-      execute:async a=>{act('🌐 web.'+a.action+' '+(a.city||a.source||a.query||a.url||''));const r=await N.web(a);if(r&&r.error)throw new Error(r.error);return shortJSON(r,10000)}});
+    TOOLS.push({name:'web',description:'Internetdan O\'ZING top va ko\'rsat: search (query — veb sahifalar: sarlavha, havola, qisqa matn), images (query — rasmlar), videos (query — YouTube videolar), fetch_url (url — sahifani to\'liq o\'qish), wiki (query, lang: uz|ru|en), news (source: kun|daryo|gazeta|uza), weather (city). search/images/videos natijalari foydalanuvchiga Jarvis ichida rasm/video/kartochka bo\'lib o\'zi ko\'rsatiladi — sen faqat eng yaxshilarini qisqa izohla. Rasm so\'ralsa — images, video so\'ralsa — videos, ma\'lumot/variant so\'ralsa — search (+kerak bo\'lsa fetch_url).',
+      inputSchema:{type:'object',properties:{action:{type:'string',enum:['search','images','videos','fetch_url','wiki','news','weather']},city:{type:'string'},source:{type:'string'},limit:{type:'number'},url:{type:'string'},query:{type:'string'},lang:{type:'string'}},required:['action']},
+      execute:async a=>{act('🌐 web.'+a.action+' '+(a.city||a.source||a.query||a.url||''));const r=await N.web(a);if(r&&r.error)throw new Error(r.error);
+        try{if(r.images)window.showMedia('images',r.images,a.query);if(r.videos)window.showMedia('videos',r.videos,a.query);if(r.results)window.showMedia('results',r.results,a.query)}catch(e){}
+        if(r.images)return shortJSON({korsatildi:r.images.length+' ta rasm foydalanuvchiga ko\'rsatildi',rasmlar:r.images.slice(0,12).map(x=>({title:x.title,site:x.site}))},4000);
+        if(r.videos)return shortJSON({korsatildi:r.videos.length+' ta video foydalanuvchiga ko\'rsatildi',videolar:r.videos.map(x=>({title:x.title,channel:x.channel,duration:x.duration,views:x.views,url:x.url}))},5000);
+        if(r.results)return shortJSON({korsatildi:r.results.length+' ta sahifa kartochka bo\'lib ko\'rsatildi',natijalar:r.results},8000);
+        return shortJSON(r,10000)}});
     // Telegram: incoming messages from phone
     if(N.onTg)N.onTg(async m=>{addMsg('u','📱 '+m.text);let ans='';
       try{if(voiceControl(m.text)){N.tgReply(m.id,'✓ Bajarildi.');return}
