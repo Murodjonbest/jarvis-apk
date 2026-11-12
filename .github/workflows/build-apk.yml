@@ -26,7 +26,7 @@ jobs:
       - name: Internetsiz "Jarvis" so'zini tanish modeli (Vosk)
         run: |
           curl -sSL -o /tmp/m.zip https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
-          unzip -q /tmp/m.zip -d /tmp/m
+          unzip -oq /tmp/m.zip -d /tmp/m
           D=android/app/src/main/assets/vosk-model; rm -rf $D; mkdir -p $D
           cp -r /tmp/m/vosk-model-small-en-us-0.15/* $D/
           echo "en-small-015-v1" > $D/uuid
@@ -39,7 +39,7 @@ jobs:
       - name: Internetsiz "Jarvis" so'zini tanish modeli (Vosk)
         run: |
           curl -sSL -o /tmp/m.zip https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
-          unzip -q /tmp/m.zip -d /tmp/m
+          unzip -oq /tmp/m.zip -d /tmp/m
           D=android/app/src/main/assets/vosk-model; rm -rf $D; mkdir -p $D
           cp -r /tmp/m/vosk-model-small-en-us-0.15/* $D/
           echo "en-small-015-v1" > $D/uuid
