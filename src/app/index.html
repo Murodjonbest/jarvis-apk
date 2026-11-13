@@ -2220,6 +2220,12 @@ TOOLS.push({name:'read_aloud',description:'HUJJATNI OVOZ CHIQARIB O\'QISH — is
 $('dockMore').onclick=e=>{e.stopPropagation();$('dock').classList.toggle('open');$('dockMore').textContent=$('dock').classList.contains('open')?'✕ Yopish':'☰ Yana'};
 $('dock').addEventListener('click',e=>{if(e.target.closest('.dx')){$('dock').classList.remove('open');$('dockMore').textContent='☰ Yana'}});
 
+/* yangi imkoniyatlar haqida bir martalik xabar */
+setTimeout(()=>{try{if(localStorage.getItem('jarvis_news')==='oqi1')return;localStorage.setItem('jarvis_news','oqi1')}catch(e){return}
+  const d=addMsg('j','🆕 **Yangi imkoniyatlar:**\n• **📖 O\'qish** — istalgan faylni (PDF, Word, PowerPoint, Excel) asl ko\'rinishida ochib, tabiiy o\'zbek ovozida o\'qib beradi (chap menyuda yoki "faylni o\'qib ber" deng)\n• **Fayl tashlash** — faylni oynaga tashlang: men fikr bildirib, nima qilishni so\'rayman (o\'qish, tahrirlash, xulosa, tekshirish)\n• **Asl ko\'rinish** — Word/PowerPoint fayllari aynan asl shaklida ko\'rinadi, tahrirlashda shakli o\'zgarmaydi\n• Yozgan buyruqlaringizga ham ovozli javob beraman');
+  const row=document.createElement('div');row.className='fchips';[['📖 Faylni o\'qish',()=>openReader(null)],['📎 Fayl tanlash',()=>pick('.docx,.xlsx,.pptx,.pdf,.txt,.csv,.md,image/*')]].forEach(([t,f])=>{const b=document.createElement('button');b.className='chip w';b.textContent=t;b.onclick=f;row.appendChild(b)});
+  (d&&d.querySelector('.body')||d).appendChild(row)},2500);
+
 /* ============ INPUT ============ */
 $('send').onclick=()=>ask($('inp').value,{typed:true});
 $('inp').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask($('inp').value,{typed:true})}};

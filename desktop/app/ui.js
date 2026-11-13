@@ -9,12 +9,13 @@
   /* ---- yuqori panel ---- */
   const top = document.createElement('header'); top.id = 'mTop';
   top.innerHTML = '<div id="mOrb"></div><div class="mb"><b>JARVIS</b><small id="mState">tayyor</small></div><button id="mLive" title="Gemini bilan jonli suhbat">🎙</button><button id="mStop" title="Hammasini to\'xtatish">⛔</button>';
+  try { const NV = window.jarvisNative; if (NV && NV.appVersion) NV.appVersion().then(v => { const b = top.querySelector('.mb b'); if (b && v) b.insertAdjacentHTML('beforeend', ' <small style="opacity:.55;font-size:10px;font-weight:400">v' + v + '</small>'); }).catch(() => {}); } catch (e) {}
   document.body.appendChild(top);
   $('mStop').onclick = () => $('estop') && $('estop').click();
   $('mLive').onclick = () => { const b = $('liveBtn'); if (b) b.click(); else toast('Jonli suhbat uchun Gemini kaliti kerak (⚙ Sozlash)'); };
 
   /* ---- pastki menyu ---- */
-  const NAV = [['center', '💬', 'Suhbat'], ['right', '📋', 'Eslatma'], ['apps', '🧩', 'Ilovalar'], ['left', '📊', 'Holat'], ['set', '⚙', 'Sozlash']];
+  const NAV = [['center', '💬', 'Suhbat'], ['read', '📖', "O'qish"], ['right', '📋', 'Eslatma'], ['apps', '🧩', 'Ilovalar'], ['left', '📊', 'Holat'], ['set', '⚙', 'Sozlash']];
   const nav = document.createElement('nav'); nav.id = 'mNav';
   nav.innerHTML = NAV.map(([v, i, t]) => `<button data-v="${v}"><span class="i">${i}</span>${t}<span class="badge"></span></button>`).join('');
   document.body.appendChild(nav);
@@ -35,6 +36,7 @@
     const b = e.target.closest('button'); if (!b) return; const v = b.dataset.v;
     if (v === 'apps') { sheet.classList.contains('open') ? closeSheet() : openSheet(); return; }
     if (v === 'set') { closeSheet(); const m = dockBtn(/Modellar/); if (m) m.click(); setOn('set'); return; }
+    if (v === 'read') { closeSheet(); try { openReader(null); } catch (er) {} return; }
     show(v);
   });
 
