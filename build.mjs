@@ -6,6 +6,7 @@ fs.cpSync(S + '/app/vendor', W + '/vendor', { recursive: true });
 fs.copyFileSync('node_modules/@capacitor/core/dist/capacitor.js', W + '/lib/capacitor.js');
 fs.copyFileSync('node_modules/scrypt-js/scrypt.js', W + '/lib/scrypt.js');
 for (const f of ['native.js', 'tts-polyfill.js', 'mobile.css', 'mobile.js']) fs.copyFileSync(S + '/' + f, W + '/' + f);
+fs.copyFileSync(S + '/app/notiq.html', W + '/notiq.html');
 
 let shim = fs.readFileSync(S + '/app/shim.js', 'utf8');
 const pcA = shim.indexOf("description:'Foydalanuvchining kompyuterida ishlash (Windows)."), pcB = shim.indexOf("required:['action']}", pcA);

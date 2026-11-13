@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>NOTIQ — taqdimotni gapirib beruvchi</title>
+<style>
+:root{--bg:#050b12;--p:#0b1722;--p2:#0f2030;--line:rgba(80,200,255,.16);--cy:#3fd2ff;--cy2:#8be9ff;--txt:#e3f3fb;--mut:#7d97a8;--ok:#36e3a0;--amber:#ffb547;--red:#ff5a6a}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font:15px/1.45 "Segoe UI",system-ui,sans-serif;overflow:hidden}
+button{font:inherit;cursor:pointer}
+header{height:52px;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid var(--line);background:#06111b}
+.logo{font-weight:800;letter-spacing:.18em;color:var(--cy2);font-size:15px;white-space:nowrap}.logo small{display:block;font-weight:500;letter-spacing:.02em;color:var(--mut);font-size:11px}
+#fname{flex:1;min-width:0;color:var(--mut);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:8px}
+.b{background:var(--p2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:8px 12px;white-space:nowrap}
+.b:hover{border-color:var(--cy)}.b.w{background:linear-gradient(135deg,#1aa6d6,#0d6f95);border:0;color:#fff}.b.g{background:linear-gradient(135deg,#1fb87d,#0f7f55);border:0;color:#fff}
+.b:disabled{opacity:.45;cursor:default}
+main{display:flex;height:calc(100% - 52px)}
+#thumbs{width:190px;overflow-y:auto;border-right:1px solid var(--line);padding:8px;display:flex;flex-direction:column;gap:8px;background:#06101a}
+.th{position:relative;border:2px solid transparent;border-radius:8px;overflow:hidden;cursor:pointer;background:#000;flex:0 0 auto}
+.th.on{border-color:var(--cy)}.th img{width:100%;display:block}
+.th .n{position:absolute;left:4px;top:4px;background:rgba(0,0,0,.7);font-size:11px;padding:0 6px;border-radius:6px}
+.th .st{position:absolute;right:4px;bottom:4px;font-size:12px}
+#stage{flex:1;display:flex;flex-direction:column;min-width:0}
+#tools{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--line)}
+#view{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:12px;background:#02070c}
+#view img{max-width:100%;max-height:100%;box-shadow:0 8px 40px rgba(0,0,0,.6);border-radius:4px}
+#empty{text-align:center;color:var(--mut);max-width:520px}
+#empty h2{color:var(--cy2);font-weight:700;letter-spacing:.06em}
+#empty .drop{margin-top:14px;border:2px dashed var(--line);border-radius:16px;padding:28px}
+#scriptBox{border-top:1px solid var(--line);padding:8px 12px 12px;background:#06111b}
+#scriptBox .hd{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;color:var(--mut)}
+#scriptBox .hd b{color:var(--cy2)}#scriptBox .hd span{flex:1}
+#script{width:100%;height:110px;resize:vertical;background:#0b1a28;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:15px/1.5 "Segoe UI",system-ui,sans-serif}
+#bar{height:3px;background:transparent}#bar i{display:block;height:100%;width:0;background:var(--cy);transition:width .3s}
+#msg{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#132a3b;border:1px solid var(--cy);color:var(--txt);padding:10px 16px;border-radius:12px;z-index:90;display:none;max-width:90vw}
+/* dialog */
+#dlg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:80}
+#dlg.on{display:flex}#dlg .box{background:var(--p);border:1px solid var(--line);border-radius:16px;padding:18px;width:min(560px,94vw);max-height:90vh;overflow:auto}
+#dlg h3{margin:0 0 10px;color:var(--cy2)}#dlg label{display:block;margin:10px 0 4px;color:var(--mut);font-size:13px}
+#dlg select,#dlg input{width:100%;background:#0b1a28;color:var(--txt);border:1px solid var(--line);border-radius:9px;padding:9px 10px;font:inherit}
+#dlg .row{display:flex;gap:8px}#dlg .row>*{flex:1}#dlg .act{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+#dlg .hint{font-size:12.5px;color:var(--mut);margin-top:6px}
+/* jonli namoyish */
+#live{position:fixed;inset:0;background:#000;z-index:70;display:none;flex-direction:column}
+#live.on{display:flex}
+#live .sl{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;position:relative}
+#live .sl img{max-width:100%;max-height:100%;transition:opacity .45s}
+#live .sub{position:absolute;left:6%;right:6%;bottom:86px;text-align:center;font-size:clamp(16px,2.1vw,26px);line-height:1.35;color:#fff;text-shadow:0 2px 8px #000,0 0 3px #000;pointer-events:none}
+#live .ctl{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:8px;background:rgba(10,20,30,.85);border:1px solid var(--line);border-radius:30px;padding:6px 10px;transition:opacity .3s;align-items:center}
+#live .ctl button{background:none;border:0;color:#fff;font-size:20px;width:42px;height:42px;border-radius:21px}
+#live .ctl button:hover{background:rgba(63,210,255,.2)}
+#live .ctl .pg{color:var(--mut);font-size:13px;padding:0 6px;white-space:nowrap}
+#live.idle .ctl{opacity:0}#live.idle{cursor:none}
+#live .prog{height:4px;background:#111}#live .prog i{display:block;height:100%;background:var(--cy);width:0;transition:width .4s}
+#live.on~#msg{display:none!important}
+#qa{position:absolute;right:16px;top:16px;max-width:min(520px,80vw);background:rgba(8,18,28,.92);border:1px solid var(--cy);border-radius:14px;padding:12px 14px;color:#fff;display:none;font-size:16px}
+#qa.on{display:block}#qa b{color:var(--cy2)}
+@media (max-width:760px){
+  main{flex-direction:column}#thumbs{width:auto;height:92px;flex-direction:row;overflow-x:auto;overflow-y:hidden;border-right:0;border-bottom:1px solid var(--line)}
+  .th{width:130px}header .logo small{display:none}#tools .b{padding:7px 10px;font-size:13.5px}#script{height:96px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">NOTIQ<small>taqdimotni gapirib beradi</small></div>
+  <div id="fname">fayl tanlanmagan</div>
+  <button class="b" id="bOpen">📂 Ochish</button>
+  <button class="b" id="bSet">⚙ Ovoz</button>
+  <button class="b" id="bClose" style="display:none">✕</button>
+</header>
+<main>
+  <aside id="thumbs"></aside>
+  <section id="stage">
+    <div id="tools">
+      <button class="b w" id="bWrite" disabled>✨ Nutqni AI yozsin</button>
+      <button class="b" id="bVoice" disabled>🔊 Ovozlarni tayyorlash</button>
+      <button class="b g" id="bLive" disabled>▶ Namoyish</button>
+      <button class="b" id="bVideo" disabled>🎬 MP4 video</button>
+      <button class="b" id="bDocx" disabled>📄 Nutq (Word)</button>
+      <button class="b" id="bSave" disabled>💾 Loyiha</button>
+    </div>
+    <div id="bar"><i></i></div>
+    <div id="view"><div id="empty"><h2>🎤 NOTIQ</h2>Taqdimotingizni (PowerPoint <b>.pptx</b>, <b>PDF</b> yoki rasmlar) oching — har bir slayd uchun nutqni AI yozadi, siz tahrirlaysiz, keyin dastur tabiiy ovozda o'zi gapirib, slaydlarni o'zi almashtiradi. Tayyorini <b>MP4 video</b> qilib ham olasiz.<div class="drop">Faylni shu yerga tashlang yoki <b>📂 Ochish</b> ni bosing</div></div><img id="big" alt="" style="display:none"></div>
+    <div id="scriptBox" style="display:none">
+      <div class="hd"><b id="sn">1-slayd</b><span id="sinfo"></span><button class="b" id="bOne">✨ Shu slaydni qayta yoz</button><button class="b" id="bListen">🔊 Tinglash</button></div>
+      <textarea id="script" placeholder="Bu slaydda gapiriladigan matn… (AI yozadi yoki o'zingiz yozasiz)"></textarea>
+    </div>
+  </section>
+</main>
+<div id="live"><div class="sl"><img id="limg" alt=""><div class="sub" id="lsub"></div><div id="qa"></div>
+  <div class="ctl"><button id="lPrev" title="Oldingi (←)">⏮</button><button id="lPlay" title="Pauza (bo'sh joy)">⏸</button><button id="lNext" title="Keyingi (→)">⏭</button><span class="pg" id="lpg"></span><button id="lSub" title="Subtitr">💬</button><button id="lAsk" title="Savol berish (Q)">❓</button><button id="lExit" title="Chiqish (Esc)">✕</button></div></div>
+  <div class="prog"><i id="lprog"></i></div></div>
+<div id="dlg"><div class="box" id="dlgBox"></div></div>
+<div id="msg"></div>
+<input type="file" id="fin" accept=".pptx,.pdf,image/*" multiple style="display:none">
+<script type="module">
+/* ================= NOTIQ ================= */
+const N = window.jarvisNative || (window.parent !== window && window.parent.jarvisNative) || null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const EMBED = window.parent !== window;
+if (EMBED) { $('bClose').style.display = ''; $('bClose').onclick = () => window.parent.postMessage({ notiq: 'close' }, '*'); }
+let toastT; function toast(t, ms) { const m = $('msg'); m.textContent = t; m.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => m.style.display = 'none', ms || 4000); }
+function prog(p) { $('bar').firstChild.style.width = p == null ? '0' : Math.round(p * 100) + '%'; }
+
+/* ---------- sozlamalar ---------- */
+const DEF = { lang: 'uz', style: 'rasmiy', sec: 45, engine: 'gemini', voice: 'Charon', azureKey: '', azureRegion: 'westeurope', azureVoice: 'uz-UZ-SardorNeural', sysVoice: '', rate: 1, sub: true, tone: 'iliq va ishonchli' };
+let CFG = Object.assign({}, DEF); try { Object.assign(CFG, JSON.parse(localStorage.getItem('notiq_cfg') || '{}')); } catch (e) {}
+const saveCfg = () => { try { localStorage.setItem('notiq_cfg', JSON.stringify(CFG)); } catch (e) {} };
+const LANGS = { uz: "o'zbek (lotin)", ru: 'rus', en: 'ingliz' };
+
+/* ---------- loyiha ---------- */
+let P = null, cur = 0;   // P = {name, slides:[{img,text,notes,script,audio:{b64,mime,dur}}]}
+const IDB = { p: null, open() { return this.p || (this.p = new Promise((res, rej) => { const r = indexedDB.open('notiq', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); })); },
+  async op(m, f) { const d = await this.open(); return new Promise((res, rej) => { const q = f(d.transaction('kv', m).objectStore('kv')); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); },
+  get(k) { return this.op('readonly', s => s.get(k)); }, set(k, v) { return this.op('readwrite', s => s.put(v, k)); }, del(k) { return this.op('readwrite', s => s.delete(k)); } };
+let saveT; function persist() { clearTimeout(saveT); saveT = setTimeout(() => { if (P) IDB.set('last', P).catch(() => {}); }, 800); }
+
+/* ---------- ZIP o'qish ---------- */
+async function inflate(u8) { const ds = new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw')); return new Uint8Array(await new Response(ds).arrayBuffer()); }
+async function unzip(bytes) { const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), u8 = bytes; let e = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 70000); i--) if (dv.getUint32(i, true) === 0x06054b50) { e = i; break; }
+  if (e < 0) throw new Error('Fayl buzilgan'); const n = dv.getUint16(e + 10, true); let p = dv.getUint32(e + 16, true); const out = {};
+  for (let k = 0; k < n; k++) { const m = dv.getUint16(p + 10, true), cs = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true), xl = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true), lo = dv.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nl)); p += 46 + nl + xl + cl; const ln = dv.getUint16(lo + 26, true), lx = dv.getUint16(lo + 28, true); const raw = u8.slice(lo + 30 + ln + lx, lo + 30 + ln + lx + cs);
+    out[name] = async () => m === 0 ? raw : await inflate(raw); }
+  return out; }
+const xmlTxt = s => s.replace(/<a:br\/>/g, '\n').replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+const TD = new TextDecoder();
+async function pptxSlides(bytes) {
+  const z = await unzip(bytes); const rd = async n => z[n] ? TD.decode(await z[n]()) : '';
+  const pres = await rd('ppt/presentation.xml'), prel = await rd('ppt/_rels/presentation.xml.rels');
+  const ids = [...pres.matchAll(/<p:sldId\b[^>]*r:id="([^"]+)"/g)].map(m => m[1]);
+  let files = ids.map(id => { const m = new RegExp('Id="' + id + '"[^>]*Target="([^"]+)"').exec(prel) || new RegExp('Target="([^"]+)"[^>]*Id="' + id + '"').exec(prel); return m ? 'ppt/' + m[1].replace(/^\/?ppt\//, '').replace(/^\.\.\//, '') : null; }).filter(Boolean);
+  if (!files.length) files = Object.keys(z).filter(k => /^ppt\/slides\/slide\d+\.xml$/.test(k)).sort((a, b) => parseInt(a.match(/\d+/)) - parseInt(b.match(/\d+/)));
+  const out = [];
+  for (const f of files) {
+    const x = await rd(f); const paras = x.split(/<\/a:p>/).map(p => xmlTxt(p).trim()).filter(Boolean);
+    const isTitle = /type="(title|ctrTitle)"/.test(x); let title = '';
+    const tm = /<p:sp>(?:(?!<\/p:sp>)[\s\S])*?type="(?:title|ctrTitle)"[\s\S]*?<\/p:sp>/.exec(x); if (tm) title = tm[0].split(/<\/a:p>/).map(p => xmlTxt(p).trim()).filter(Boolean).join(' ');
+    const rel = await rd(f.replace('slides/', 'slides/_rels/') + '.rels'); const nm = /Target="\.\.\/notesSlides\/([^"]+)"/.exec(rel);
+    let notes = ''; if (nm) { const nx = await rd('ppt/notesSlides/' + nm[1]); notes = nx.split(/<\/a:p>/).map(p => xmlTxt(p).trim()).filter(t => t && !/^\d+$/.test(t)).join('\n'); }
+    out.push({ title: title || (isTitle ? paras[0] : '') || paras[0] || '', text: paras.join('\n'), notes });
+  }
+  return out;
+}
+/* matnli slayd rasmi (PowerPoint bo'lmasa) */
+function textCard(s, i, n) {
+  const c = document.createElement('canvas'); c.width = 1600; c.height = 900; const g = c.getContext('2d');
+  const gr = g.createLinearGradient(0, 0, 1600, 900); gr.addColorStop(0, '#0d2a40'); gr.addColorStop(1, '#06131f'); g.fillStyle = gr; g.fillRect(0, 0, 1600, 900);
+  g.fillStyle = '#3fd2ff'; g.fillRect(0, 0, 14, 900);
+  g.fillStyle = '#8be9ff'; g.font = 'bold 56px Segoe UI, sans-serif'; wrap(g, s.title || (i + 1) + '-slayd', 90, 130, 1420, 66, 2);
+  g.fillStyle = '#e3f3fb'; g.font = '34px Segoe UI, sans-serif'; const body = s.text.split('\n').filter(t => t && t !== s.title).slice(0, 12);
+  let y = 300; for (const l of body) { y = wrap(g, '•  ' + l, 110, y, 1380, 46, 2) + 14; if (y > 840) break; }
+  g.fillStyle = '#7d97a8'; g.font = '24px Segoe UI'; g.fillText((i + 1) + ' / ' + n, 1480, 870);
+  return c.toDataURL('image/jpeg', .9);
+  function wrap(g, t, x, y, w, lh, max) { const ws = String(t).split(/\s+/); let line = '', k = 0; for (const wd of ws) { const tt = line ? line + ' ' + wd : wd; if (g.measureText(tt).width > w && line) { g.fillText(line, x, y); y += lh; line = wd; if (++k >= max + 3) return y; } else line = tt; } if (line) { g.fillText(line, x, y); y += lh; } return y; }
+}
+async function loadPdf(bytes) {
+  const pdfjs = await import('./vendor/pdfjs/pdf.min.mjs'); pdfjs.GlobalWorkerOptions.workerSrc = new URL('./vendor/pdfjs/pdf.worker.min.mjs', location.href).href;
+  const doc = await pdfjs.getDocument({ data: bytes }).promise; const out = [];
+  for (let i = 1; i <= doc.numPages; i++) { prog(i / doc.numPages); const pg = await doc.getPage(i); const vp0 = pg.getViewport({ scale: 1 }); const sc = 1600 / vp0.width; const vp = pg.getViewport({ scale: sc });
+    const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height; await pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+    const tc = await pg.getTextContent(); const text = tc.items.map(t => t.str).join(' ').replace(/\s+/g, ' ').trim();
+    out.push({ img: c.toDataURL('image/jpeg', .88), title: '', text, notes: '', script: '', audio: null }); }
+  prog(null); return out;
+}
+const b64of = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
+async function openFiles(files) {
+  files = [...files]; if (!files.length) return;
+  try {
+    const f = files[0], ext = f.name.split('.').pop().toLowerCase(); let slides;
+    toast('⏳ Ochilmoqda…', 60000);
+    if (files.every(x => /^image\//.test(x.type))) {
+      slides = await Promise.all(files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })).map(x => new Promise(r => { const fr = new FileReader(); fr.onload = () => r({ img: fr.result, title: '', text: '', notes: '', script: '', audio: null }); fr.readAsDataURL(x); })));
+    } else if (ext === 'pdf') slides = await loadPdf(new Uint8Array(await f.arrayBuffer()));
+    else if (ext === 'pptx') {
+      const bytes = new Uint8Array(await f.arrayBuffer()); const info = await pptxSlides(bytes); let imgs = null;
+      if (N && N.notiqRender) { toast('⏳ Slaydlar asl ko\'rinishda tayyorlanmoqda (PowerPoint orqali)…', 120000); const r = await N.notiqRender({ b64: b64of(bytes), name: f.name }); if (r && r.slides && r.slides.length) imgs = r.slides.map(b => 'data:image/png;base64,' + b); else if (r && r.error) toast('ℹ ' + r.error + ' — slaydlar matn ko\'rinishida ochiladi', 7000); }
+      slides = info.map((s, i) => ({ img: imgs && imgs[i] ? imgs[i] : textCard(s, i, info.length), title: s.title, text: s.text, notes: s.notes, script: '', audio: null }));
+    } else throw new Error('PowerPoint (.pptx), PDF yoki rasm tanlang. Eski .ppt bo\'lsa — PowerPoint\'da "Сохранить как → .pptx" qiling');
+    P = { name: f.name.replace(/\.\w+$/, ''), slides, at: Date.now() }; cur = 0; render(); persist();
+    toast('✓ ' + slides.length + ' ta slayd ochildi. Endi "✨ Nutqni AI yozsin" ni bosing', 6000);
+  } catch (e) { toast('✕ ' + e.message, 8000); console.error(e); }
+}
+
+/* ---------- ko'rinish ---------- */
+function render() {
+  const has = !!(P && P.slides.length);
+  ['bWrite', 'bVoice', 'bLive', 'bVideo', 'bDocx', 'bSave'].forEach(id => $(id).disabled = !has);
+  $('bVideo').style.display = N && N.notiqVideo ? '' : 'none';
+  $('empty').style.display = has ? 'none' : ''; $('big').style.display = has ? '' : 'none'; $('scriptBox').style.display = has ? '' : 'none';
+  $('fname').textContent = has ? P.name + ' · ' + P.slides.length + ' slayd' : 'fayl tanlanmagan';
+  $('thumbs').innerHTML = has ? P.slides.map((s, i) => `<div class="th ${i === cur ? 'on' : ''}" data-i="${i}"><img src="${s.img}" loading="lazy"><span class="n">${i + 1}</span><span class="st">${s.audio ? '🔊' : s.script ? '📝' : ''}</span></div>`).join('') : '';
+  if (has) showSlide(cur);
+}
+function showSlide(i) { cur = Math.max(0, Math.min(i, P.slides.length - 1)); const s = P.slides[cur]; $('big').src = s.img; $('sn').textContent = (cur + 1) + '-slayd';
+  $('script').value = s.script || ''; info(); document.querySelectorAll('.th').forEach(t => t.classList.toggle('on', +t.dataset.i === cur));
+  const t = document.querySelector('.th.on'); if (t) t.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+function info() { const s = P.slides[cur]; const w = (s.script || '').trim().split(/\s+/).filter(Boolean).length; $('sinfo').textContent = w ? `${w} so'z · ≈${Math.round(w / 1.9)} soniya${s.audio ? ' · 🔊 ovoz tayyor (' + Math.round(s.audio.dur) + ' s)' : ''}` : ''; }
+$('thumbs').onclick = e => { const t = e.target.closest('.th'); if (t) showSlide(+t.dataset.i); };
+$('script').oninput = () => { const s = P.slides[cur]; s.script = $('script').value; s.audio = null; info(); const st = document.querySelector('.th.on .st'); if (st) st.textContent = s.script ? '📝' : ''; persist(); };
+$('bOpen').onclick = () => $('fin').click(); $('fin').onchange = () => { openFiles($('fin').files); $('fin').value = ''; };
+document.addEventListener('dragover', e => e.preventDefault()); document.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files.length) openFiles(e.dataTransfer.files); });
+document.addEventListener('keydown', e => { if ($('live').classList.contains('on') || /TEXTAREA|INPUT|SELECT/.test(document.activeElement.tagName) || !P) return; if (e.key === 'ArrowDown' || e.key === 'ArrowRight') showSlide(cur + 1); if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') showSlide(cur - 1); });
+
+/* ---------- AI: nutq matni ---------- */
+async function ai(messages, vision) {
+  if (!N || !N.chat) throw new Error('AI faqat Jarvis ilovasida (kompyuter yoki telefon) ishlaydi');
+  const r = await N.chat({ id: 'notiq' + Date.now(), messages, tools: [], tier: 'default', vision: !!vision });
+  if (r.error) throw new Error(r.error.code === 'no_keys' ? 'AI kaliti yo\'q — Jarvis\'da ⚙ Sozlash\'da Gemini yoki Groq kalitini kiriting' : r.error.message);
+  return String(r.message.content || '').trim();
+}
+function promptFor(i) {
+  const s = P.slides[i], n = P.slides.length, words = Math.round(CFG.sec * 1.9);
+  const prev = i > 0 ? (P.slides[i - 1].script || '').slice(-400) : '';
+  return `Sen tajribali, ishonchli notiqsan. "${P.name}" taqdimotini auditoriyaga gapirib beryapsan. Hozir ${i + 1}-slayd (jami ${n} ta).
+Slayddagi matn:\n"""${(s.text || '(matn yo\'q — rasmga qarab tushun)').slice(0, 3000)}"""${s.notes ? `\nMuallif izohlari (asosan shularga tayan):\n"""${s.notes.slice(0, 2000)}"""` : ''}${prev ? `\nOldingi slayddagi nutq oxiri: "…${prev}"` : ''}
+Vazifa: shu slayd uchun ${LANGS[CFG.lang]} tilida, ${CFG.style} uslubda, ${CFG.tone} ohangda, taxminan ${CFG.sec} soniyalik (≈${words} so'z) jonli NUTQ yoz.
+Qoidalar: faqat ovoz chiqarib aytiladigan matnni yoz — sarlavha, belgi, yulduzcha, "${i + 1}-slayd" kabi so'zlar YOZMA. Slayddagi matnni so'zma-so'z o'qima — tushuntir, misol keltir, keyingisiga silliq o'tkaz. Jadval yoki raqamlar bo'lsa — eng muhimlarini ayt.${i === 0 ? ' Bu birinchi slayd: qisqa salomlash va mavzuni tanishtir.' : ''}${i === n - 1 ? ' Bu oxirgi slayd: xulosa qil va e\'tibor uchun rahmat ayt.' : ''}`;
+}
+async function writeOne(i) {
+  const s = P.slides[i]; const content = [{ type: 'text', text: promptFor(i) }];
+  let txt; try { txt = await ai([{ role: 'user', content: [...content, { type: 'image_url', image_url: { url: s.img } }] }], true); }
+  catch (e) { txt = await ai([{ role: 'user', content: promptFor(i) }], false); }
+  s.script = txt.replace(/^["«]|["»]$/g, '').replace(/\*\*/g, '').replace(/^#+\s*/gm, '').trim(); s.audio = null; return s.script;
+}
+let busy = false;
+async function runAll(label, fn) { if (busy) return; busy = true; const n = P.slides.length; let ok = 0, err = '';
+  for (let i = 0; i < n; i++) { prog(i / n); toast(`${label}: ${i + 1}/${n}…`, 120000); try { await fn(i); ok++; } catch (e) { err = e.message; if (/kalit|faqat Jarvis/.test(err)) break; } if (i === cur) showSlide(cur); render(); }
+  prog(null); busy = false; toast(err && ok < n ? `⚠ ${ok}/${n} tayyor. Xato: ${err}` : `✓ ${label}: ${ok} ta slayd tayyor`, 8000); persist(); }
+$('bWrite').onclick = () => openDlg('write');
+$('bOne').onclick = async () => { const b = $('bOne'); b.disabled = true; b.textContent = '⏳…'; try { await writeOne(cur); showSlide(cur); render(); persist(); } catch (e) { toast('✕ ' + e.message, 7000); } b.disabled = false; b.textContent = '✨ Shu slaydni qayta yoz'; };
+
+/* ---------- OVOZ ---------- */
+function pcmToWav(b64, rate) { const pcm = Uint8Array.from(atob(b64), c => c.charCodeAt(0)); const h = new DataView(new ArrayBuffer(44));
+  const w = (o, s) => { for (let i = 0; i < 4; i++) h.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); h.setUint32(4, 36 + pcm.length, true); w(8, 'WAVE'); w(12, 'fmt '); h.setUint32(16, 16, true); h.setUint16(20, 1, true); h.setUint16(22, 1, true); h.setUint32(24, rate, true); h.setUint32(28, rate * 2, true); h.setUint16(32, 2, true); h.setUint16(34, 16, true); w(36, 'data'); h.setUint32(40, pcm.length, true);
+  const out = new Uint8Array(44 + pcm.length); out.set(new Uint8Array(h.buffer)); out.set(pcm, 44); return { b64: b64of(out), mime: 'audio/wav', dur: pcm.length / 2 / rate }; }
+async function wavDur(b64, mime) { try { const ac = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 1, 22050); const buf = await ac.decodeAudioData(Uint8Array.from(atob(b64), c => c.charCodeAt(0)).buffer); return buf.duration; } catch (e) { return 0; } }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function synth(text) {
+  text = String(text || '').trim(); if (!text) throw new Error('Matn bo\'sh');
+  if (CFG.engine === 'azure') {
+    if (!N || !N.ttsAzure) throw new Error('Azure ovozi faqat ilovada'); if (!CFG.azureKey) throw new Error('Azure kaliti kiritilmagan (⚙ Ovoz)');
+    const r = await N.ttsAzure({ key: CFG.azureKey, region: CFG.azureRegion, voice: CFG.azureVoice, text, rate: CFG.rate }); if (r.error) throw new Error('Azure: ' + r.error);
+    return { b64: r.b64, mime: 'audio/wav', dur: await wavDur(r.b64) };
+  }
+  if (CFG.engine === 'gemini') {
+    if (!N || !N.ttsGemini) throw new Error('Gemini ovozi faqat ilovada');
+    const styled = `Read aloud as a ${CFG.tone === 'iliq va ishonchli' ? 'warm, confident' : CFG.tone === 'tantanali' ? 'solemn, formal' : 'calm, friendly'} professional presenter, in natural ${CFG.lang === 'ru' ? 'Russian' : CFG.lang === 'en' ? 'English' : 'Uzbek'}, with natural pauses and intonation:\n${text}`;
+    for (let k = 0; k < 4; k++) {
+      if (N.ttsCfg && k) { try { await N.ttsCfg({ ttsOn: true }); } catch (e) {} }
+      const r = await N.ttsGemini(styled, CFG.voice); if (r && r.pcm) { const w = pcmToWav(r.pcm, r.rate || 24000); return w; }
+      const e = String(r && r.error || '');
+      if (/429|cooldown/.test(e) && k < 3) { toast(`⏳ Gemini ovoz limiti — ${20 * (k + 1)} soniya kutyapman…`, 25000); await sleep(20000 * (k + 1)); continue; }
+      throw new Error(e === 'no_key' ? 'Gemini kaliti yo\'q (Jarvis ⚙ Sozlash)' : e === 'off' ? 'Jarvis\'da Gemini ovozi o\'chirilgan' : /429|cooldown/.test(e) ? 'Gemini bepul ovoz limiti tugadi — ⚙ Ovoz\'da "Azure" yoki "Kompyuter ovozi"ni tanlang' : 'Gemini: ' + e);
+    }
+  }
+  return null; // tizim ovozi — jonli o'qiladi
+}
+async function voiceOne(i) { const s = P.slides[i]; if (!s.script) await writeOne(i); if (!s.audio) { const a = await synth(s.script); if (a) s.audio = a; } return s.audio; }
+$('bVoice').onclick = () => { if (CFG.engine === 'system') { toast('Kompyuter ovozida oldindan tayyorlash shart emas — "▶ Namoyish"ni bosing'); return; } runAll('Ovozlar', voiceOne); };
+let lisAudio = null;
+$('bListen').onclick = async () => { const b = $('bListen'); if (lisAudio) { lisAudio.pause(); lisAudio = null; speechSynthesis.cancel(); b.textContent = '🔊 Tinglash'; return; }
+  b.textContent = '⏳…'; try { const s = P.slides[cur]; if (!s.script) { await writeOne(cur); showSlide(cur); }
+    if (CFG.engine === 'system') { sysSpeak(s.script).then(() => { lisAudio = null; b.textContent = '🔊 Tinglash'; }); lisAudio = { pause() {} }; b.textContent = '⏹ To\'xtatish'; return; }
+    const a = await voiceOne(cur); render(); lisAudio = new Audio('data:' + a.mime + ';base64,' + a.b64); lisAudio.onended = () => { lisAudio = null; b.textContent = '🔊 Tinglash'; }; await lisAudio.play(); b.textContent = '⏹ To\'xtatish'; persist(); }
+  catch (e) { toast('✕ ' + e.message, 8000); b.textContent = '🔊 Tinglash'; lisAudio = null; } };
+function sysSpeak(text) { return new Promise(res => { const u = new SpeechSynthesisUtterance(text); const v = speechSynthesis.getVoices().find(x => x.name === CFG.sysVoice); if (v) { u.voice = v; u.lang = v.lang; } u.rate = CFG.rate; u.onend = u.onerror = () => res(); speechSynthesis.speak(u); }); }
+
+/* ---------- JONLI NAMOYISH ---------- */
+const L = { on: false, i: 0, paused: false, audio: null, gen: 0, sub: CFG.sub };
+async function prepare(i) { const s = P.slides[i]; if (!s) return; if (!s.script) await writeOne(i); if (CFG.engine !== 'system' && !s.audio) { const a = await synth(s.script); if (a) s.audio = a; } }
+async function liveStart(from) {
+  L.on = true; L.i = from || 0; L.paused = false; $('live').classList.add('on'); try { await document.documentElement.requestFullscreen(); } catch (e) {}
+  liveLoop();
+}
+async function liveLoop() {
+  const g = ++L.gen;
+  while (L.on && g === L.gen && L.i < P.slides.length) {
+    const i = L.i, s = P.slides[i]; const im = $('limg'); im.style.opacity = 0; await sleep(200); im.src = s.img; im.style.opacity = 1;
+    $('lpg').textContent = (i + 1) + ' / ' + P.slides.length; $('lprog').style.width = ((i) / P.slides.length * 100) + '%';
+    try { $('lsub').textContent = s.script ? '' : '⏳ tayyorlanmoqda…'; await prepare(i); } catch (e) { $('lsub').textContent = '⚠ ' + e.message; await sleep(4000); }
+    if (g !== L.gen || !L.on) return;
+    prepare(i + 1).catch(() => {}); // keyingisini oldindan
+    $('lsub').textContent = L.sub ? (s.script || '') : '';
+    while (L.paused && g === L.gen) await sleep(200);
+    if (g !== L.gen || !L.on) return;
+    if (CFG.engine === 'system') await sysSpeak(s.script);
+    else if (s.audio) await new Promise(res => { const a = new Audio('data:' + s.audio.mime + ';base64,' + s.audio.b64); L.audio = a; a.playbackRate = 1; a.onended = a.onerror = () => res(); a.play().catch(() => res()); const chk = setInterval(() => { if (g !== L.gen || !L.on) { a.pause(); clearInterval(chk); res(); } }, 200); a.addEventListener('ended', () => clearInterval(chk)); });
+    else await sleep(4000);
+    if (g !== L.gen || !L.on) return;
+    while (L.paused && g === L.gen) await sleep(200);
+    await sleep(700); if (g !== L.gen) return; L.i++;
+  }
+  if (L.on && g === L.gen) { $('lprog').style.width = '100%'; $('lsub').textContent = L.sub ? '— Tugadi. Savol bo\'lsa ❓ ni bosing —' : ''; }
+}
+function liveGo(d) { if (L.audio) L.audio.pause(); speechSynthesis.cancel(); L.i = Math.max(0, Math.min(P.slides.length - 1, L.i + d)); L.paused = false; $('lPlay').textContent = '⏸'; liveLoop(); }
+function liveStop() { L.on = false; L.gen++; if (L.audio) L.audio.pause(); speechSynthesis.cancel(); $('live').classList.remove('on'); $('qa').classList.remove('on'); try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {} showSlide(Math.min(L.i, P.slides.length - 1)); render(); persist(); }
+$('bLive').onclick = () => liveStart(cur);
+$('lPrev').onclick = () => liveGo(-1); $('lNext').onclick = () => liveGo(1); $('lExit').onclick = liveStop;
+$('lPlay').onclick = () => { L.paused = !L.paused; $('lPlay').textContent = L.paused ? '▶' : '⏸'; if (L.audio) L.paused ? L.audio.pause() : L.audio.play().catch(() => {}); if (CFG.engine === 'system') L.paused ? speechSynthesis.pause() : speechSynthesis.resume(); };
+$('lSub').onclick = () => { L.sub = !L.sub; CFG.sub = L.sub; saveCfg(); $('lsub').textContent = L.sub ? (P.slides[L.i] || {}).script || '' : ''; };
+let idleT; $('live').addEventListener('mousemove', () => { $('live').classList.remove('idle'); clearTimeout(idleT); idleT = setTimeout(() => $('live').classList.add('idle'), 2500); });
+$('live').addEventListener('click', e => { if (!e.target.closest('.ctl')) { $('live').classList.remove('idle'); clearTimeout(idleT); idleT = setTimeout(() => $('live').classList.add('idle'), 2500); } });
+document.addEventListener('keydown', e => { if (!L.on) return; if (e.key === 'Escape') liveStop(); else if (e.key === ' ') { e.preventDefault(); $('lPlay').click(); } else if (e.key === 'ArrowRight' || e.key === 'PageDown') liveGo(1); else if (e.key === 'ArrowLeft' || e.key === 'PageUp') liveGo(-1); else if (e.key.toLowerCase() === 'q') $('lAsk').click(); });
+
+/* ---------- SAVOL-JAVOB (ovoz bilan) ---------- */
+async function recordWav(maxMs) {
+  const st = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+  const rec = new MediaRecorder(st); const ch = []; rec.ondataavailable = e => ch.push(e.data);
+  const ctx = new AudioContext(); const an = ctx.createAnalyser(); ctx.createMediaStreamSource(st).connect(an); const buf = new Float32Array(an.fftSize);
+  rec.start(); let heard = false, quiet = 0; const t0 = Date.now();
+  await new Promise(res => { const tick = () => { an.getFloatTimeDomainData(buf); let s = 0; for (const v of buf) s += v * v; const rms = Math.sqrt(s / buf.length);
+    if (rms > .02) { heard = true; quiet = 0; } else if (heard) quiet += 50; if ((heard && quiet > 1300) || Date.now() - t0 > maxMs) return res(); setTimeout(tick, 50); }; tick(); });
+  rec.stop(); await new Promise(r => rec.onstop = r); st.getTracks().forEach(t => t.stop()); ctx.close();
+  const blob = new Blob(ch, { type: rec.mimeType }); const dec = await new AudioContext().decodeAudioData(await blob.arrayBuffer());
+  const oc = new OfflineAudioContext(1, Math.ceil(dec.duration * 16000), 16000); const src = oc.createBufferSource(); src.buffer = dec; src.connect(oc.destination); src.start(); const r = await oc.startRendering();
+  const pcm = r.getChannelData(0); const out = new DataView(new ArrayBuffer(44 + pcm.length * 2)); const w = (o, s) => { for (let i = 0; i < 4; i++) out.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); out.setUint32(4, 36 + pcm.length * 2, true); w(8, 'WAVE'); w(12, 'fmt '); out.setUint32(16, 16, true); out.setUint16(20, 1, true); out.setUint16(22, 1, true); out.setUint32(24, 16000, true); out.setUint32(28, 32000, true); out.setUint16(32, 2, true); out.setUint16(34, 16, true); w(36, 'data'); out.setUint32(40, pcm.length * 2, true);
+  for (let i = 0; i < pcm.length; i++) out.setInt16(44 + i * 2, Math.max(-1, Math.min(1, pcm[i])) * 32767, true);
+  return out.buffer;
+}
+$('lAsk').onclick = async () => {
+  const qa = $('qa'); const wasPaused = L.paused; if (!L.paused) $('lPlay').click();
+  qa.classList.add('on'); qa.innerHTML = '🎙 <b>Savolingizni ayting…</b>';
+  try {
+    if (!N || !N.stt) throw new Error('Ovozli savol faqat ilovada ishlaydi');
+    const wav = await recordWav(15000); qa.innerHTML = '⏳ tanilmoqda…';
+    const r = await N.stt(wav, 'audio/wav'); if (r.error) throw new Error(r.error); const q = (r.text || '').trim(); if (!q) throw new Error('Savol eshitilmadi');
+    qa.innerHTML = `<b>Savol:</b> ${esc(q)}<br>⏳ javob tayyorlanmoqda…`;
+    const ctxT = P.slides.map((s, i) => `[${i + 1}-slayd] ${s.title || ''}\nMatn: ${(s.text || '').slice(0, 600)}\nNutq: ${(s.script || '').slice(0, 600)}`).join('\n\n').slice(0, 24000);
+    const ans = await ai([{ role: 'user', content: `Sen "${P.name}" taqdimotini qilgan notiqsan. Auditoriyadan savol keldi. Taqdimot mazmuniga tayanib, ${LANGS[CFG.lang]} tilida QISQA (3–5 gap), aniq va xushmuomala javob ber. Taqdimotda javob yo'q bo'lsa — umumiy bilimingdan ehtiyotkor javob ber.\n\nTAQDIMOT:\n${ctxT}\n\nSAVOL: ${q}` }]);
+    qa.innerHTML = `<b>Savol:</b> ${esc(q)}<br><b>Javob:</b> ${esc(ans)}`;
+    if (CFG.engine === 'system') await sysSpeak(ans); else { const a = await synth(ans); if (a) await new Promise(res => { const au = new Audio('data:' + a.mime + ';base64,' + a.b64); au.onended = au.onerror = res; au.play().catch(res); }); }
+  } catch (e) { qa.innerHTML = '⚠ ' + esc(e.message); await sleep(3500); }
+  setTimeout(() => qa.classList.remove('on'), 6000); if (!wasPaused && L.paused) $('lPlay').click();
+};
+
+/* ---------- MP4 VIDEO ---------- */
+$('bVideo').onclick = async () => {
+  if (!N || !N.notiqVideo) return toast('MP4 video kompyuter versiyasida tayyorlanadi');
+  if (CFG.engine === 'system') return toast('Video uchun ⚙ Ovoz\'da Gemini yoki Azure ovozini tanlang (kompyuter ovozini videoga yozib bo\'lmaydi)', 8000);
+  await runAll('Ovozlar', voiceOne); if (P.slides.some(s => !s.audio)) return toast('⚠ Hamma slaydlar uchun ovoz tayyor bo\'lmadi — video to\'xtatildi', 8000);
+  const b = $('bVideo'); b.disabled = true; b.textContent = '⏳ Video…'; toast('🎬 Video yig\'ilmoqda — taqdimot uzunligiga qarab 1–3 daqiqa…', 300000);
+  try { const r = await N.notiqVideo({ name: P.name, slides: P.slides.map(s => ({ img: s.img.split(',')[1], imgType: /png/.test(s.img.slice(0, 30)) ? 'png' : 'jpg', wav: s.audio.b64 })) });
+    if (r.error) throw new Error(r.error); toast('✓ Video tayyor: ' + r.path, 10000); }
+  catch (e) { toast('✕ Video: ' + e.message, 10000); }
+  b.disabled = false; b.textContent = '🎬 MP4 video';
+};
+
+/* ---------- Word (nutq matni) va loyiha ---------- */
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return u => { let c = 0xFFFFFFFF; for (let i = 0; i < u.length; i++) c = t[(c ^ u[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }; })();
+function zip(files) { const enc = new TextEncoder(), parts = [], cent = []; let off = 0;
+  for (const [name, content] of files) { const nb = enc.encode(name), data = enc.encode(content), crc = CRC(data);
+    const h = new DataView(new ArrayBuffer(30)); h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint32(14, crc, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true); h.setUint16(26, nb.length, true); parts.push(new Uint8Array(h.buffer), nb, data);
+    const c = new DataView(new ArrayBuffer(46)); c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true); c.setUint16(28, nb.length, true); c.setUint32(42, off, true); cent.push(new Uint8Array(c.buffer), nb); off += 30 + nb.length + data.length; }
+  const cl = cent.reduce((a, b) => a + b.length, 0); const e = new DataView(new ArrayBuffer(22)); e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cl, true); e.setUint32(16, off, true);
+  return new Blob([...parts, ...cent, new Uint8Array(e.buffer)], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }); }
+const xe = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const para = (t, o = {}) => `<w:p><w:pPr>${o.c ? '<w:jc w:val="center"/>' : '<w:jc w:val="both"/>'}<w:spacing w:after="120"/>${o.ind ? '<w:ind w:firstLine="709"/>' : ''}</w:pPr><w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>${o.b ? '<w:b/>' : ''}<w:sz w:val="${o.sz || 28}"/></w:rPr><w:t xml:space="preserve">${xe(t)}</w:t></w:r></w:p>`;
+async function saveBlob(blob, name) { if (N && N.saveFile) { const b64 = b64of(new Uint8Array(await blob.arrayBuffer())); const r = await N.saveFile({ b64, name, mime: blob.type }); toast(r && r.error ? '✕ ' + r.error : '✓ Saqlandi: ' + (r && r.path || name), 7000); return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+$('bDocx').onclick = () => { const body = para(P.name.toUpperCase(), { c: true, b: true, sz: 32 }) + para('Taqdimot nutqi', { c: true, sz: 26 }) + P.slides.map((s, i) => para(`${i + 1}-slayd${s.title ? ': ' + s.title : ''}`, { b: true }) + (s.script || '(nutq yozilmagan)').split(/\n+/).map(t => para(t, { ind: true })).join('')).join('');
+  const doc = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="850" w:bottom="1134" w:left="1701" w:header="709" w:footer="709" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+  saveBlob(zip([['[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'],
+    ['_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'], ['word/document.xml', doc]]), P.name + ' — nutq.docx'); };
+$('bSave').onclick = () => saveBlob(new Blob([JSON.stringify(P)], { type: 'application/json' }), P.name + '.notiq.json');
+$('fin').accept = '.pptx,.pdf,.json,image/*';
+const _open = openFiles; openFiles = async fs => { fs = [...fs]; if (fs[0] && /\.json$/i.test(fs[0].name)) { try { P = JSON.parse(await fs[0].text()); cur = 0; render(); persist(); toast('✓ Loyiha ochildi'); } catch (e) { toast('✕ Loyiha fayli buzilgan'); } return; } return _open(fs); };
+
+/* ---------- sozlamalar oynasi ---------- */
+const GVOICES = [['Charon', 'Erkak — ishonchli'], ['Orus', 'Erkak — qat\'iy'], ['Fenrir', 'Erkak — jonli'], ['Iapetus', 'Erkak — tiniq'], ['Algenib', 'Erkak — past'], ['Kore', 'Ayol — qat\'iy'], ['Aoede', 'Ayol — yengil'], ['Leda', 'Ayol — yosh'], ['Sulafat', 'Ayol — iliq'], ['Achernar', 'Ayol — mayin']];
+function openDlg(kind) {
+  const box = $('dlgBox'); const sys = speechSynthesis.getVoices();
+  if (kind === 'write') {
+    box.innerHTML = `<h3>✨ Nutqni AI yozsin</h3>
+      <div class="row"><div><label>Til</label><select id="dLang">${Object.entries(LANGS).map(([k, v]) => `<option value="${k}" ${CFG.lang === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+      <div><label>Uslub</label><select id="dStyle">${['rasmiy', 'ilmiy', 'oddiy, tushunarli', 'ishontiruvchi (himoya uchun)'].map(v => `<option ${CFG.style === v ? 'selected' : ''}>${v}</option>`).join('')}</select></div></div>
+      <div class="row"><div><label>Har slayd uchun (soniya)</label><input id="dSec" type="number" min="15" max="180" value="${CFG.sec}"></div>
+      <div><label>Ohang</label><select id="dTone">${['iliq va ishonchli', 'tantanali', 'xotirjam, do\'stona'].map(v => `<option ${CFG.tone === v ? 'selected' : ''}>${v}</option>`).join('')}</select></div></div>
+      <label><input type="checkbox" id="dOver" style="width:auto"> Yozilgan nutqlarni ham qayta yozish</label>
+      <div class="hint">AI har bir slaydning matni, izohlari (Notes) va rasmiga qarab nutq yozadi. Keyin har birini o'zingiz tahrirlashingiz mumkin. Jami ≈ ${Math.round(CFG.sec * (P ? P.slides.length : 0) / 60)} daqiqa.</div>
+      <div class="act"><button class="b" id="dNo">Bekor</button><button class="b w" id="dOk">✨ Yozish</button></div>`;
+    $('dNo').onclick = () => $('dlg').classList.remove('on');
+    $('dOk').onclick = () => { CFG.lang = $('dLang').value; CFG.style = $('dStyle').value; CFG.sec = Math.max(15, Math.min(180, +$('dSec').value || 45)); CFG.tone = $('dTone').value; saveCfg(); const over = $('dOver').checked; $('dlg').classList.remove('on');
+      runAll('Nutq', async i => { if (!over && P.slides[i].script) return; await writeOne(i); }); };
+  } else {
+    box.innerHTML = `<h3>⚙ Ovoz sozlamalari</h3>
+      <label>Ovoz manbai</label><select id="dEng"><option value="gemini" ${CFG.engine === 'gemini' ? 'selected' : ''}>Google Gemini — tabiiy (Jarvis\'dagi Gemini kaliti, bepul limit bilan)</option><option value="azure" ${CFG.engine === 'azure' ? 'selected' : ''}>Microsoft Azure — eng tabiiy o'zbek ovozi (Madina / Sardor)</option><option value="system" ${CFG.engine === 'system' ? 'selected' : ''}>Kompyuter/telefon ovozi (internetsiz, videoga yozilmaydi)</option></select>
+      <div id="gBox"><label>Gemini ovozi</label><select id="dGV">${GVOICES.map(([v, d]) => `<option value="${v}" ${CFG.voice === v ? 'selected' : ''}>${v} — ${d}</option>`).join('')}</select></div>
+      <div id="aBox"><div class="row"><div><label>Azure kaliti</label><input id="dAK" type="password" value="${esc(CFG.azureKey)}" placeholder="Speech resource → Keys"></div><div><label>Region</label><input id="dAR" value="${esc(CFG.azureRegion)}" placeholder="westeurope"></div></div>
+        <label>Azure ovozi</label><select id="dAV">${[['uz-UZ-SardorNeural', 'Sardor — erkak, o\'zbek'], ['uz-UZ-MadinaNeural', 'Madina — ayol, o\'zbek'], ['ru-RU-DmitryNeural', 'Dmitry — rus'], ['ru-RU-SvetlanaNeural', 'Svetlana — rus'], ['en-US-AndrewMultilingualNeural', 'Andrew — ingliz']].map(([v, d]) => `<option value="${v}" ${CFG.azureVoice === v ? 'selected' : ''}>${d}</option>`).join('')}</select>
+        <div class="hint">Azure: portal.azure.com → "Speech service" yarating (Free F0 — oyiga 500 000 belgi bepul) → Keys and Endpoint'dan kalit va regionni oling.</div></div>
+      <div id="sBox"><label>Tizim ovozi</label><select id="dSV">${sys.map(v => `<option ${CFG.sysVoice === v.name ? 'selected' : ''}>${esc(v.name)}</option>`).join('') || '<option>(ovoz topilmadi)</option>'}</select></div>
+      <label>Tezlik: <b id="dRv">${CFG.rate}</b></label><input id="dRate" type="range" min="0.75" max="1.3" step="0.05" value="${CFG.rate}">
+      <div class="act"><button class="b" id="dTest">🔊 Sinab ko'rish</button><button class="b w" id="dOk">Saqlash</button></div>`;
+    const sync = () => { const e = $('dEng').value; $('gBox').style.display = e === 'gemini' ? '' : 'none'; $('aBox').style.display = e === 'azure' ? '' : 'none'; $('sBox').style.display = e === 'system' ? '' : 'none'; };
+    $('dEng').onchange = sync; sync(); $('dRate').oninput = () => $('dRv').textContent = $('dRate').value;
+    const take = () => { CFG.engine = $('dEng').value; CFG.voice = $('dGV').value; CFG.azureKey = $('dAK').value.trim(); CFG.azureRegion = $('dAR').value.trim() || 'westeurope'; CFG.azureVoice = $('dAV').value; CFG.sysVoice = $('dSV').value; CFG.rate = +$('dRate').value; saveCfg(); };
+    $('dOk').onclick = () => { take(); if (P) P.slides.forEach(s => s.audio = null); render(); $('dlg').classList.remove('on'); toast('✓ Saqlandi. Ovozlar yangi sozlama bilan qayta tayyorlanadi'); };
+    $('dTest').onclick = async () => { take(); const t = CFG.lang === 'ru' ? 'Здравствуйте! Начинаем нашу презентацию.' : CFG.lang === 'en' ? 'Hello everyone! Let us begin our presentation.' : 'Assalomu alaykum, hurmatli hamkasblar! Taqdimotimizni boshlaymiz.';
+      try { if (CFG.engine === 'system') return sysSpeak(t); const a = await synth(t); new Audio('data:' + a.mime + ';base64,' + a.b64).play(); } catch (e) { toast('✕ ' + e.message, 8000); } };
+  }
+  $('dlg').classList.add('on');
+}
+$('bSet').onclick = () => openDlg('voice');
+$('dlg').onclick = e => { if (e.target.id === 'dlg') $('dlg').classList.remove('on'); };
+speechSynthesis.onvoiceschanged = () => {};
+
+/* ---------- boshlash: Jarvis yuborgan fayl yoki oxirgi loyiha ---------- */
+(async () => {
+  try { const pend = await IDB.get('pending'); if (pend && pend.bytes) { await IDB.del('pending'); await openFiles([new File([pend.bytes], pend.name, { type: pend.mime || '' })]); return; } } catch (e) {}
+  try { const last = await IDB.get('last'); if (last && last.slides && last.slides.length) { P = last; cur = 0; render(); toast('Oxirgi loyiha ochildi: ' + P.name); } } catch (e) {}
+  render();
+})();
+window.addEventListener('message', async e => { if (e.data && e.data.notiqOpen) { const d = e.data.notiqOpen; await openFiles([new File([d.bytes], d.name, { type: d.mime || '' })]); } });
+</script>
+</body>
+</html>

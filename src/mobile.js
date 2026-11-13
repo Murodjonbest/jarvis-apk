@@ -112,6 +112,7 @@
 
   /* ---- telefonning "orqaga" tugmasi ---- */
   window.mobBack = function () {
+    const nf = $('notiqFrame'); if (nf) { nf.remove(); return true; }
     const md = $('modal'); if (md && getComputedStyle(md).display !== 'none') { const n = $('mNo'); if (n) n.click(); return true; }
     if (sheet.classList.contains('open')) { closeSheet(); return true; }
     const w = [...document.querySelectorAll('.win')].filter(x => x.style.display !== 'none').sort((a, b) => (+b.style.zIndex || 0) - (+a.style.zIndex || 0))[0];

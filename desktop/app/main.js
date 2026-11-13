@@ -795,7 +795,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1400, height: 900, minWidth: 900, minHeight: 600, backgroundColor: '#03080f', title: 'JARVIS',
     autoHideMenuBar: true,
-    show: !process.argv.includes('--hidden'), icon: path.join(BASE_APP, 'icon.png'),
+    show: !process.argv.includes('--hidden') && !process.argv.includes('--notiq'), icon: path.join(BASE_APP, 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false }
   });
   MAINWIN = win;
@@ -805,6 +805,7 @@ function createWindow() {
   win.webContents.on('will-navigate', (e, url) => { if (!url.startsWith('jarvis:')) { e.preventDefault(); shell.openExternal(url); } });
   win.loadURL('jarvis://app/index.html');
   TG.win = win; const t = tgCfg(); if (t.token && t.owner && t.enabled !== false) { TG.on = true; tgLoop(); }
+  if (process.argv.includes('--notiq')) openNotiq();
 }
 app.whenReady().then(() => {
   protocol.handle('jarvis', req => { const u = new URL(req.url); const rel = decodeURIComponent(u.pathname); let f = path.normalize(path.join(__dirname, rel)); if (!f.startsWith(__dirname)) return new Response('no', { status: 403 }); if (!fs.existsSync(f) && BASE_APP !== __dirname) { const g = path.normalize(path.join(BASE_APP, rel)); if (g.startsWith(BASE_APP)) f = g; } return net.fetch(pathToFileURL(f).toString()); });
@@ -830,7 +831,85 @@ function makeTray() {
   } catch (e) { logw('TRAY: ' + e.message); }
 }
 ipcMain.handle('win:show', () => { showMain(); return true; });
-if (!app.requestSingleInstanceLock()) { app.__quitting = true; app.exit(0); } else app.on('second-instance', () => showMain());
+/* ================= NOTIQ: taqdimotni gapirib beruvchi (alohida oyna) ================= */
+let NOTIQWIN = null;
+function openNotiq() {
+  if (NOTIQWIN && !NOTIQWIN.isDestroyed()) { if (NOTIQWIN.isMinimized()) NOTIQWIN.restore(); NOTIQWIN.show(); NOTIQWIN.focus(); return; }
+  NOTIQWIN = new BrowserWindow({ width: 1360, height: 860, minWidth: 820, minHeight: 560, backgroundColor: '#050b12', title: 'NOTIQ — taqdimotni gapirib beruvchi', autoHideMenuBar: true, icon: path.join(BASE_APP, 'notiq.png'),
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false } });
+  NOTIQWIN.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:\/\//.test(url)) shell.openExternal(url); return { action: 'deny' }; });
+  NOTIQWIN.loadURL('jarvis://app/notiq.html'); NOTIQWIN.on('closed', () => { NOTIQWIN = null; });
+}
+ipcMain.handle('notiq:open', () => { openNotiq(); return true; });
+const psRun = (script, timeout) => new Promise(res => execFile('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', script], { timeout: timeout || 180000, windowsHide: true, maxBuffer: 1 << 24 }, (err, out, se) => res({ err, out: String(out || ''), se: String(se || '') })));
+// PowerPoint (yoki WPS) orqali slaydlarni asl ko'rinishda PNG qilish
+ipcMain.handle('notiq:render', async (e, { b64, name }) => {
+  if (process.platform !== 'win32') return { error: 'PowerPoint faqat Windows\'da' };
+  const dir = path.join(app.getPath('temp'), 'notiq-' + Date.now()); fs.mkdirSync(dir, { recursive: true });
+  const inp = path.join(dir, 'in.pptx'); fs.writeFileSync(inp, Buffer.from(b64, 'base64'));
+  const q = s => s.replace(/'/g, "''");
+  const script = `$ErrorActionPreference='Stop'
+$in='${q(inp)}'; $out='${q(dir)}'
+function Exp($app){ $p=$app.Presentations.Open($in,$true,$false,$false); $w=[double]$p.PageSetup.SlideWidth; $h=[double]$p.PageSetup.SlideHeight; $W=1920; $H=[int]([math]::Round(1920*$h/$w)); $i=1; foreach($s in $p.Slides){ $s.Export((Join-Path $out ("s{0:D3}.png" -f $i)),'PNG',$W,$H); $i++ }; $p.Close() }
+$ok=$false
+try { $pp=New-Object -ComObject PowerPoint.Application; Exp $pp; try{$pp.Quit()}catch{}; $ok=$true } catch { $e1=$_.Exception.Message }
+if(-not $ok){ try { $wp=New-Object -ComObject KWPP.Application; Exp $wp; try{$wp.Quit()}catch{}; $ok=$true } catch { $e2=$_.Exception.Message } }
+if($ok){ 'OK' } else { 'ERR: ' + $e1 + ' | ' + $e2 }`;
+  const r = await psRun(script, 240000);
+  try {
+    const files = fs.readdirSync(dir).filter(f => /^s\d+\.png$/i.test(f)).sort();
+    if (!files.length) { logw('NOTIQ render: ' + (r.out + r.se).slice(0, 400)); return { error: /ERR/.test(r.out) && /class not registered|80040154|ProgID/i.test(r.out) ? 'Kompyuterda PowerPoint topilmadi' : 'PowerPoint slaydlarni ocholmadi' }; }
+    return { slides: files.map(f => fs.readFileSync(path.join(dir, f)).toString('base64')) };
+  } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch (er) {} }
+});
+// MP4 video: har slayd rasmi + ovozi → ffmpeg
+ipcMain.handle('notiq:video', async (e, { name, slides }) => {
+  const ffUser = path.join(app.getPath('userData'), 'ffmpeg', 'ffmpeg.exe');
+  let ff = [path.join(BASE_APP, 'vendor', 'ffmpeg', 'ffmpeg.exe'), path.join(__dirname, 'vendor', 'ffmpeg', 'ffmpeg.exe'), ffUser].find(f => fs.existsSync(f));
+  if (!ff) { // eski o'rnatmada yo'q bo'lsa — bir marta yuklab olamiz (~30 MB)
+    try { if (NOTIQWIN && !NOTIQWIN.isDestroyed()) NOTIQWIN.setProgressBar(2);
+      const r = await fetchT('https://github.com/eugeneware/ffmpeg-static/releases/download/b6.0/ffmpeg-win32-x64.gz', { headers: { 'User-Agent': 'Jarvis' } }, 600000); if (!r.ok) throw new Error('HTTP ' + r.status);
+      const buf = require('zlib').gunzipSync(Buffer.from(await r.arrayBuffer())); fs.mkdirSync(path.dirname(ffUser), { recursive: true }); fs.writeFileSync(ffUser, buf); ff = ffUser; }
+    catch (err) { return { error: 'Video dasturi (ffmpeg) yuklab olinmadi: ' + err.message }; } }
+  const dir = path.join(app.getPath('temp'), 'notiqv-' + Date.now()); fs.mkdirSync(dir, { recursive: true });
+  const run = args => new Promise((res, rej) => execFile(ff, args, { windowsHide: true, maxBuffer: 1 << 24, timeout: 600000 }, (err, o, se) => err ? rej(new Error(String(se || err.message).split('\n').filter(Boolean).slice(-2).join(' '))) : res()));
+  try {
+    const list = [];
+    for (let i = 0; i < slides.length; i++) {
+      const s = slides[i]; const img = path.join(dir, `i${i}.${s.imgType || 'png'}`), wav = path.join(dir, `a${i}.wav`), seg = path.join(dir, `s${i}.mp4`);
+      fs.writeFileSync(img, Buffer.from(s.img, 'base64')); const wb = Buffer.from(s.wav, 'base64'); fs.writeFileSync(wav, wb);
+      let dur = 5; try { const br = wb.readUInt32LE(28); const dl = wb.length - 44; if (br > 0) dur = dl / br; } catch (er) {}
+      await run(['-y', '-loop', '1', '-framerate', '30', '-i', img, '-i', wav, '-t', (dur + 0.8).toFixed(2), '-vf', 'scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=black,format=yuv420p',
+        '-af', 'apad', '-c:v', 'libx264', '-preset', 'veryfast', '-tune', 'stillimage', '-crf', '20', '-r', '30', '-c:a', 'aac', '-b:a', '160k', '-ar', '48000', '-ac', '2', seg]);
+      list.push(`file '${seg.replace(/\\/g, '/').replace(/'/g, "'\\''")}'`);
+      if (NOTIQWIN && !NOTIQWIN.isDestroyed()) NOTIQWIN.setProgressBar((i + 1) / (slides.length + 1));
+    }
+    fs.writeFileSync(path.join(dir, 'list.txt'), list.join('\n'));
+    const outDir = path.join(app.getPath('videos'), 'Notiq'); fs.mkdirSync(outDir, { recursive: true });
+    let out = path.join(outDir, String(name || 'taqdimot').replace(/[\\/:*?"<>|]+/g, ' ').trim() + '.mp4'); if (fs.existsSync(out)) out = out.replace(/\.mp4$/, ` (${Date.now() % 100000}).mp4`);
+    await run(['-y', '-f', 'concat', '-safe', '0', '-i', path.join(dir, 'list.txt'), '-c', 'copy', '-movflags', '+faststart', out]);
+    if (NOTIQWIN && !NOTIQWIN.isDestroyed()) NOTIQWIN.setProgressBar(-1);
+    shell.showItemInFolder(out); return { ok: true, path: out };
+  } catch (err) { logw('NOTIQ video: ' + err.message); if (NOTIQWIN && !NOTIQWIN.isDestroyed()) NOTIQWIN.setProgressBar(-1); return { error: err.message.slice(0, 300) }; }
+  finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch (er) {} }
+});
+// Microsoft Azure — eng tabiiy o'zbek ovozi (ixtiyoriy, o'z kalitingiz bilan)
+ipcMain.handle('tts:azure', async (e, { key, region, voice, text, rate }) => {
+  try {
+    const lang = (voice || 'uz-UZ-SardorNeural').split('-').slice(0, 2).join('-'); const pct = Math.round(((rate || 1) - 1) * 100);
+    const ssml = `<speak version="1.0" xml:lang="${lang}"><voice name="${voice}"><prosody rate="${pct >= 0 ? '+' : ''}${pct}%">${String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</prosody></voice></speak>`;
+    const r = await fetchT(`https://${region || 'westeurope'}.tts.speech.microsoft.com/cognitiveservices/v1`, { method: 'POST', headers: { 'Ocp-Apim-Subscription-Key': key, 'Content-Type': 'application/ssml+xml', 'X-Microsoft-OutputFormat': 'riff-24khz-16bit-mono-pcm', 'User-Agent': 'Notiq' }, body: ssml }, 60000);
+    if (!r.ok) return { error: r.status === 401 ? 'kalit noto\'g\'ri' : r.status + ' ' + (await r.text()).slice(0, 120) };
+    return { b64: Buffer.from(await r.arrayBuffer()).toString('base64') };
+  } catch (err) { return { error: err.message }; }
+});
+// ish stoli va Pusk menyusida alohida "Notiq" belgisi (bir marta)
+app.whenReady().then(() => { if (process.platform !== 'win32') return; try { const f = path.join(app.getPath('userData'), '.notiq-shortcut'); if (fs.existsSync(f)) return;
+  const exe = process.execPath.replace(/'/g, "''"); const ico = path.join(BASE_APP, 'notiq.ico').replace(/'/g, "''");
+  psRun(`$s=New-Object -ComObject WScript.Shell; foreach($d in @([Environment]::GetFolderPath('Desktop'),(Join-Path $env:APPDATA 'Microsoft\\Windows\\Start Menu\\Programs'))){ $l=$s.CreateShortcut((Join-Path $d 'Notiq — taqdimot.lnk')); $l.TargetPath='${exe}'; $l.Arguments='--notiq'; $l.WorkingDirectory='${path.dirname(process.execPath).replace(/'/g, "''")}'; if(Test-Path '${ico}'){ $l.IconLocation='${ico}' }; $l.Description='Taqdimotni tabiiy ovozda gapirib beradi'; $l.Save() }`, 30000)
+    .then(r => { if (!r.err) fs.writeFileSync(f, '1'); else logw('NOTIQ shortcut: ' + r.se.slice(0, 200)); }); } catch (er) {} });
+
+if (!app.requestSingleInstanceLock()) { app.__quitting = true; app.exit(0); } else app.on('second-instance', (e, argv) => { if ((argv || []).includes('--notiq')) openNotiq(); else showMain(); });
 // birinchi ishga tushishda — Windows bilan birga ochilsin (fonda)
 app.whenReady().then(() => { try { const f = path.join(app.getPath('userData'), '.autostart-set'); if (!fs.existsSync(f)) { app.setLoginItemSettings({ openAtLogin: true, args: ['--hidden'] }); fs.writeFileSync(f, '1'); } } catch (e) {} });
 

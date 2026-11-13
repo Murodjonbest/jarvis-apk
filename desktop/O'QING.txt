@@ -154,3 +154,11 @@ YANGI (v1.9) — tuzatishlar
   o'rtada suhbat, ochilgan oynalar (Gmail, Drive, hujjat, sozlamalar…) o'ng tomonda yon panel bo'lib chiqadi — suhbat ko'rinib turadi.
 • Esc — ochiq oynani yopadi. Chap tepadagi doira — Jarvis holati (bosilsa suhbatga qaytadi).
 • Sozlamalar bo'limlarga bo'lindi (bosib ochiladi), Google kirish eng tepada.
+
+=== v2.8 — NOTIQ: TAQDIMOTNI GAPIRIB BERUVCHI ===
+• Ish stolida "Notiq — taqdimot" belgisi paydo bo'ladi (Jarvis ichida ham: 🧩 Ilovalar → 🎤 Notiq, yoki "taqdimotni gapirib ber").
+• PowerPoint (.pptx), PDF yoki rasmlarni oching — slaydlar asl ko'rinishda (kompyuterda PowerPoint bo'lsa) ochiladi.
+• ✨ Nutqni AI yozsin: har slayd matni, izohlari (Notes) va rasmiga qarab o'zbek/rus/ingliz tilida nutq yozadi; tahrirlaysiz.
+• ▶ Namoyish: to'liq ekranda tabiiy ovozda gapiradi, slaydlarni o'zi almashtiradi, subtitr; ❓ — tinglovchi savoliga ovozda javob.
+• 🎬 MP4 video (1920×1080) — Videolar\Notiq papkasiga. 📄 Nutq matnini Word qilib olish.
+• Ovoz: Google Gemini (tabiiy, Jarvis kaliti bilan) yoki Microsoft Azure (eng tabiiy o'zbek ovozi Madina/Sardor, o'z kalitingiz bilan).

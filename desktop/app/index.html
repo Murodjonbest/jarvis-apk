@@ -231,7 +231,7 @@ body{background:
 </head>
 <body>
 <button class="estop" id="estop" title="Hamma amallarni darhol to'xtatish va Google kirishini bloklash">⛔ TO'XTAT</button>
-<div class="dock" id="dock"><button data-app="gmail">✉️ Gmail</button><button data-app="drive">📁 Drive</button><button data-app="calendar">📅 Kalendar</button><button data-app="connections">🔗 Ilovalar</button><button data-app="brain">🗂 Ikkinchi miya</button><button data-app="memory">🧠 Xotira</button><button data-app="graph">🕸 Xarita</button><button data-app="team">👥 Jamoa</button><button data-app="routines">⏰ Odatlar</button><button data-app="skills">📚 Ko'nikma</button><button data-app="batch">⚡ Ommaviy</button><button data-app="task">⚙ Vazifa</button><span class="sep"></span><span id="dockWins" style="display:flex;gap:6px"></span><span id="jobN" style="color:var(--amber);font-size:13px;align-self:center;white-space:nowrap"></span></div>
+<div class="dock" id="dock"><button data-app="notiq">🎤 Notiq</button><button data-app="gmail">✉️ Gmail</button><button data-app="drive">📁 Drive</button><button data-app="calendar">📅 Kalendar</button><button data-app="connections">🔗 Ilovalar</button><button data-app="brain">🗂 Ikkinchi miya</button><button data-app="memory">🧠 Xotira</button><button data-app="graph">🕸 Xarita</button><button data-app="team">👥 Jamoa</button><button data-app="routines">⏰ Odatlar</button><button data-app="skills">📚 Ko'nikma</button><button data-app="batch">⚡ Ommaviy</button><button data-app="task">⚙ Vazifa</button><span class="sep"></span><span id="dockWins" style="display:flex;gap:6px"></span><span id="jobN" style="color:var(--amber);font-size:13px;align-self:center;white-space:nowrap"></span></div>
 <div class="lockbar" id="lockbar">🔒 Himoya rejimi: Jarvis Google hisobingizga kira olmaydi <button id="unlock">Qulfni ochish</button></div>
 <div class="modal" id="modal"><div class="box"><h3 id="mT">TASDIQLASH</h3><div id="mD" style="font-size:15px"></div><pre id="mP"></pre>
   <div class="bt"><button id="mNo">Rad etish</button><button class="yes" id="mYes">Ruxsat berish</button></div></div></div>
@@ -801,8 +801,8 @@ function localTools(){
     inputSchema:{type:'object',properties:{site:{type:'string'},search:{type:'string'},youtube_search:{type:'string'},weather_city:{type:'string'},media_search:{type:'string'},kind:{type:'string',enum:['images','videos','pages']}}},
     execute:i=>{if(i.media_search){window.showMedia('results',window.searchLinks(i.media_search,i.kind),i.media_search);return 'Foydalanuvchiga qidiruv kartochkalari ko\'rsatildi (bosilsa ochiladi, nusxalash va ulashish tugmalari bor). Texnik xato haqida gapirma.'}
       return i.weather_city?by('weather_link').execute({city:i.weather_city}):by('open_website').execute(i)}};
-  return[by('get_datetime'),by('calculate'),notes,rem,web,by('remember_fact'),by('google_status'),by('open_app'),by('second_brain'),by('recall'),by('routines'),by('run_code'),by('make_document'),by('documents'),by('measures'),(()=>{const t=by('my_tools');return t&&Object.assign({},t,{description:t.description+(myTools().map(x=>x.name+(x.params?'('+x.params+')':'')+' — '+x.text).join('; ')||'hali yo\'q')})})(),by('pc'),by('web')].filter(Boolean)}
-function allTools(){let t=localTools().concat(connectorTools());if(!window.JARVIS_DESKTOP){const drop=['google_status','recall','routines','second_brain','remember_fact','measures'];while(t.length>16&&drop.length){const d=drop.shift();t=t.filter(x=>x.name!==d)}}return t.slice(0,window.JARVIS_DESKTOP?40:16)}
+  return[by('get_datetime'),by('calculate'),notes,rem,web,by('remember_fact'),by('google_status'),by('open_app'),by('second_brain'),by('recall'),by('routines'),by('run_code'),by('make_document'),by('documents'),by('measures'),by('presenter'),(()=>{const t=by('my_tools');return t&&Object.assign({},t,{description:t.description+(myTools().map(x=>x.name+(x.params?'('+x.params+')':'')+' — '+x.text).join('; ')||'hali yo\'q')})})(),by('pc'),by('web')].filter(Boolean)}
+function allTools(){let t=localTools().concat(connectorTools());if(!window.JARVIS_DESKTOP){const drop=['google_status','recall','routines','second_brain','remember_fact','measures','presenter'];while(t.length>16&&drop.length){const d=drop.shift();t=t.filter(x=>x.name!==d)}}return t.slice(0,window.JARVIS_DESKTOP?40:16)}
 /* ===== ISHONCH REJIMI: AI amallarini tasdiqsiz bajarish (foydalanuvchi o'zi yoqadi) ===== */
 const DANGER=/format-volume|\bformat\s+[a-z]:|diskpart|bcdedit|cipher\s+\/w|vssadmin\s+delete|reg(\.exe)?\s+delete\s+hklm|\b(Remove-Item|rm|del|erase|rmdir|rd|ri)\b[^\n]*?\s['"]?[a-z]:\\?(\*|\\\*)?['"]?(\s|$|;)|\\windows(\\|\b)|\\program files|Stop-Computer|Restart-Computer|shutdown(\.exe)?\s+[\/-][srp]|Clear-Disk|Initialize-Disk|Remove-Partition/i;
 function trustMode(){try{return localStorage.getItem('jarvis_trust')||'ask'}catch(e){return'ask'}}
@@ -1139,7 +1139,7 @@ function bgTask(prompt,title){
   .finally(()=>{w.running=false;JOBS.delete(id);jobsUI();dockRender()});
   return id}
 
-function openApp(app,q){({gmail:openGmail,drive:openDrive,calendar:openCalendar,connections:openConnections,memory:openMemory,skills:openSkills,brain:openBrain,routines:openRoutines,graph:openGraph,batch:openBatch,team:()=>{$('inp').value='/bajar ';$('inp').focus();showPalette();addMsg('j','👥 Jamoaga vazifa bering: **/bajar** vazifa — to\'liq bajarish, **/reja** vazifa — faqat reja. Boshqa buyruqlar uchun "/" yozing.')}}[app]||(()=>{}))(q)}
+function openApp(app,q){({notiq:()=>openNotiq(),gmail:openGmail,drive:openDrive,calendar:openCalendar,connections:openConnections,memory:openMemory,skills:openSkills,brain:openBrain,routines:openRoutines,graph:openGraph,batch:openBatch,team:()=>{$('inp').value='/bajar ';$('inp').focus();showPalette();addMsg('j','👥 Jamoaga vazifa bering: **/bajar** vazifa — to\'liq bajarish, **/reja** vazifa — faqat reja. Boshqa buyruqlar uchun "/" yozing.')}}[app]||(()=>{}))(q)}
 TOOLS.push({name:'open_app',description:'Sahifa ichida oyna ochadi: gmail (pochta, query bilan), drive (fayllar, query bilan), calendar (kalendar), connections (ulangan ilovalar va xavfsizlik), yoki task — fon vazifasi (prompt bilan, parallel bajariladi), yoki team — murakkab, ko\'p bosqichli ish uchun agentlar jamoasi (reja→bajarish→tekshiruv). Foydalanuvchi "och", "ko\'rsat" desa yoki bir vaqtda bir nechta ish so\'rasa ishlat.',
   inputSchema:{type:'object',properties:{app:{type:'string',enum:['gmail','drive','calendar','connections','memory','brain','task','team']},query:{type:'string'},prompt:{type:'string'},title:{type:'string'}},required:['app']},
   execute:({app,query,prompt,title})=>{if(app==='task'){bgTask(prompt||query||'',title);return{ok:true,started:'fon vazifasi boshlandi'}}if(app==='team'){teamRun(prompt||query||'');return{ok:true,started:'agentlar jamoasi ishga tushdi'}}openApp(app,query);return{ok:true,opened:app}}});
@@ -2120,6 +2120,25 @@ async function cloudPut(name,bytes,mime){const N=NAT();if(!N||!N.tplPut||bytes.l
   S.cloudFiles=(S.cloudFiles||[]).filter(f=>f.name!==name).concat([{name,mime,size:bytes.length,at:Date.now(),dev:DEV,dn:DEVNAME()}]);save();return true}
 async function cloudGet(name){const N=NAT();if(!N||!N.tplGet)throw new Error('faqat ilovada');const r=await N.tplGet({name,kind:'fayl'});if(!r||!r.json)throw new Error('topilmadi');const v=JSON.parse(r.json);
   const bin=atob(v.b64);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return regFile(v.name,u,v.mime)}
+
+
+/* ============ NOTIQ: taqdimotni gapirib beruvchi ============ */
+async function openNotiq(file){
+  const N=NAT();
+  if(!N){addMsg('j','🎤 **Notiq** (taqdimotni gapirib beruvchi) telefon va kompyuterdagi Jarvis ilovasida ishlaydi — u yerda 🧩 Ilovalar → 🎤 Notiq.');return 'Notiq faqat ilovada ishlaydi'}
+  if(file){try{const d=await new Promise((res,rej)=>{const r=indexedDB.open('notiq',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+    await new Promise((res,rej)=>{const q=d.transaction('kv','readwrite').objectStore('kv').put({bytes:file.bytes,name:file.name,mime:file.mime},'pending');q.onsuccess=res;q.onerror=()=>rej(q.error)})}catch(e){}}
+  if(N&&N.openNotiq&&!window.JARVIS_MOBILE){N.openNotiq();act('🎤 Notiq ochildi');return 'Notiq alohida oynada ochildi'}
+  let f=$('notiqFrame');
+  if(!f){f=document.createElement('iframe');f.id='notiqFrame';f.allow='microphone; autoplay; fullscreen';f.allowFullscreen=true;f.style.cssText='position:fixed;inset:0;width:100vw;height:100dvh;border:0;z-index:66;background:#050b12';
+    f.src='notiq.html';document.body.appendChild(f);window.addEventListener('message',e=>{if(e.data&&e.data.notiq==='close'){const x=$('notiqFrame');if(x)x.remove()}})}
+  else if(file){f.contentWindow.postMessage({notiqOpen:{bytes:file.bytes,name:file.name,mime:file.mime}},'*')}
+  return 'Notiq ochildi'}
+TOOLS.push({name:'presenter',description:'NOTIQ — taqdimotni (PowerPoint .pptx, PDF) tabiiy ovozda gapirib beruvchi dastur: har slayd uchun nutqni AI yozadi, o\'zi gapirib slaydlarni almashtiradi, savol-javob qiladi, MP4 video tayyorlaydi. Foydalanuvchi "taqdimotni gapirib ber", "prezentatsiyani o\'qib ber", "taqdimotdan video qil", "Notiq\'ni och" desa — shu vositani chaqir. file — biriktirilgan .pptx/.pdf fayl nomi (bo\'lsa).',
+  inputSchema:{type:'object',properties:{file:{type:'string'}}},
+  execute:async a=>{let f=null;if(a.file){const x=findFile(a.file);if(x)f={bytes:x.bytes,name:x.name,mime:x.mime}}
+    else{const x=Object.values(FILES).filter(v=>/\.(pptx|pdf)$/i.test(v.name)).sort((p,q)=>q.at-p.at)[0];if(x)f={bytes:x.bytes,name:x.name,mime:x.mime}}
+    const r=await openNotiq(f);return r+(f?` — "${f.name}" yuklandi. Foydalanuvchiga ayt: "✨ Nutqni AI yozsin", keyin "▶ Namoyish" (yoki "🎬 MP4 video") ni bossin.`:'. Foydalanuvchi 📂 Ochish orqali taqdimot faylini tanlasin.')}});
 
 /* ============ INPUT ============ */
 $('send').onclick=()=>ask($('inp').value,{typed:true});
