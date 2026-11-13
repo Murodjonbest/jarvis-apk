@@ -278,16 +278,24 @@
   const tts={async speak(arg,o){const lines=typeof arg==='string'?[{text:arg,...(o||{})}]:arg;const text=lines.map(l=>l.text).join(' ').trim();if(!text)return;
       if(lines[0].rate)T.rate=lines[0].rate;const voice=VMAP[lines[0].voice]||lines[0].voice||'Charon';
       T.stopped=false;st('speaking');
+      const ev=(()=>{try{return localStorage.getItem('jarvis_edgeVoice')||'madina'}catch(e){return 'madina'}})();
+      if(N.voiceSay&&ev!=='off'){try{const r=await N.voiceSay({text,voice:ev,rate:T.rate});if(r&&(r.ok||r.stopped||T.stopped)){st('idle',T.stopped?'viewer_stopped':'completed');return}if(r&&r.error&&!T.edgeWarned){T.edgeWarned=1;console.warn('Edge ovozi:',r.error)}}catch(e){}}
+      if(T.stopped){st('idle','viewer_stopped');return}
       try{const ps=parts(text);let next=N.ttsGemini(ps[0],voice);
         for(let i=0;i<ps.length;i++){const r=await next;if(T.stopped)break;if(i+1<ps.length)next=N.ttsGemini(ps[i+1],voice);
           if(r.error){if(!/^(off|no_key|cooldown)$/.test(r.error))console.warn('TTS:',r.error);await winSpeak(ps.slice(i).join(' '));break}
           await play(pcmToBuffer(r.pcm,r.rate))}
       }finally{st('idle',T.stopped?'viewer_stopped':'completed')}},
     add(arg){return tts.speak(arg)},
-    stop(){T.stopped=true;try{T.src&&T.src.stop()}catch(e){}try{speechSynthesis.cancel()}catch(e){}},
+    stop(){T.stopped=true;try{N.voiceStop&&N.voiceStop()}catch(e){}try{T.src&&T.src.stop()}catch(e){}try{speechSynthesis.cancel()}catch(e){}},
     setRate(r){T.rate=r;try{T.src.playbackRate.value=r}catch(e){}},
     onState(f){T.L.push(f)},onLine(){},onPosition(){},pause(){try{T.ctx.suspend()}catch(e){}},resume(){try{T.ctx.resume()}catch(e){}}};
   const prevUse=window.claude.use;window.claude.use=async n=>n==='tts'?tts:prevUse(n);
+  /* tabiiy ovoz tanlovi (Edge: Madina/Sardor) */
+  setTimeout(()=>{try{const eng=document.getElementById('vEngine');if(!eng||document.getElementById('vEdge'))return;const row=eng.closest('.vrow');const r=document.createElement('div');r.className='vrow';
+    r.innerHTML='<label>Tabiiy ovoz</label><select id="vEdge"><option value="madina">👩 Madina (o\'zbek, tabiiy)</option><option value="sardor">👨 Sardor (o\'zbek, tabiiy)</option><option value="off">Gemini / Windows</option></select>';
+    row.parentNode.insertBefore(r,row.nextSibling);const sel=r.querySelector('select');try{sel.value=localStorage.getItem('jarvis_edgeVoice')||'madina'}catch(e){}
+    sel.onchange=()=>{try{localStorage.setItem('jarvis_edgeVoice',sel.value)}catch(e){}const t=document.getElementById('vTest');if(t)t.click()}}catch(e){}},1500);
 
   /* ---- helpers ---- */
   const loadJS=src=>new Promise((res,rej)=>{if(document.querySelector(`script[src="${src}"]`))return res();const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)});

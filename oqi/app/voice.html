@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="uz"><head><meta charset="utf-8"><title>Jarvis ovozi</title></head>
+<body style="background:#03080f;color:#3fd2ff;font:14px 'Segoe UI',sans-serif;padding:14px">🔊 Jarvis ovozi ishlayapti — bu oynani yopmang.
+<div id="st" style="color:#8aa;margin-top:6px;font-size:12px"></div>
+<script>
+'use strict';
+// Jarvis kompyuter dasturi matnni shu yerga yuboradi, bu sahifa uni Edge'ning tabiiy o'zbek ovozida (Madina/Sardor) aytadi.
+const K = new URLSearchParams(location.search).get('k');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+let V = [];
+function load() { V = speechSynthesis.getVoices(); document.getElementById('st').textContent = 'Ovozlar: ' + V.filter(v => /^uz/i.test(v.lang)).map(v => v.name.replace(/^Microsoft /, '')).join(', '); }
+speechSynthesis.onvoiceschanged = () => { load(); report(); };
+load();
+async function report() { try { await fetch('/api/voices?k=' + K, { method: 'POST', body: JSON.stringify(V.filter(v => /^(uz|ru)/i.test(v.lang)).map(v => ({ name: v.name, lang: v.lang }))) }); } catch (e) {} }
+setTimeout(report, 1200); setTimeout(report, 4000);
+function chunks(t) { const out = []; let cur = ''; (t.match(/[^.!?…]+[.!?…]*\s*/g) || [t]).forEach(p => { if ((cur + p).length > 700 && cur) { out.push(cur); cur = ''; } cur += p; }); if (cur.trim()) out.push(cur); return out; }
+let stopFlag = false;
+function speak(r) {
+  return new Promise(res => {
+    load(); stopFlag = false;
+    const want = String(r.voice || 'madina').toLowerCase(); const uz = V.filter(x => /^uz/i.test(x.lang));
+    const v = uz.find(x => x.name.toLowerCase().includes(want)) || uz.find(x => /natural|online/i.test(x.name)) || uz[0];
+    if (!v) return res({ ok: false, err: 'no_uz_voice' });
+    const parts = chunks(r.text); let i = 0, done = false;
+    const fin = o => { if (!done) { done = true; clearInterval(wd); res(o); } };
+    let last = Date.now();
+    const wd = setInterval(() => { if (speechSynthesis.speaking || speechSynthesis.pending) last = Date.now(); else if (Date.now() - last > 6000) fin({ ok: false, err: 'stall' }); }, 1000);
+    const next = () => {
+      if (stopFlag) return fin({ ok: true });
+      if (i >= parts.length) return fin({ ok: true });
+      const u = new SpeechSynthesisUtterance(parts[i++]); u.voice = v; u.lang = v.lang; u.rate = r.rate || 1;
+      u.onend = next; u.onerror = e => { if (/interrupted|canceled/.test(e.error)) fin({ ok: true }); else next(); };
+      last = Date.now(); speechSynthesis.speak(u);
+    };
+    next();
+  });
+}
+(async function sayLoop() { for (;;) { try { const r = await (await fetch('/api/say?k=' + K)).json(); if (!r.id) continue; const o = await speak(r); fetch('/api/said?k=' + K + '&id=' + r.id + '&ok=' + (o.ok ? 1 : 0) + '&err=' + (o.err || '')).catch(() => {}); } catch (e) { await sleep(1500); } } })();
+(async function ctlLoop() { for (;;) { try { const r = await (await fetch('/api/ctl?k=' + K)).json(); if (r.stop) { stopFlag = true; speechSynthesis.cancel(); } } catch (e) { await sleep(1500); } } })();
+</script></body></html>

@@ -942,14 +942,14 @@ function oqiRoot() { const a = path.join(__dirname, 'oqi'); return fs.existsSync
 function oqiServer() {
   if (OQI) return Promise.resolve(OQI);
   return new Promise((res, rej) => {
-    const st = { token: crypto.randomBytes(16).toString('hex'), queue: [], waiters: [], mem: {}, ping: 0 };
+    const st = { token: crypto.randomBytes(16).toString('hex'), queue: [], waiters: [], mem: {}, ping: 0, V: { q: [], w: [], cw: [], done: {}, ping: 0, voices: [], ready: false, proc: null } };
     const srv = http.createServer(async (req, resp) => {
       try {
         const u = new URL(req.url, 'http://x'); const send = (code, body, ct) => { resp.writeHead(code, { 'Content-Type': ct || 'text/plain', 'Cache-Control': 'no-cache' }); resp.end(body); };
         const json = o => send(200, JSON.stringify(o), 'application/json');
         if (u.pathname.startsWith('/api/')) {
           if (u.searchParams.get('k') !== st.token) return send(403, 'no');
-          st.ping = Date.now();
+          if (!/^\/api\/(say|ctl|said|voices)$/.test(u.pathname)) st.ping = Date.now();
           if (u.pathname === '/api/ping') return send(200, 'jarvis');
           if (u.pathname === '/api/next') {
             if (st.queue.length) return json({ path: st.queue.shift() });
@@ -957,6 +957,10 @@ function oqiServer() {
             const t = setTimeout(() => { st.waiters = st.waiters.filter(w => w !== fn); json({}); }, 25000);
             st.waiters.push(fn); req.on('close', () => { clearTimeout(t); st.waiters = st.waiters.filter(w => w !== fn); }); return;
           }
+          if (u.pathname === '/api/say') { const V = st.V; V.ping = Date.now(); if (V.q.length) return json(V.q.shift()); const fn = o => { clearTimeout(t); json(o); }; const t = setTimeout(() => { V.w = V.w.filter(x => x !== fn); json({}); }, 25000); V.w.push(fn); req.on('close', () => { clearTimeout(t); V.w = V.w.filter(x => x !== fn); }); return; }
+          if (u.pathname === '/api/ctl') { const V = st.V; V.ping = Date.now(); const fn = o => { clearTimeout(t); json(o); }; const t = setTimeout(() => { V.cw = V.cw.filter(x => x !== fn); json({}); }, 25000); V.cw.push(fn); req.on('close', () => { clearTimeout(t); V.cw = V.cw.filter(x => x !== fn); }); return; }
+          if (u.pathname === '/api/said') { const V = st.V; const id = u.searchParams.get('id'); const cb = V.done[id]; if (cb) { delete V.done[id]; cb({ ok: u.searchParams.get('ok') === '1', error: u.searchParams.get('err') || '' }); } return send(200, 'ok'); }
+          if (u.pathname === '/api/voices' && req.method === 'POST') { const ch = []; for await (const c of req) ch.push(c); try { st.V.voices = JSON.parse(Buffer.concat(ch).toString()); } catch (e) {} st.V.ready = true; return send(200, 'ok'); }
           if (u.pathname === '/api/topdf' && req.method === 'POST') { const ch = []; for await (const c of req) ch.push(c); const r = await docToPdf(Buffer.concat(ch), u.searchParams.get('ext')); return r.pdf ? send(200, r.pdf, 'application/pdf') : send(422, r.error || 'xato'); }
           if (u.pathname === '/api/pick') { const { dialog } = require('electron'); const r = await dialog.showOpenDialog({ title: "O'QI — hujjatni tanlang", properties: ['openFile'], filters: [{ name: 'Hujjatlar', extensions: ['pdf', 'docx', 'pptx', 'xlsx', 'txt'] }, { name: 'Barcha fayllar', extensions: ['*'] }] }); return json({ path: r.canceled ? '' : r.filePaths[0] }); }
           if (u.pathname === '/api/file') {
@@ -982,6 +986,34 @@ function edgeExe() {
   const c = [path.join(process.env['ProgramFiles(x86)'] || '', 'Microsoft\\Edge\\Application\\msedge.exe'), path.join(process.env.ProgramFiles || '', 'Microsoft\\Edge\\Application\\msedge.exe'), path.join(process.env.LOCALAPPDATA || '', 'Microsoft\\Edge\\Application\\msedge.exe')];
   return c.find(x => { try { return fs.statSync(x).isFile(); } catch (e) { return false; } }) || '';
 }
+/* ===== JARVIS OVOZI: Edge'ning tabiiy o'zbek ovozi (Madina/Sardor) orqali gapirish ===== */
+async function voiceUp(st) {
+  const V = st.V; if (Date.now() - V.ping < 30000) return true;
+  const edge = edgeExe(); if (!edge) return false;
+  if (!V.proc || V.proc.exitCode !== null) {
+    const prof = path.join(app.getPath('userData'), 'jarvis-voice-edge');
+    V.ready = false;
+    V.proc = require('child_process').spawn(edge, ['--app=' + `http://127.0.0.1:${st.port}/voice.html?k=${st.token}`, '--user-data-dir=' + prof, '--no-first-run', '--no-default-browser-check', '--window-size=320,160', '--window-position=-32000,-32000', '--autoplay-policy=no-user-gesture-required', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'], { stdio: 'ignore' });
+    V.proc.on('exit', () => { V.proc = null; });
+  }
+  for (let i = 0; i < 60 && Date.now() - V.ping > 30000; i++) await new Promise(r => setTimeout(r, 250));
+  return Date.now() - V.ping < 30000;
+}
+ipcMain.handle('voice:say', async (e, { text, voice, rate } = {}) => {
+  try {
+    const st = await oqiServer(); if (!(await voiceUp(st))) return { error: 'no_edge' };
+    const V = st.V; for (let i = 0; i < 24 && !V.ready; i++) await new Promise(r => setTimeout(r, 250));
+    if (V.ready && !(V.voices || []).some(v => /^uz/i.test(v.lang))) return { error: 'no_uz_voice' };
+    const id = crypto.randomBytes(6).toString('hex'); const msg = { id, text: String(text || ''), voice: voice || 'madina', rate: rate || 1 };
+    const p = new Promise(res => { V.done[id] = res; setTimeout(() => { if (V.done[id]) { delete V.done[id]; res({ error: 'timeout' }); } }, Math.min(600000, msg.text.length * 150 / msg.rate + 20000)); });
+    const w = V.w.shift(); if (w) w(msg); else V.q.push(msg);
+    return await p;
+  } catch (err) { return { error: String(err.message || err) }; }
+});
+ipcMain.handle('voice:stop', async () => { if (!OQI) return true; const V = OQI.V; V.q = []; Object.keys(V.done).forEach(id => { const cb = V.done[id]; delete V.done[id]; cb({ ok: false, stopped: true }); }); const c = V.cw.splice(0); c.forEach(f => f({ stop: true })); return true; });
+ipcMain.handle('voice:list', async () => { if (!OQI) return []; return OQI.V.voices || []; });
+app.on('will-quit', () => { try { OQI && OQI.V.proc && OQI.V.proc.kill(); } catch (e) {} });
+
 let OQIWIN = null;
 ipcMain.handle('oqi:open', async (e, a = {}) => {
   try {
