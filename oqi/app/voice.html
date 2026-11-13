@@ -34,4 +34,12 @@ async function sayOne(r, g) {
   }
   return { ok: true, voice: v.name };
 }
+
+// zaxira rejim: DevTools ulanmasa — Jarvis navbatidan matn olib aytamiz
+const K = new URLSearchParams(location.search).get('k'); const zz = ms => new Promise(r => setTimeout(r, ms));
+if (K) {
+  (async () => { try { await window.jvVoices(); await fetch('/api/voices?k=' + K, { method: 'POST', body: JSON.stringify(V.filter(v => /^(uz|ru)/i.test(v.lang)).map(v => ({ name: v.name, lang: v.lang }))) }); } catch (e) {} })();
+  (async function sayLoop() { for (;;) { try { const r = await (await fetch('/api/say?k=' + K)).json(); if (!r.id) continue; const o = await window.jvSay(r); fetch('/api/said?k=' + K + '&id=' + r.id + '&ok=' + (o.ok ? 1 : 0) + '&err=' + encodeURIComponent(o.error || '')).catch(() => {}); } catch (e) { await zz(1500); } } })();
+  (async function ctlLoop() { for (;;) { try { const r = await (await fetch('/api/ctl?k=' + K)).json(); if (r.stop) window.jvStop(); } catch (e) { await zz(1500); } } })();
+}
 </script></body></html>
