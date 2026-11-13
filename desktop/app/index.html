@@ -287,6 +287,8 @@ body{background:
         <option value="fast">⚡ Tezkor yordamchi</option></select></div>
       <div class="vrow"><label>Manba</label><select id="vEngine">
         <option value="auto">Avtomatik</option><option value="claude">Tiniq ovoz (Gemini)</option><option value="browser">Brauzer / Windows ovozi</option></select></div>
+      <div class="vrow" id="vEdgeRow" style="display:none"><label>Tabiiy ovoz</label><select id="vEdge"><option value="madina">👩 Madina — o'zbek, tabiiy</option><option value="sardor">👨 Sardor — o'zbek, tabiiy</option><option value="off">O'chiq (Gemini / Windows)</option></select></div>
+      <div id="vEdgeSt" style="display:none;font-size:12px;color:var(--mut);margin:-2px 0 6px"></div>
       <div class="vrow" id="vClaudeRow"><label>Ovoz</label><select id="vClaude">
         <option value="buttery">Yumshoq (erkak)</option><option value="rounded">Chuqur</option><option value="glassy">Tiniq</option><option value="airy">Yengil</option></select></div>
       <div class="vrow" id="vBrowserRow"><label>Ovoz</label><select id="vBrowser"></select></div>
@@ -559,6 +561,10 @@ function useBrowser(){return VS.engine==='browser'||(VS.engine==='auto'&&(!tts||
 function vsUI(){$('vPreset').value=VS.preset||'';$('vEngine').value=VS.engine;$('vClaude').value=VS.cvoice;$('vRate').value=VS.rate;$('vRateV').textContent=(+VS.rate).toFixed(2);
   $('vPitch').value=VS.pitch;$('vPitchV').textContent=(+VS.pitch).toFixed(2);$('vCyr').checked=VS.cyr;
   const b=useBrowser();$('vClaudeRow').style.display=b?'none':'';$('vBrowserRow').style.display=b?'':'none';$('vPitchRow').style.display=b?'':'none'}
+(function(){const N=window.jarvisNative;if(!N||!N.voiceSay)return;$('vEdgeRow').style.display='';$('vEdgeSt').style.display='';const sel=$('vEdge');try{sel.value=localStorage.getItem('jarvis_edgeVoice')||'madina'}catch(e){}
+  const chk=async()=>{const st=$('vEdgeSt');st.textContent='⏳ Tabiiy ovoz tekshirilmoqda…';try{const l=await N.voiceList();const uz=(l||[]).filter(v=>/^uz/i.test(v.lang));st.innerHTML=uz.length?'✓ Tabiiy ovoz tayyor: '+uz.map(v=>esc(v.name.replace(/^Microsoft /,'').replace(/ \(.*$/,''))).join(', '):'✕ Tabiiy o\'zbek ovozi topilmadi — Microsoft Edge o\'rnatilgani va internet ulanganini tekshiring'}catch(e){st.textContent='✕ '+e.message}};
+  sel.onchange=()=>{try{localStorage.setItem('jarvis_edgeVoice',sel.value)}catch(e){}if(sel.value!=='off'){const was=S.voice;S.voice=true;speak(sel.value==='sardor'?'Assalomu alaykum, ser. Men Sardorman — Jarvisning ovozi.':'Assalomu alaykum, ser. Men Madinaman — Jarvisning ovozi.').finally(()=>S.voice=was)}};
+  setTimeout(chk,4000)})();
 $('vEngine').onchange=e=>{VS.engine=e.target.value;VS.preset='';$('vPreset').value='';vsSave();vsUI()};
 $('vClaude').onchange=e=>{VS.cvoice=e.target.value;VS.preset='';$('vPreset').value='';vsSave()};
 $('vBrowser').onchange=e=>{VS.bvoice=e.target.value;VS.preset='';$('vPreset').value='';vsSave()};
@@ -2168,7 +2174,6 @@ async function openNotiq(file){
   if(!N){addMsg('j','🎤 **Notiq** (taqdimotni gapirib beruvchi) telefon va kompyuterdagi Jarvis ilovasida ishlaydi — u yerda 🧩 Ilovalar → 🎤 Notiq.');return 'Notiq faqat ilovada ishlaydi'}
   if(file){try{const d=await new Promise((res,rej)=>{const r=indexedDB.open('notiq',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
     await new Promise((res,rej)=>{const q=d.transaction('kv','readwrite').objectStore('kv').put({bytes:file.bytes,name:file.name,mime:file.mime},'pending');q.onsuccess=res;q.onerror=()=>rej(q.error)})}catch(e){}}
-  if(N&&N.openNotiq&&!window.JARVIS_MOBILE){N.openNotiq();act('🎤 Notiq ochildi');return 'Notiq alohida oynada ochildi'}
   let f=$('notiqFrame');
   if(!f){f=document.createElement('iframe');f.id='notiqFrame';f.allow='microphone; autoplay; fullscreen';f.allowFullscreen=true;f.style.cssText='position:fixed;inset:0;width:100vw;height:100dvh;border:0;z-index:66;background:#050b12';
     f.src='notiq.html';document.body.appendChild(f);window.addEventListener('message',e=>{if(e.data&&e.data.notiq==='close'){const x=$('notiqFrame');if(x)x.remove()}})}
@@ -2185,14 +2190,12 @@ TOOLS.push({name:'presenter',description:'NOTIQ — taqdimotni (PowerPoint .pptx
 async function openReader(file,o={}){
   const N=NAT();
   if(!file){const x=Object.values(FILES).filter(v=>/\.(pdf|docx|pptx|xlsx|txt|md|csv)$/i.test(v.name)).sort((p,q)=>q.at-p.at)[0];if(x)file=x}
-  if(N&&N.oqiOpen&&!window.JARVIS_MOBILE){
-    try{const r=await N.oqiOpen(file?{b64:await b2b64(new Blob([file.bytes])),name:file.name}:{});if(r&&!r.error){act('📖 O\'qish oynasi ochildi'+(file?': '+file.name:''));return file?`"${file.name}" alohida oynada asl ko'rinishida ochildi va ovoz chiqarib o'qilmoqda (tabiiy o'zbek ovozi). Boshqaruv: ▶/⏸, tezlik, 🎙 ovozli buyruqlar.`:'O\'qish oynasi ochildi — foydalanuvchi faylni o\'sha yerda tanlasin.'}}catch(e){console.warn('oqi',e)}}
-  if(window.JARVIS_MOBILE){let f=$('oqiFrame');
+  if(window.JARVIS_MOBILE||window.JARVIS_DESKTOP||(N&&N.voiceSay)){let f=$('oqiFrame');
     const send=()=>{if(file)$('oqiFrame').contentWindow.postMessage({oqiOpen:{bytes:file.bytes,name:file.name,auto:o.auto!==false}},'*')};
-    if(!f){f=document.createElement('iframe');f.id='oqiFrame';f.allow='autoplay';f.style.cssText='position:fixed;inset:0;width:100vw;height:100dvh;border:0;z-index:66;background:#e9edf3';f.src='oqi/index.html';document.body.appendChild(f);
+    if(!f){f=document.createElement('iframe');f.id='oqiFrame';f.allow='autoplay';f.style.cssText='position:fixed;inset:0;width:100vw;height:100dvh;border:0;z-index:66;background:#e9edf3';f.src='oqi/index.html'+(o.auto===false?'':'?auto=1');document.body.appendChild(f);
       const on=e=>{if(!e.data)return;if(e.data.oqi==='ready'){send()}if(e.data.oqi==='close'){const x=$('oqiFrame');if(x)x.remove();window.removeEventListener('message',on)}};window.addEventListener('message',on)}
     else send();
-    stopSpeak();return file?`"${file.name}" o'qish oynasida ochildi va o'qilmoqda.`:'O\'qish oynasi ochildi.'}
+    stopSpeak();act('📖 O\'qish'+(file?': '+file.name:''));return file?`"${file.name}" Jarvis ichidagi o'qish oynasida asl ko'rinishida ochildi va Jarvis ovozida o'qilmoqda.`:'O\'qish oynasi ochildi — foydalanuvchi 📂 Fayl ochish orqali faylni tanlasin.'}
   // brauzer (va zaxira): ichki o'qigich
   if(!file){pick('.docx,.xlsx,.pptx,.pdf,.txt,.csv,.md');return 'Foydalanuvchi faylni tanlasin — tanlangach o\'zi o\'qiy boshlaydi.'}
   let text='';try{text=await fileText(file)}catch(e){addMsg('j','⚠ '+e.message);return 'Faylni o\'qib bo\'lmadi: '+e.message}
@@ -2236,10 +2239,11 @@ function modRemove(id){(MODS.el[id]||[]).forEach(x=>{try{x.remove()}catch(e){}})
 async function modGenerate(req){if(!sample)throw new Error('AI ulanmagan — avval ⚙ Sozlash\'da kalit kiriting');
   const ctx=`Sen JARVIS dasturining o'zini o'zgartiruvchi modulisan. Foydalanuvchi so'rovi bo'yicha dasturga XAVFSIZ qo'shimcha yozasan: CSS va/yoki JavaScript.
 QOIDALAR: asosiy kodni o'zgartirma, faqat qatlam qo'sh. JS "J" obyektini oladi: J.addMsg(who,text), J.ask(text), J.speak(text), J.showToast(text,title), J.openWin(id,title,w=>{w.body.innerHTML=...}), J.openReader(null), J.$(id). DOM bilan ishlash mumkin (document.querySelector). Tarmoq so'rovlari, localStorage tozalash, eval, sahifani qayta yuklash TAQIQLANGAN. JS o'zi qo'shgan narsalarni olib tashlaydigan funksiya qaytarsin (return ()=>{...}). Interfeys o'zbekcha.
+Global funksiyalar va obyektlar (to'g'ridan-to'g'ri ishlatsa bo'ladi): speak(text) — ovoz chiqarib aytish; VS — ovoz sozlamalari {rate,pitch,engine}; S — holat {voice,speakTyped,notes,reminders}; TOOLS — AI vositalari massivi (yangi vosita: TOOLS.push({name,description,inputSchema,execute:async a=>'natija'})); openReader(null); openNotiq(); openWin; showToast; ask(text,{typed:true}); addMsg('j',markdown). Ovoz dvigateli, fayl tizimi, kalitlar kabi ichki qismlarni qatlam bilan o'zgartirib bo'lmasa — js va css ni bo'sh qoldir va "about" ga sababini yoz.
 Sahifa tuzilishi: #log — suhbat, #inp — yozish maydoni, #send — yuborish, .dock — pastki menyu, #mNav — chap menyu (kompyuterda), .msg.j — Jarvis xabarlari, .msg.u — foydalanuvchi xabarlari, :root CSS o'zgaruvchilari --cy (ko'k), --amber, --txt, --line.
 JAVOB faqat JSON: {"name":"qisqa nom","about":"1 gapda nima qiladi","css":"...","js":"..."}`;
   const r=await sample(ctx+'\n\nSO\'ROV: '+req,{cache:false,modelTier:'complex'});const t=String(r.text||'');const j=JSON.parse((t.match(/\{[\s\S]*\}/)||['{}'])[0]);
-  if(!j.css&&!j.js)throw new Error('O\'zgarish yaratilmadi — so\'rovni aniqroq yozing');
+  if(!j.css&&!j.js)throw new Error(j.about?String(j.about):'O\'zgarish yaratilmadi — so\'rovni aniqroq yozing');
   if(/localStorage\.clear|location\.reload|eval\(|fetch\(|XMLHttpRequest|jarvisNative/.test(j.js||''))throw new Error('Xavfli kod rad etildi');
   return{id:'m'+Date.now().toString(36),name:String(j.name||req).slice(0,60),about:String(j.about||''),css:String(j.css||''),js:String(j.js||''),on:true,at:Date.now(),req}}
 function openCustomize(prefill){openWin('mods','🛠 JARVISNI O\'ZGARTIRISH',w=>{const draw=()=>{const a=MODS.get();

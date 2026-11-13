@@ -986,33 +986,45 @@ function edgeExe() {
   const c = [path.join(process.env['ProgramFiles(x86)'] || '', 'Microsoft\\Edge\\Application\\msedge.exe'), path.join(process.env.ProgramFiles || '', 'Microsoft\\Edge\\Application\\msedge.exe'), path.join(process.env.LOCALAPPDATA || '', 'Microsoft\\Edge\\Application\\msedge.exe')];
   return c.find(x => { try { return fs.statSync(x).isFile(); } catch (e) { return false; } }) || '';
 }
-/* ===== JARVIS OVOZI: Edge'ning tabiiy o'zbek ovozi (Madina/Sardor) orqali gapirish ===== */
-async function voiceUp(st) {
-  const V = st.V; if (Date.now() - V.ping < 30000) return true;
-  const edge = edgeExe(); if (!edge) return false;
-  if (!V.proc || V.proc.exitCode !== null) {
-    const prof = path.join(app.getPath('userData'), 'jarvis-voice-edge');
-    V.ready = false;
-    V.proc = require('child_process').spawn(edge, ['--app=' + `http://127.0.0.1:${st.port}/voice.html?k=${st.token}`, '--user-data-dir=' + prof, '--no-first-run', '--no-default-browser-check', '--window-size=320,160', '--window-position=-32000,-32000', '--autoplay-policy=no-user-gesture-required', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'], { stdio: 'ignore' });
-    V.proc.on('exit', () => { V.proc = null; });
-  }
-  for (let i = 0; i < 60 && Date.now() - V.ping > 30000; i++) await new Promise(r => setTimeout(r, 250));
-  return Date.now() - V.ping < 30000;
+/* ===== JARVIS OVOZI: Edge'ning tabiiy o'zbek ovozi (Madina/Sardor) — yig'ilgan Edge oynasi DevTools protokoli orqali boshqariladi ===== */
+const VC = { proc: null, ws: null, id: 0, pend: {}, ready: null, voices: [] };
+function vcSend(method, params = {}) { return new Promise((res, rej) => { if (!VC.ws || VC.ws.readyState !== 1) return rej(new Error('ulanmagan')); const id = ++VC.id; VC.pend[id] = { res, rej }; VC.ws.send(JSON.stringify({ id, method, params })); }); }
+function vcEval(expr, timeout) { return Promise.race([vcSend('Runtime.evaluate', { expression: expr, userGesture: true, awaitPromise: true, returnByValue: true }).then(r => r && r.result ? r.result.value : null), new Promise(r => setTimeout(() => r({ ok: false, error: 'timeout' }), timeout || 30000))]); }
+async function voiceUp() {
+  if (VC.ws && VC.ws.readyState === 1) return true;
+  if (VC.ready) return VC.ready;
+  VC.ready = (async () => {
+    const edge = process.env.JARVIS_EDGE || edgeExe(); if (!edge) return false;
+    const st = await oqiServer(); const prof = path.join(app.getPath('userData'), 'jarvis-voice-edge');
+    const portFile = path.join(prof, 'DevToolsActivePort'); try { fs.unlinkSync(portFile); } catch (e) {}
+    try { if (VC.proc) VC.proc.kill(); } catch (e) {}
+    VC.proc = require('child_process').spawn(edge, ['--app=' + `http://127.0.0.1:${st.port}/voice.html`, '--user-data-dir=' + prof, '--remote-debugging-port=0', '--remote-allow-origins=*', '--no-first-run', '--no-default-browser-check', '--window-size=360,180', '--window-position=0,0', '--autoplay-policy=no-user-gesture-required', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows', ...(process.env.JARVIS_EDGE_ARGS ? process.env.JARVIS_EDGE_ARGS.split(' ') : [])], { stdio: 'ignore' });
+    VC.proc.on('exit', () => { VC.proc = null; try { VC.ws && VC.ws.close(); } catch (e) {} VC.ws = null; });
+    let port = 0; for (let i = 0; i < 80 && !port; i++) { await new Promise(r => setTimeout(r, 250)); try { port = +fs.readFileSync(portFile, 'utf8').split(/\r?\n/)[0]; } catch (e) {} }
+    if (!port) return false;
+    let tgt = null; for (let i = 0; i < 40 && !tgt; i++) { try { const l = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); tgt = l.find(t => t.type === 'page' && /voice\.html/.test(t.url)); } catch (e) {} if (!tgt) await new Promise(r => setTimeout(r, 250)); }
+    if (!tgt || typeof WebSocket === 'undefined') return false;
+    await new Promise((res) => { const ws = new WebSocket(tgt.webSocketDebuggerUrl); ws.onopen = () => { VC.ws = ws; res(); }; ws.onerror = () => res(); ws.onclose = () => { if (VC.ws === ws) VC.ws = null; };
+      ws.onmessage = ev => { try { const m = JSON.parse(ev.data); const p = m.id && VC.pend[m.id]; if (p) { delete VC.pend[m.id]; m.error ? p.rej(new Error(m.error.message)) : p.res(m.result); } } catch (e) {} }; setTimeout(res, 8000); });
+    if (!VC.ws) return false;
+    // oynani yig'ib qo'yamiz — ovoz baribir chiqadi
+    try { const w = await vcSend('Browser.getWindowForTarget', {}); await vcSend('Browser.setWindowBounds', { windowId: w.windowId, bounds: { windowState: 'minimized' } }); } catch (e) {}
+    for (let i = 0; i < 40; i++) { try { const ok = await vcEval('typeof window.jvSay', 3000); if (ok === 'function') break; } catch (e) {} await new Promise(r => setTimeout(r, 250)); }
+    try { VC.voices = await vcEval('window.jvVoices()', 8000) || []; } catch (e) {}
+    return true;
+  })();
+  try { return await VC.ready; } finally { VC.ready = null; }
 }
 ipcMain.handle('voice:say', async (e, { text, voice, rate } = {}) => {
   try {
-    const st = await oqiServer(); if (!(await voiceUp(st))) return { error: 'no_edge' };
-    const V = st.V; for (let i = 0; i < 24 && !V.ready; i++) await new Promise(r => setTimeout(r, 250));
-    if (V.ready && !(V.voices || []).some(v => /^uz/i.test(v.lang))) return { error: 'no_uz_voice' };
-    const id = crypto.randomBytes(6).toString('hex'); const msg = { id, text: String(text || ''), voice: voice || 'madina', rate: rate || 1 };
-    const p = new Promise(res => { V.done[id] = res; setTimeout(() => { if (V.done[id]) { delete V.done[id]; res({ error: 'timeout' }); } }, Math.min(600000, msg.text.length * 150 / msg.rate + 20000)); });
-    const w = V.w.shift(); if (w) w(msg); else V.q.push(msg);
-    return await p;
+    if (!(await voiceUp())) return { error: 'no_edge' };
+    const t = String(text || ''); const r = await vcEval('window.jvSay(' + JSON.stringify({ text: t, voice: voice || 'madina', rate: rate || 1 }) + ')', Math.min(600000, t.length * 160 / (rate || 1) + 20000));
+    return r || { error: 'empty' };
   } catch (err) { return { error: String(err.message || err) }; }
 });
-ipcMain.handle('voice:stop', async () => { if (!OQI) return true; const V = OQI.V; V.q = []; Object.keys(V.done).forEach(id => { const cb = V.done[id]; delete V.done[id]; cb({ ok: false, stopped: true }); }); const c = V.cw.splice(0); c.forEach(f => f({ stop: true })); return true; });
-ipcMain.handle('voice:list', async () => { if (!OQI) return []; return OQI.V.voices || []; });
-app.on('will-quit', () => { try { OQI && OQI.V.proc && OQI.V.proc.kill(); } catch (e) {} });
+ipcMain.handle('voice:stop', async () => { try { if (VC.ws && VC.ws.readyState === 1) await vcEval('window.jvStop()', 3000); } catch (e) {} return true; });
+ipcMain.handle('voice:list', async () => { try { if (await voiceUp()) VC.voices = await vcEval('window.jvVoices()', 8000) || VC.voices; } catch (e) {} return VC.voices || []; });
+app.on('will-quit', () => { try { VC.proc && VC.proc.kill(); } catch (e) {} });
 
 let OQIWIN = null;
 ipcMain.handle('oqi:open', async (e, a = {}) => {

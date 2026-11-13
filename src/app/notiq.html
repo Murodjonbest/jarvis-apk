@@ -106,7 +106,7 @@ function prog(p) { $('bar').firstChild.style.width = p == null ? '0' : Math.roun
 
 /* ---------- sozlamalar ---------- */
 const DEF = { lang: 'uz', style: 'rasmiy', sec: 45, engine: 'gemini', voice: 'Charon', azureKey: '', azureRegion: 'westeurope', azureVoice: 'uz-UZ-SardorNeural', sysVoice: '', rate: 1, sub: true, tone: 'iliq va ishonchli' };
-let CFG = Object.assign({}, DEF); try { Object.assign(CFG, JSON.parse(localStorage.getItem('notiq_cfg') || '{}')); } catch (e) {}
+let CFG = Object.assign({}, DEF); try { const sv = localStorage.getItem('notiq_cfg'); if (!sv && (window.jarvisNative || parent.jarvisNative || {}).voiceSay) CFG.engine = 'system'; Object.assign(CFG, JSON.parse(sv || '{}')); } catch (e) {}
 const saveCfg = () => { try { localStorage.setItem('notiq_cfg', JSON.stringify(CFG)); } catch (e) {} };
 const LANGS = { uz: "o'zbek (lotin)", ru: 'rus', en: 'ingliz' };
 
@@ -263,12 +263,14 @@ async function synth(text) {
 async function voiceOne(i) { const s = P.slides[i]; if (!s.script) await writeOne(i); if (!s.audio) { const a = await synth(s.script); if (a) s.audio = a; } return s.audio; }
 $('bVoice').onclick = () => { if (CFG.engine === 'system') { toast('Kompyuter ovozida oldindan tayyorlash shart emas — "▶ Namoyish"ni bosing'); return; } runAll('Ovozlar', voiceOne); };
 let lisAudio = null;
-$('bListen').onclick = async () => { const b = $('bListen'); if (lisAudio) { lisAudio.pause(); lisAudio = null; speechSynthesis.cancel(); b.textContent = '🔊 Tinglash'; return; }
+$('bListen').onclick = async () => { const b = $('bListen'); if (lisAudio) { lisAudio.pause(); lisAudio = null; speechSynthesis.cancel(); try { JV && JV.voiceStop(); } catch (e) {} b.textContent = '🔊 Tinglash'; return; }
   b.textContent = '⏳…'; try { const s = P.slides[cur]; if (!s.script) { await writeOne(cur); showSlide(cur); }
     if (CFG.engine === 'system') { sysSpeak(s.script).then(() => { lisAudio = null; b.textContent = '🔊 Tinglash'; }); lisAudio = { pause() {} }; b.textContent = '⏹ To\'xtatish'; return; }
     const a = await voiceOne(cur); render(); lisAudio = new Audio('data:' + a.mime + ';base64,' + a.b64); lisAudio.onended = () => { lisAudio = null; b.textContent = '🔊 Tinglash'; }; await lisAudio.play(); b.textContent = '⏹ To\'xtatish'; persist(); }
   catch (e) { toast('✕ ' + e.message, 8000); b.textContent = '🔊 Tinglash'; lisAudio = null; } };
-function sysSpeak(text) { return new Promise(res => { const u = new SpeechSynthesisUtterance(text); const v = speechSynthesis.getVoices().find(x => x.name === CFG.sysVoice); if (v) { u.voice = v; u.lang = v.lang; } u.rate = CFG.rate; u.onend = u.onerror = () => res(); speechSynthesis.speak(u); }); }
+const JV = (() => { try { const n = window.jarvisNative || parent.jarvisNative; return n && n.voiceSay ? n : null; } catch (e) { return null; } })();
+async function sysSpeak(text) { if (JV) { let ev = 'madina'; try { ev = localStorage.getItem('jarvis_edgeVoice') || 'madina'; } catch (e) {} if (ev !== 'off') { const r = await JV.voiceSay({ text, voice: ev, rate: CFG.rate }); if (r && (r.ok || r.stopped)) return; } } return sysSpeak0(text); }
+function sysSpeak0(text) { return new Promise(res => { const u = new SpeechSynthesisUtterance(text); const v = speechSynthesis.getVoices().find(x => x.name === CFG.sysVoice); if (v) { u.voice = v; u.lang = v.lang; } u.rate = CFG.rate; u.onend = u.onerror = () => res(); speechSynthesis.speak(u); }); }
 
 /* ---------- JONLI NAMOYISH ---------- */
 const L = { on: false, i: 0, paused: false, audio: null, gen: 0, sub: CFG.sub };
@@ -297,8 +299,8 @@ async function liveLoop() {
   }
   if (L.on && g === L.gen) { $('lprog').style.width = '100%'; $('lsub').textContent = L.sub ? '— Tugadi. Savol bo\'lsa ❓ ni bosing —' : ''; }
 }
-function liveGo(d) { if (L.audio) L.audio.pause(); speechSynthesis.cancel(); L.i = Math.max(0, Math.min(P.slides.length - 1, L.i + d)); L.paused = false; $('lPlay').textContent = '⏸'; liveLoop(); }
-function liveStop() { L.on = false; L.gen++; if (L.audio) L.audio.pause(); speechSynthesis.cancel(); $('live').classList.remove('on'); $('qa').classList.remove('on'); try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {} showSlide(Math.min(L.i, P.slides.length - 1)); render(); persist(); }
+function liveGo(d) { if (L.audio) L.audio.pause(); speechSynthesis.cancel(); try { JV && JV.voiceStop(); } catch (e) {} L.i = Math.max(0, Math.min(P.slides.length - 1, L.i + d)); L.paused = false; $('lPlay').textContent = '⏸'; liveLoop(); }
+function liveStop() { L.on = false; L.gen++; if (L.audio) L.audio.pause(); speechSynthesis.cancel(); try { JV && JV.voiceStop(); } catch (e) {} $('live').classList.remove('on'); $('qa').classList.remove('on'); try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {} showSlide(Math.min(L.i, P.slides.length - 1)); render(); persist(); }
 $('bLive').onclick = () => liveStart(cur);
 $('lPrev').onclick = () => liveGo(-1); $('lNext').onclick = () => liveGo(1); $('lExit').onclick = liveStop;
 $('lPlay').onclick = () => { L.paused = !L.paused; $('lPlay').textContent = L.paused ? '▶' : '⏸'; if (L.audio) L.paused ? L.audio.pause() : L.audio.play().catch(() => {}); if (CFG.engine === 'system') L.paused ? speechSynthesis.pause() : speechSynthesis.resume(); };
@@ -389,7 +391,7 @@ function openDlg(kind) {
       runAll('Nutq', async i => { if (!over && P.slides[i].script) return; await writeOne(i); }); };
   } else {
     box.innerHTML = `<h3>⚙ Ovoz sozlamalari</h3>
-      <label>Ovoz manbai</label><select id="dEng"><option value="gemini" ${CFG.engine === 'gemini' ? 'selected' : ''}>Google Gemini — tabiiy (Jarvis\'dagi Gemini kaliti, bepul limit bilan)</option><option value="azure" ${CFG.engine === 'azure' ? 'selected' : ''}>Microsoft Azure — eng tabiiy o'zbek ovozi (Madina / Sardor)</option><option value="system" ${CFG.engine === 'system' ? 'selected' : ''}>Kompyuter/telefon ovozi (internetsiz, videoga yozilmaydi)</option></select>
+      <label>Ovoz manbai</label><select id="dEng"><option value="gemini" ${CFG.engine === 'gemini' ? 'selected' : ''}>Google Gemini — tabiiy (Jarvis\'dagi Gemini kaliti, bepul limit bilan)</option><option value="azure" ${CFG.engine === 'azure' ? 'selected' : ''}>Microsoft Azure — eng tabiiy o'zbek ovozi (Madina / Sardor)</option><option value="system" ${CFG.engine === 'system' ? 'selected' : ''}>Jarvis ovozi — tabiiy o\'zbek (Madina/Sardor, videoga yozilmaydi)</option></select>
       <div id="gBox"><label>Gemini ovozi</label><select id="dGV">${GVOICES.map(([v, d]) => `<option value="${v}" ${CFG.voice === v ? 'selected' : ''}>${v} — ${d}</option>`).join('')}</select></div>
       <div id="aBox"><div class="row"><div><label>Azure kaliti</label><input id="dAK" type="password" value="${esc(CFG.azureKey)}" placeholder="Speech resource → Keys"></div><div><label>Region</label><input id="dAR" value="${esc(CFG.azureRegion)}" placeholder="westeurope"></div></div>
         <label>Azure ovozi</label><select id="dAV">${[['uz-UZ-SardorNeural', 'Sardor — erkak, o\'zbek'], ['uz-UZ-MadinaNeural', 'Madina — ayol, o\'zbek'], ['ru-RU-DmitryNeural', 'Dmitry — rus'], ['ru-RU-SvetlanaNeural', 'Svetlana — rus'], ['en-US-AndrewMultilingualNeural', 'Andrew — ingliz']].map(([v, d]) => `<option value="${v}" ${CFG.azureVoice === v ? 'selected' : ''}>${d}</option>`).join('')}</select>

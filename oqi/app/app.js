@@ -5,6 +5,10 @@ const PAR = (() => { try { return EMBED && window.parent.JARVIS_MOBILE ? window.
 const SS = PAR && PAR.speechSynthesis ? PAR.speechSynthesis : window.speechSynthesis;
 const SU = PAR && PAR.SpeechSynthesisUtterance ? PAR.SpeechSynthesisUtterance : window.SpeechSynthesisUtterance;
 const AUTO = new URLSearchParams(location.search).get('auto') === '1';
+// Jarvis ichida ochilganda — Jarvisning o'z ovozi (Edge Madina/Sardor xizmati) bilan o'qiladi
+const JV = (() => { try { const n = EMBED && !PAR && window.parent.jarvisNative; return n && n.voiceSay ? n : null; } catch (e) { return null; } })();
+let JVOK = !!JV;
+function jvVoice() { try { const v = window.parent.localStorage.getItem('jarvis_edgeVoice') || 'madina'; return v === 'off' ? 'madina' : v; } catch (e) { return 'madina'; } }
 const VIEW = new URLSearchParams(location.search).get('view') === '1'; // Jarvis ichidagi ko'rinish (faqat asl ko'rinishni ko'rsatadi)
 if (VIEW) document.documentElement.classList.add('view');
 const $ = id => document.getElementById(id);
@@ -356,7 +360,8 @@ function pickVoices() {
   const uz = uzVoices();
   $('vchips').innerHTML = uz.filter(isNat).slice(0, 4).map(v => { const nm = (v.name.match(/Microsoft (\w+)/) || [, v.name])[1]; return `<button data-v="${esc(v.name)}" class="${sel.value === v.name ? 'on' : ''}">${/sardor/i.test(nm) ? '👨' : '👩'} ${esc(nm)}<small>tabiiy o'zbek ovozi</small></button>`; }).join('') || '<div class="hint">Tabiiy o\'zbek ovozlari topilmadi</div>';
   $('vchips').querySelectorAll('button').forEach(b => b.onclick = () => setVoice(b.dataset.v));
-  $('vwarn').innerHTML = uz.some(isNat) ? '' : `<div class="warn">⚠ <b>Tabiiy o'zbek ovozi (Madina, Sardor) topilmadi.</b> Ular Microsoft Edge orqali bepul ishlaydi va <b>internet</b> kerak. Internetni tekshiring va dasturni qayta oching.${VOICES.length ? '' : ' Hozir umuman ovoz yo\'q.'}</div>`;
+  if (JV && JVOK) $('vchips').innerHTML = `<div class="hint">🎙 <b>Jarvis ovozi</b> bilan o'qiladi: ${jvVoice() === 'sardor' ? '👨 Sardor' : '👩 Madina'}. Almashtirish: Jarvis → Holat → Ovoz sozlamalari → Tabiiy ovoz.</div>`;
+  $('vwarn').innerHTML = (JV && JVOK) || uz.some(isNat) ? '' : `<div class="warn">⚠ <b>Tabiiy o'zbek ovozi (Madina, Sardor) topilmadi.</b> Ular Microsoft Edge orqali bepul ishlaydi va <b>internet</b> kerak. Internetni tekshiring va dasturni qayta oching.${VOICES.length ? '' : ' Hozir umuman ovoz yo\'q.'}</div>`;
 }
 function setVoice(name) { $('sVoice').value = name; ST.set('voice', name); pickVoices(); if (PLAY.on) play(POS.p, POS.s); }
 function mainVoice() { return VOICES.find(v => v.name === $('sVoice').value) || uzVoices()[0] || VOICES[0]; }
@@ -398,21 +403,35 @@ function play(pi, s) {
   SS.cancel(); const g = ++GEN; PLAY.on = true; PLAY.paused = false; setBtn(); lastSpeak = Date.now();
   if (pi != null) { POS.p = pi; POS.s = s || 0; } const np = nextPos(POS.p, POS.s); if (!np) { finish(); return; }
   [POS.p, POS.s] = np; mark(); updProg();
+  if (JV && JVOK) { try { JV.voiceStop(); } catch (e) {} setTimeout(() => { if (g === GEN) playJ(g); }, 80); return; }
   setTimeout(() => { if (g === GEN) queue(g, np); }, 60);
 }
+async function playJ(g) {
+  const say = ([pi, k]) => JV.voiceSay({ text: prep(DOC.paras[pi].sents[k].t, { lang: 'uz-UZ' }), voice: jvVoice(), rate: RATE }).catch(e => ({ error: String(e) }));
+  const adv = ([pi, k]) => nextPos(pi, k + 1);
+  let cur = nextPos(POS.p, POS.s); if (!cur) { finish(); return; }
+  let pCur = say(cur), nxt = adv(cur), pNext = nxt ? say(nxt) : null;
+  for (;;) {
+    [POS.p, POS.s] = cur; mark(); updProg(); savePos();
+    const r = await pCur; if (g !== GEN) return;
+    if (r && r.error && !r.stopped && /no_edge|no_uz_voice/.test(r.error)) { JVOK = false; try { JV.voiceStop(); } catch (e) {} toast('Jarvis ovozi topilmadi (Edge yoki internet yo\'q) — kompyuter ovozi ishlatiladi', 6000); play(POS.p, POS.s); return; }
+    if (!nxt) { finish(); return; }
+    cur = nxt; pCur = pNext; nxt = adv(cur); pNext = nxt ? say(nxt) : null;
+  }
+}
 function finish() { PLAY.on = false; PLAY.paused = false; setBtn(); if (DOC && !nextPos(POS.p + 1, 0)) { toast('✓ Hujjat oxirigacha o\'qildi'); ST.set('pos:' + DOC.key, { p: 0, s: 0 }); } }
-function pause() { if (!PLAY.on) return; PLAY.paused = true; SS.pause(); setBtn(); }
-function resume() { if (!PLAY.on) return play(); PLAY.paused = false; setBtn(); SS.resume(); const g = GEN; setTimeout(() => { if (g === GEN && PLAY.on && !PLAY.paused && !SS.speaking) play(POS.p, POS.s); }, 600); }
-function stop() { GEN++; PLAY.on = false; PLAY.paused = false; try { SS.cancel(); } catch (e) {} setBtn(); }
+function pause() { if (!PLAY.on) return; if (JV && JVOK) { GEN++; try { JV.voiceStop(); } catch (e) {} PLAY.paused = true; setBtn(); return; } PLAY.paused = true; SS.pause(); setBtn(); }
+function resume() { if (!PLAY.on || (JV && JVOK)) return play(POS.p, POS.s); PLAY.paused = false; setBtn(); SS.resume(); const g = GEN; setTimeout(() => { if (g === GEN && PLAY.on && !PLAY.paused && !SS.speaking) play(POS.p, POS.s); }, 600); }
+function stop() { GEN++; try { JV && JV.voiceStop(); } catch (e) {} PLAY.on = false; PLAY.paused = false; try { SS.cancel(); } catch (e) {} setBtn(); }
 function toggle() { if (!PLAY.on) play(); else if (PLAY.paused) resume(); else pause(); }
-let lastSpeak = 0; setInterval(() => { if (PLAY.on && !PLAY.paused) { if (SS.speaking || SS.pending) lastSpeak = Date.now(); else if (Date.now() - lastSpeak > 4000) { lastSpeak = Date.now(); play(POS.p, POS.s); } } }, 1000);
+let lastSpeak = 0; setInterval(() => { if (PLAY.on && !PLAY.paused && !(JV && JVOK)) { if (SS.speaking || SS.pending) lastSpeak = Date.now(); else if (Date.now() - lastSpeak > 4000) { lastSpeak = Date.now(); play(POS.p, POS.s); } } }, 1000);
 function jump(d) { if (!DOC) return; let p = POS.p + d; while (p >= 0 && p < DOC.paras.length && !readable(p)) p += d; p = Math.max(0, Math.min(DOC.paras.length - 1, p)); if (PLAY.on) play(p, 0); else { POS.p = p; POS.s = 0; mark(); updProg(); } }
 function gotoPage(n) { if (!DOC) return false; const pg = DOC.pages[n - 1]; if (!pg) return false; pg.el.scrollIntoView({ block: 'start' }); const np = nextPos(pg.p, 0); if (np) { if (PLAY.on) play(np[0], 0); else { [POS.p, POS.s] = np; mark(false); updProg(); } } return true; }
 function pageJump(d) { const p = cur(); if (!p) return; gotoPage(p.page + 1 + d); }
 function setRate(r) { RATE = Math.max(0.5, Math.min(2, Math.round(r * 20) / 20)); ST.set('rate', RATE); $('sRate').value = RATE; $('vRate').textContent = RATE.toFixed(2).replace(/0$/, '') + '×';
   document.querySelectorAll('#rateChips button').forEach(b => b.classList.toggle('on', Math.abs(+b.dataset.r - RATE) < 0.03)); if (PLAY.on && !PLAY.paused) play(POS.p, POS.s); }
 function setVol(v) { VOL = Math.max(0.1, Math.min(1, v)); ST.set('vol', VOL); $('sVol').value = VOL; if (PLAY.on && !PLAY.paused) play(POS.p, POS.s); }
-function say(t) { if (PLAY.on && !PLAY.paused) { toast(t); return; } toast(t); const v = uzVoices()[0] || mainVoice(); const u = new SU(normUz(t)); if (v) { u.voice = v; u.lang = v.lang; } u.rate = Math.max(1, RATE); u.volume = VOL; if (!PLAY.on) SS.cancel(); SS.speak(u); }
+function say(t) { if (PLAY.on && !PLAY.paused) { toast(t); return; } toast(t); if (JV && JVOK) { JV.voiceSay({ text: normUz(t), voice: jvVoice(), rate: RATE }); return; } const v = uzVoices()[0] || mainVoice(); const u = new SU(normUz(t)); if (v) { u.voice = v; u.lang = v.lang; } u.rate = Math.max(1, RATE); u.volume = VOL; if (!PLAY.on) SS.cancel(); SS.speak(u); }
 
 /* ============ OVOZLI BUYRUQLAR ============ */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition; let REC = null, LISTEN = false, recLang = ST.get('recLang', 'uz-UZ');

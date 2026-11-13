@@ -291,11 +291,7 @@
     setRate(r){T.rate=r;try{T.src.playbackRate.value=r}catch(e){}},
     onState(f){T.L.push(f)},onLine(){},onPosition(){},pause(){try{T.ctx.suspend()}catch(e){}},resume(){try{T.ctx.resume()}catch(e){}}};
   const prevUse=window.claude.use;window.claude.use=async n=>n==='tts'?tts:prevUse(n);
-  /* tabiiy ovoz tanlovi (Edge: Madina/Sardor) */
-  setTimeout(()=>{try{const eng=document.getElementById('vEngine');if(!eng||document.getElementById('vEdge'))return;const row=eng.closest('.vrow');const r=document.createElement('div');r.className='vrow';
-    r.innerHTML='<label>Tabiiy ovoz</label><select id="vEdge"><option value="madina">👩 Madina (o\'zbek, tabiiy)</option><option value="sardor">👨 Sardor (o\'zbek, tabiiy)</option><option value="off">Gemini / Windows</option></select>';
-    row.parentNode.insertBefore(r,row.nextSibling);const sel=r.querySelector('select');try{sel.value=localStorage.getItem('jarvis_edgeVoice')||'madina'}catch(e){}
-    sel.onchange=()=>{try{localStorage.setItem('jarvis_edgeVoice',sel.value)}catch(e){}const t=document.getElementById('vTest');if(t)t.click()}}catch(e){}},1500);
+
 
   /* ---- helpers ---- */
   const loadJS=src=>new Promise((res,rej)=>{if(document.querySelector(`script[src="${src}"]`))return res();const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)});
@@ -371,7 +367,9 @@
   });
   async function addSecSections(){const w=WINS.models;if(!w||w.body.querySelector('[data-sec2]'))return;const tc=await N.ttsCfg();
     const box=document.createElement('div');box.className='wmsg';box.setAttribute('data-sec2','1');box.style.borderColor='var(--green)';const hasFace=!!LS('jarvis_face'),hasVP=!!LS('jarvis_vp');
-    box.innerHTML=`<div class="h">🔊 TINIQ OVOZ (Gemini)</div><div class="t" style="font-size:13px;color:var(--mut)">Google Gemini kaliti bilan odamnikiga o'xshash tiniq, ravon ovoz. Limit tugasa yoki internet bo'lmasa Windows ovozi ishlaydi. Ovoz turini chapdagi "Ovoz" menyusidan tanlang.</div>
+    box.innerHTML=`<div class="h">🎙 JARVIS OVOZI — TABIIY O'ZBEK</div><div class="t" style="font-size:13px;color:var(--mut)">Asosiy ovoz: Microsoft Edge'ning tabiiy o'zbek ovozi (bepul, internet kerak). Ishlamasa, pastdagi Gemini, so'ng Windows ovozi ishlaydi.</div>
+      <div class="addrow"><select data-ev style="flex:1"><option value="madina">👩 Madina</option><option value="sardor">👨 Sardor</option><option value="off">O'chiq (Gemini / Windows)</option></select><button data-evt>▶ Sinash</button></div><div data-evs style="font-size:12px;color:var(--mut)"></div>
+      <div class="h" style="margin-top:12px">🔊 ZAXIRA OVOZ (Gemini)</div><div class="t" style="font-size:13px;color:var(--mut)">Google Gemini kaliti bilan odamnikiga o'xshash tiniq, ravon ovoz. Limit tugasa yoki internet bo'lmasa Windows ovozi ishlaydi. Ovoz turini chapdagi "Ovoz" menyusidan tanlang.</div>
       <div class="addrow"><label class="toggle"><input type="checkbox" data-tton ${tc.ttsOn?'checked':''}> yoqilgan</label><input data-ttm value="${esc(tc.ttsModel)}"><button data-tts>▶ Sinash</button></div>
       <div class="h" style="margin-top:10px">🙂 FACE ID</div><div class="t" style="font-size:13px;color:var(--mut)">Yuzingiz faqat shu kompyuterda raqamli belgi ko'rinishida saqlanadi (rasm saqlanmaydi). Kamera ishlamasa — zaxira PIN.</div>
       <div class="wact"><button data-fe>${hasFace?'🔁 Qayta o\'rgatish':'📷 Yuzimni o\'rgatish'}</button>${hasFace?'<button data-ft>✓ Sinash</button><button data-fd>✕ O\'chirish</button>':''}</div>
@@ -383,6 +381,9 @@
       <div class="vrow"><label>Sezgirlik <b data-vthv>${Math.round(VP.thr*100)}%</b></label><input type="range" min="0.6" max="0.97" step="0.01" value="${VP.thr}" data-vth></div>
       <div class="kbm" data-sres2></div>`;
     w.body.prepend(box);const q=s=>box.querySelector(s),res=q('[data-sres2]');
+    {const ev=q('[data-ev]'),evs=q('[data-evs]');try{ev.value=localStorage.getItem('jarvis_edgeVoice')||'madina'}catch(e){}ev.onchange=()=>{try{localStorage.setItem('jarvis_edgeVoice',ev.value)}catch(e){}const m=document.getElementById('vEdge');if(m)m.value=ev.value};
+      q('[data-evt]').onclick=async()=>{try{localStorage.setItem('jarvis_edgeVoice',ev.value)}catch(e){}evs.textContent='⏳ Tekshirilmoqda (birinchi marta 5–15 soniya)…';const r=await N.voiceSay({text:'Assalomu alaykum, ser. Men Jarvisman. Qurilish, hujjat, qaror — barchasini ravon o\'qiyman.',voice:ev.value==='off'?'madina':ev.value,rate:1});
+        evs.textContent=r&&r.ok?'✓ Tabiiy ovoz ishlayapti'+(r.voice?' ('+r.voice.replace(/^Microsoft /,'')+')':''):'✕ Ishlamadi: '+({no_edge:'Microsoft Edge topilmadi',no_uz_voice:'o\'zbek ovozi topilmadi — internetni tekshiring',not_started:'Edge ovozni boshlamadi'}[r&&r.error]||(r&&r.error)||'noma\'lum')}}
     q('[data-tton]').onchange=e=>N.ttsCfg({ttsOn:e.target.checked});q('[data-ttm]').onchange=e=>N.ttsCfg({ttsModel:e.target.value});
     q('[data-tts]').onclick=async()=>{await N.ttsCfg({ttsModel:q('[data-ttm]').value,ttsOn:q('[data-tton]').checked});const r=await N.ttsGemini('Assalomu alaykum, ser. Men Jarvisman. Qurilish, qog\'oz, qaror — barchasini aniq o\'qiyman.','Charon');
       if(r.error){res.textContent='✕ Gemini ovozi: '+r.error+' — Windows ovozi ishlatiladi.';return}res.textContent='✓ Gemini ovozi ishlayapti';try{await tts.speak('Assalomu alaykum, ser. Men Jarvisman. Qurilish, qog\'oz, qaror — barchasini aniq o\'qiyman.')}catch(e){}};
