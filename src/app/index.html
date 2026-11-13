@@ -55,6 +55,7 @@ body{background:
 .copy{float:right;margin:-2px -4px 0 8px;background:none;border:none;color:var(--mut);cursor:pointer;font-size:12px}
 .bar{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line)}
 #inp{flex:1;background:rgba(0,0,0,.35);border:1px solid var(--line2);color:var(--txt);font:500 17px Rajdhani;padding:10px 12px;outline:none;resize:none;height:46px}
+#inp{scrollbar-width:none;-ms-overflow-style:none}#inp::-webkit-scrollbar{width:0;height:0;display:none}
 #inp:focus{border-color:var(--cy);box-shadow:0 0 0 1px var(--cy) inset}
 .btn{min-width:46px;height:46px;border:1px solid var(--cy);background:rgba(63,210,255,.12);color:var(--cy2);cursor:pointer;font:700 14px Orbitron;display:flex;align-items:center;justify-content:center;padding:0 12px}
 .btn:hover{background:rgba(63,210,255,.28)} .btn:disabled{opacity:.4;cursor:default}
@@ -134,7 +135,16 @@ body{background:
 .dock{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:35;display:flex;gap:6px;background:rgba(4,14,24,.92);border:1px solid var(--line2);padding:6px;box-shadow:0 0 20px rgba(63,210,255,.2);max-width:96vw;overflow-x:auto}
 .dock button{background:rgba(63,210,255,.08);border:1px solid var(--line);color:var(--txt);font:600 13px Rajdhani;padding:6px 10px;cursor:pointer;white-space:nowrap}
 .dock button:hover{border-color:var(--cy);background:rgba(63,210,255,.2)}
+#dropZone{position:fixed;inset:0;z-index:90;display:none;place-items:center;background:rgba(2,10,18,.72);backdrop-filter:blur(3px);pointer-events:none}#dropZone.on{display:grid}#dropZone div{border:2px dashed var(--cy);padding:40px 60px;text-align:center;color:var(--cy);font:700 26px Rajdhani;background:rgba(4,14,24,.9)}#dropZone small{display:block;font:400 14px sans-serif;color:var(--txt);margin-top:8px}
+.fchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.fprev{margin-top:10px;border:1px solid var(--line2);background:#e9edf3;overflow:hidden}.fprev .fpBar{display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:rgba(4,14,24,.95);color:var(--cy);font:600 13px Rajdhani}.fprev iframe{display:block;width:100%;height:440px;border:0;background:#e9edf3}
+#rdBox{position:fixed;inset:5vh 50% auto auto;transform:translateX(50%);width:min(860px,94vw);height:86vh;z-index:60;display:flex;flex-direction:column;background:rgba(4,14,24,.97);border:1px solid var(--line2);box-shadow:0 0 40px rgba(63,210,255,.25)}
+#rdBox .rdTop{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}#rdBox .rdTop b{flex:1;color:var(--cy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#rdBox .rdTop span{color:var(--mut,#7fa3b8);font-size:13px}
+#rdBox .rdBody{flex:1;overflow:auto;padding:18px 26px;font-size:17px;line-height:1.7}#rdBox p{margin:0 0 .8em;cursor:pointer;padding:2px 6px;border-radius:4px}#rdBox p:hover{background:rgba(63,210,255,.08)}#rdBox p.cur{background:rgba(255,200,60,.18);box-shadow:inset 3px 0 0 var(--amber)}
+#rdBox .rdBar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--line);flex-wrap:wrap}#rdBox button{background:rgba(63,210,255,.08);border:1px solid var(--line);color:var(--txt);padding:7px 12px;cursor:pointer;font:600 14px Rajdhani}#rdBox button.big{font-size:18px;padding:7px 18px;border-color:var(--cy)}
+#rdBox .rdSp{margin-left:auto;display:flex;gap:4px}#rdBox .rdSp button.on{border-color:var(--amber);color:var(--amber)}
 .dock .sep{width:1px;background:var(--line2);margin:0 2px}
+.dock .dx{display:none}.dock.open{flex-wrap:wrap;justify-content:center;max-width:min(760px,96vw)}.dock.open .dx{display:inline-block}.dock .dmore{border-color:var(--line2);color:var(--cy)}#dockWins:empty+#jobN:empty{display:none}
 .dock .wbtn{border-color:rgba(255,181,71,.4)} .dock .wbtn.min{opacity:.55}
 .dock .run{color:var(--amber)}
 .win{position:fixed;width:480px;height:440px;min-width:300px;min-height:200px;background:#05101b;border:1px solid var(--line2);z-index:30;resize:both;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.6),0 0 20px rgba(63,210,255,.15)}
@@ -231,7 +241,7 @@ body{background:
 </head>
 <body>
 <button class="estop" id="estop" title="Hamma amallarni darhol to'xtatish va Google kirishini bloklash">⛔ TO'XTAT</button>
-<div class="dock" id="dock"><button data-app="notiq">🎤 Notiq</button><button data-app="gmail">✉️ Gmail</button><button data-app="drive">📁 Drive</button><button data-app="calendar">📅 Kalendar</button><button data-app="connections">🔗 Ilovalar</button><button data-app="brain">🗂 Ikkinchi miya</button><button data-app="memory">🧠 Xotira</button><button data-app="graph">🕸 Xarita</button><button data-app="team">👥 Jamoa</button><button data-app="routines">⏰ Odatlar</button><button data-app="skills">📚 Ko'nikma</button><button data-app="batch">⚡ Ommaviy</button><button data-app="task">⚙ Vazifa</button><span class="sep"></span><span id="dockWins" style="display:flex;gap:6px"></span><span id="jobN" style="color:var(--amber);font-size:13px;align-self:center;white-space:nowrap"></span></div>
+<div class="dock" id="dock"><button data-app="reader">📖 O'qish</button><button data-app="notiq">🎤 Notiq</button><button data-app="gmail">✉️ Gmail</button><button data-app="drive">📁 Drive</button><button data-app="calendar" class="dx">📅 Kalendar</button><button data-app="connections" class="dx">🔗 Ilovalar</button><button data-app="brain" class="dx">🗂 Ikkinchi miya</button><button data-app="memory" class="dx">🧠 Xotira</button><button data-app="graph" class="dx">🕸 Xarita</button><button data-app="team" class="dx">👥 Jamoa</button><button data-app="routines" class="dx">⏰ Odatlar</button><button data-app="skills" class="dx">📚 Ko'nikma</button><button data-app="batch" class="dx">⚡ Ommaviy</button><button data-app="task" class="dx">⚙ Vazifa</button><button class="dmore" id="dockMore" title="Barcha bo'limlar">☰ Yana</button><span class="sep"></span><span id="dockWins" style="display:flex;gap:6px"></span><span id="jobN" style="color:var(--amber);font-size:13px;align-self:center;white-space:nowrap"></span></div>
 <div class="lockbar" id="lockbar">🔒 Himoya rejimi: Jarvis Google hisobingizga kira olmaydi <button id="unlock">Qulfni ochish</button></div>
 <div class="modal" id="modal"><div class="box"><h3 id="mT">TASDIQLASH</h3><div id="mD" style="font-size:15px"></div><pre id="mP"></pre>
   <div class="bt"><button id="mNo">Rad etish</button><button class="yes" id="mYes">Ruxsat berish</button></div></div></div>
@@ -262,6 +272,8 @@ body{background:
       <div class="stat"><span>AI rejimi</span><select id="tierSel" style="background:rgba(0,0,0,.4);border:1px solid var(--line2);color:var(--txt);font:600 13px Rajdhani"><option value="auto">Avto</option><option value="quick">⚡ Tez</option><option value="default">Standart</option><option value="complex">🧠 Kuchli</option></select></div>
       <div class="stat"><span>Oxirgi model</span><b id="sTier">—</b></div>
       <label class="toggle" style="margin-top:10px"><input type="checkbox" id="voiceOn" checked> Javoblarni ovoz chiqarib o'qish</label>
+      <label class="toggle"><input type="checkbox" id="speakTypedOn" checked> Yozgan buyruqlarimga ham ovozli javob</label>
+      <label class="toggle"><input type="checkbox" id="autoReadOn"> Tashlangan faylni so'ramasdan darhol o'qish</label>
     </div>
     <div class="panel">
       <div class="ttl">Ovoz sozlamalari</div>
@@ -592,8 +604,8 @@ function chunks(s,max=220){const parts=s.match(/[^.!?…]+[.!?…]*\s*/g)||[s];c
   for(const p of parts){if((cur+p).length>max&&cur){out.push(cur.trim());cur=''}
     if(p.length>max){p.split(/(?<=[,;:])\s+/).forEach(q=>{if((cur+q).length>max&&cur){out.push(cur.trim());cur=''}cur+=q+' '})}else cur+=p}
   if(cur.trim())out.push(cur.trim());return out.filter(x=>/[\p{L}\d]/u.test(x))}
-async function speak(text){
-  if(!S.voice||!text)return;let s=speechPrep(clean(text));
+async function speak(text,o){
+  if((!S.voice&&!(o&&o.force))||!text)return;let s=speechPrep(clean(text));
   try{
     if(!useBrowser()&&tts){setMode('speaking');
       const ln=VS.ttsLang||'uz';
@@ -626,6 +638,9 @@ $('trustSel').value=trustMode();$('trustSel').onchange=async e=>{const v=e.targe
 $('lookSel').value=window.JLOOK;$('lookSel').onchange=e=>{window.JLOOK=e.target.value;try{localStorage.setItem('jarvis_look',window.JLOOK)}catch(_){}applyLook()};
 $('tierSel').value=S.tier;$('tierSel').onchange=e=>{S.tier=e.target.value;try{localStorage.setItem('jarvis_tier',S.tier)}catch(_){}};
 $('voiceOn').onchange=e=>{S.voice=e.target.checked;if(!S.voice)stopSpeak()};
+try{S.speakTyped=localStorage.getItem('jarvis_speakTyped')!=='0';S.autoRead=localStorage.getItem('jarvis_autoRead')==='1'}catch(e){S.speakTyped=true;S.autoRead=false}
+$('speakTypedOn').checked=S.speakTyped;$('speakTypedOn').onchange=e=>{S.speakTyped=e.target.checked;try{localStorage.setItem('jarvis_speakTyped',S.speakTyped?'1':'0')}catch(_){}};
+$('autoReadOn').checked=S.autoRead;$('autoReadOn').onchange=e=>{S.autoRead=e.target.checked;try{localStorage.setItem('jarvis_autoRead',S.autoRead?'1':'0')}catch(_){}};
 
 /* ============ TOOLS ============ */
 const SITES={youtube:'https://www.youtube.com',google:'https://www.google.com',telegram:'https://web.telegram.org',gmail:'https://mail.google.com',
@@ -695,7 +710,7 @@ async function ask(text,opt){
   if(!shownAtt.length&&!imgs.length){if(voiceControl(text))return;if(text.startsWith('/')&&runCommand(text))return;
     if(/o['ʻ’]?zingni tekshir|o['ʻ’]?zingni tuzat|^\/tekshir/i.test(text)&&window.selfHeal){addMsg('u',text);$('inp').value='';addMsg('j','🔧 Tekshiryapman, ser…');window.selfHeal(true);return}
     if(/xato hisobot|hisobotni yubor.*xato|^\/xato/i.test(text)){addMsg('u',text);$('inp').value='';const d0=addMsg('j','⏳ Xato hisoboti tayyorlanmoqda…');setBody(d0,await errorReport());return}}
-  stopSpeak();const um=addMsg('u',text);$('inp').value='';chatLog('u',text+(shownAtt.length?' [📎 '+shownAtt.map(x=>x.name).join(', ')+']':''));
+  stopSpeak();const um=addMsg('u',(opt&&opt.show)||text);$('inp').value='';chatLog('u',((opt&&opt.show)||text)+(shownAtt.length?' [📎 '+shownAtt.map(x=>x.name).join(', ')+']':''));
   if(imgs.length){const g=document.createElement('div');g.className='uimgs';imgs.forEach(b=>{const im=document.createElement('img');im.src=URL.createObjectURL(b);im.onclick=()=>imgEditor(b);g.appendChild(im)});um.appendChild(g)}
   shownAtt.filter(x=>x.kind==='doc').forEach(x=>{const d2=document.createElement('div');d2.className='udoc';d2.textContent='📄 '+x.name+(x.err?' (o\'qilmadi)':'');um.appendChild(d2)});
   S.jobs=(S.jobs||0)+1;S.busy=true;$('stop').style.display='';setMode('thinking');
@@ -718,7 +733,7 @@ async function ask(text,opt){
     }
     setBody(d,answer||'Kechirasiz ser, javob topilmadi.');
     pendingLinks.forEach(([u,l])=>addLink(d,u,l));
-    setMode('idle');if(!typed||S.speakTyped)await speak(answer);
+    setMode('idle');if(!typed||S.speakTyped!==false)await speak(answer);
   }catch(e){
     if(e&&e.name==='AbortError'||e?.code==='aborted'){setBody(d,(answer||'')+' _(to\'xtatildi)_')}
     else if(e?.code==='not_granted'){sample=null;setStat('Ai','ruxsat yo\'q',false);answer=localBrain(text);setBody(d,answer);speak(answer)}
@@ -801,7 +816,7 @@ function localTools(){
     inputSchema:{type:'object',properties:{site:{type:'string'},search:{type:'string'},youtube_search:{type:'string'},weather_city:{type:'string'},media_search:{type:'string'},kind:{type:'string',enum:['images','videos','pages']}}},
     execute:i=>{if(i.media_search){window.showMedia('results',window.searchLinks(i.media_search,i.kind),i.media_search);return 'Foydalanuvchiga qidiruv kartochkalari ko\'rsatildi (bosilsa ochiladi, nusxalash va ulashish tugmalari bor). Texnik xato haqida gapirma.'}
       return i.weather_city?by('weather_link').execute({city:i.weather_city}):by('open_website').execute(i)}};
-  return[by('get_datetime'),by('calculate'),notes,rem,web,by('remember_fact'),by('google_status'),by('open_app'),by('second_brain'),by('recall'),by('routines'),by('run_code'),by('make_document'),by('documents'),by('measures'),by('presenter'),(()=>{const t=by('my_tools');return t&&Object.assign({},t,{description:t.description+(myTools().map(x=>x.name+(x.params?'('+x.params+')':'')+' — '+x.text).join('; ')||'hali yo\'q')})})(),by('pc'),by('web')].filter(Boolean)}
+  return[by('get_datetime'),by('calculate'),notes,rem,web,by('remember_fact'),by('google_status'),by('open_app'),by('second_brain'),by('recall'),by('routines'),by('run_code'),by('make_document'),by('documents'),by('read_aloud'),by('measures'),by('presenter'),(()=>{const t=by('my_tools');return t&&Object.assign({},t,{description:t.description+(myTools().map(x=>x.name+(x.params?'('+x.params+')':'')+' — '+x.text).join('; ')||'hali yo\'q')})})(),by('pc'),by('web')].filter(Boolean)}
 function allTools(){let t=localTools().concat(connectorTools());if(!window.JARVIS_DESKTOP){const drop=['google_status','recall','routines','second_brain','remember_fact','measures','presenter'];while(t.length>16&&drop.length){const d=drop.shift();t=t.filter(x=>x.name!==d)}}return t.slice(0,window.JARVIS_DESKTOP?40:16)}
 /* ===== ISHONCH REJIMI: AI amallarini tasdiqsiz bajarish (foydalanuvchi o'zi yoqadi) ===== */
 const DANGER=/format-volume|\bformat\s+[a-z]:|diskpart|bcdedit|cipher\s+\/w|vssadmin\s+delete|reg(\.exe)?\s+delete\s+hklm|\b(Remove-Item|rm|del|erase|rmdir|rd|ri)\b[^\n]*?\s['"]?[a-z]:\\?(\*|\\\*)?['"]?(\s|$|;)|\\windows(\\|\b)|\\program files|Stop-Computer|Restart-Computer|shutdown(\.exe)?\s+[\/-][srp]|Clear-Disk|Initialize-Disk|Remove-Partition/i;
@@ -1139,7 +1154,7 @@ function bgTask(prompt,title){
   .finally(()=>{w.running=false;JOBS.delete(id);jobsUI();dockRender()});
   return id}
 
-function openApp(app,q){({notiq:()=>openNotiq(),gmail:openGmail,drive:openDrive,calendar:openCalendar,connections:openConnections,memory:openMemory,skills:openSkills,brain:openBrain,routines:openRoutines,graph:openGraph,batch:openBatch,team:()=>{$('inp').value='/bajar ';$('inp').focus();showPalette();addMsg('j','👥 Jamoaga vazifa bering: **/bajar** vazifa — to\'liq bajarish, **/reja** vazifa — faqat reja. Boshqa buyruqlar uchun "/" yozing.')}}[app]||(()=>{}))(q)}
+function openApp(app,q){({reader:()=>openReader(null),notiq:()=>openNotiq(),gmail:openGmail,drive:openDrive,calendar:openCalendar,connections:openConnections,memory:openMemory,skills:openSkills,brain:openBrain,routines:openRoutines,graph:openGraph,batch:openBatch,team:()=>{$('inp').value='/bajar ';$('inp').focus();showPalette();addMsg('j','👥 Jamoaga vazifa bering: **/bajar** vazifa — to\'liq bajarish, **/reja** vazifa — faqat reja. Boshqa buyruqlar uchun "/" yozing.')}}[app]||(()=>{}))(q)}
 TOOLS.push({name:'open_app',description:'Sahifa ichida oyna ochadi: gmail (pochta, query bilan), drive (fayllar, query bilan), calendar (kalendar), connections (ulangan ilovalar va xavfsizlik), yoki task — fon vazifasi (prompt bilan, parallel bajariladi), yoki team — murakkab, ko\'p bosqichli ish uchun agentlar jamoasi (reja→bajarish→tekshiruv). Foydalanuvchi "och", "ko\'rsat" desa yoki bir vaqtda bir nechta ish so\'rasa ishlat.',
   inputSchema:{type:'object',properties:{app:{type:'string',enum:['gmail','drive','calendar','connections','memory','brain','task','team']},query:{type:'string'},prompt:{type:'string'},title:{type:'string'}},required:['app']},
   execute:({app,query,prompt,title})=>{if(app==='task'){bgTask(prompt||query||'',title);return{ok:true,started:'fon vazifasi boshlandi'}}if(app==='team'){teamRun(prompt||query||'');return{ok:true,started:'agentlar jamoasi ishga tushdi'}}openApp(app,query);return{ok:true,opened:app}}});
@@ -1781,7 +1796,29 @@ function attBar(){let b=$('attBar');if(!b){b=document.createElement('div');b.id=
 async function addFiles(files){for(const f of files){if(/^image\//.test(f.type)){ATT.items.push({kind:'image',name:f.name||'rasm.png',blob:f,url:URL.createObjectURL(f)});continue}
     const it={kind:'doc',name:f.name||'fayl',file:f};ATT.items.push(it);attBar();try{regFile(it.name,new Uint8Array(await f.arrayBuffer()),f.type)}catch(e){}
     try{it.text=(await extractText(f)).slice(0,60000);if(!it.text.trim())throw new Error('faylda matn topilmadi')}catch(e){it.err=e.message;showToast(e.message,'FAYL')}}
-  attBar();$('inp').focus()}
+  attBar();$('inp').focus();
+  fileArrived([...files])}
+// Fayl tashlanganda: Jarvis fikr bildiradi va nima qilishni so'raydi (o'qish, tahrirlash, xulosa, tekshirish...)
+function fileArrived(files){const docs=files.filter(f=>!/^image\//.test(f.type));const imgs=files.filter(f=>/^image\//.test(f.type));if(!docs.length&&!imgs.length)return;
+  const last=docs[docs.length-1];const x=last&&findFile(last.name);
+  if(x&&S.autoRead===true&&/\.(pdf|docx|pptx|xlsx|txt|md|csv)$/i.test(x.name)){openReader({bytes:x.bytes,name:x.name,mime:x.mime});return}
+  if(x)fileChips(x);
+  setTimeout(()=>{if($('inp').value.trim()||S.busy||!ATT.items.length)return;ask('',{typed:true,show:'📎 Fayl tashladim — ko\'rib chiq'})},600)}
+function fileChips(f){const nm=f.name,ext=(nm.split('.').pop()||'').toLowerCase();const d=addMsg('j',`📎 **${nm}** qabul qilindi — ko'rib chiqyapman. Quyidagilardan birini tanlang yoki o'zingiz yozing:`);
+  const acts=[['🔊 Ovoz chiqarib o\'qi',()=>openReader({bytes:f.bytes,name:f.name,mime:f.mime})],
+    ['✏️ Tahrirlash',()=>{$('inp').value=`"${nm}" faylini tahrirla: `;$('inp').focus()}],
+    ['📝 Xulosa',()=>ask(`"${nm}" faylining qisqa va aniq xulosasini yoz (asosiy raqamlar, sanalar, xulosalar).`,{typed:true})],
+    ['🔍 Xatolarini tekshir',()=>ask(`"${nm}" faylini diqqat bilan tekshir: imlo va hisob-kitob xatolari, raqamlar mosligi, sanalar, normativ havolalar, mantiqiy nomuvofiqliklar. Har birini aniq joyi bilan ko'rsat va tuzatishni taklif qil.`,{typed:true})]];
+  if(/^(docx|xlsx)$/.test(ext))acts.push(['📌 Namuna qilib saqla',()=>{const n=prompt('Namuna nomi:',nm.replace(/\.\w+$/,''));if(n)tplSave(n.trim(),f,'').then(()=>showToast('"'+n+'" namuna sifatida saqlandi','NAMUNA')).catch(e=>showToast(e.message,'NAMUNA'))}]);
+  if(/^(pptx|pdf)$/.test(ext))acts.push(['🎤 Taqdimotni gapirib ber',()=>openNotiq({bytes:f.bytes,name:f.name,mime:f.mime})]);
+  const row=document.createElement('div');row.className='fchips';acts.forEach(([t,fn])=>{const b=document.createElement('button');b.className='chip w';b.textContent=t;b.onclick=fn;row.appendChild(b)});
+  const host=(d&&d.querySelector('.body')||d||$('log'));host.appendChild(row);
+  // asl ko'rinishdagi oldindan ko'rish (kompyuter ilovasida): fayl shakli o'zgarmagan holda ko'rinadi
+  if(window.JARVIS_DESKTOP&&!window.JARVIS_MOBILE&&/^(pdf|docx|pptx|xlsx|txt)$/.test(ext)){const box=document.createElement('div');box.className='fprev';
+    box.innerHTML='<div class="fpBar"><span>👁 Asl ko\'rinishi</span><button class="chip" data-x="big">⤢ Kattalashtirib ochish</button></div>';
+    const fr=document.createElement('iframe');fr.src='oqi/index.html?view=1';fr.setAttribute('loading','lazy');box.appendChild(fr);host.appendChild(box);
+    const on=e=>{if(e.source===fr.contentWindow&&e.data&&e.data.oqi==='ready'){fr.contentWindow.postMessage({oqiOpen:{bytes:f.bytes,name:f.name,auto:false}},'*');window.removeEventListener('message',on)}};window.addEventListener('message',on);
+    box.querySelector('[data-x="big"]').onclick=()=>openReader({bytes:f.bytes,name:f.name,mime:f.mime},{auto:false})}}
 function pick(accept,capture){const i=document.createElement('input');i.type='file';i.accept=accept;i.multiple=!capture;if(capture)i.capture='environment';i.onchange=()=>{if(i.files.length)addFiles([...i.files])};i.click()}
 (function(){const bar=document.querySelector('.chat .bar');if(!bar)return;const b=document.createElement('button');b.className='btn';b.id='attBtn';b.title='Fayl yoki rasm biriktirish';b.textContent='📎';bar.insertBefore(b,$('inp'));
   const menu=document.createElement('div');menu.id='attMenu';menu.innerHTML='<button data-k="cam">📷 Kamera — suratga olish</button><button data-k="img">🖼 Rasm tanlash</button><button data-k="file">📄 Fayl (Word, Excel, PDF, matn)</button><button data-k="lens">🔍 Rasm bo\'yicha qidirish</button>';document.body.appendChild(menu);
@@ -1790,12 +1827,15 @@ function pick(accept,capture){const i=document.createElement('input');i.type='fi
     if(k==='cam')pick('image/*',true);if(k==='img')pick('image/*');if(k==='file')pick('.docx,.xlsx,.pptx,.pdf,.txt,.csv,.md,.json,.xml,.html,image/*');
     if(k==='lens'){const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=()=>{if(i.files[0])imgEditor(i.files[0],null,{lens:true})};i.click()}};
   $('inp').addEventListener('paste',e=>{const fs=[...(e.clipboardData?.files||[])];if(fs.length){e.preventDefault();addFiles(fs)}});
-  document.addEventListener('dragover',e=>{if(e.dataTransfer?.types?.includes('Files'))e.preventDefault()});
-  document.addEventListener('drop',e=>{if(e.dataTransfer?.files?.length){e.preventDefault();addFiles([...e.dataTransfer.files])}})})();
+  const hasF=e=>{const t=e.dataTransfer&&e.dataTransfer.types;return !!t&&[...t].some(x=>x==='Files'||x==='application/x-moz-file')};
+  let dz=null,dzT=0;const showDz=on=>{if(!dz){dz=document.createElement('div');dz.id='dropZone';dz.innerHTML='<div>📥 Faylni shu yerga tashlang<small>Word, Excel, PDF, PowerPoint, rasm, matn — Jarvis ko\'rib chiqib, nima qilishni so\'raydi</small></div>';document.body.appendChild(dz)}dz.classList.toggle('on',on)};
+  ['dragenter','dragover'].forEach(ev=>window.addEventListener(ev,e=>{if(!hasF(e))return;e.preventDefault();try{e.dataTransfer.dropEffect='copy'}catch(_){}showDz(true);clearTimeout(dzT);dzT=setTimeout(()=>showDz(false),400)},true));
+  window.addEventListener('drop',e=>{if(!hasF(e)&&!(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length))return;e.preventDefault();e.stopPropagation();showDz(false);const fs=[...(e.dataTransfer.files||[])];if(fs.length)addFiles(fs)},true);
+  const N0=window.jarvisNative;if(N0&&N0.onDropPath)N0.onDropPath(async p=>{try{const r=await N0.fileRead({path:p});if(r&&r.b64){const bin=atob(r.b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);addFiles([new File([u],r.name||p.split(/[\\/]/).pop(),{type:r.mime||''})])}else if(r&&r.error)showToast(r.error,'FAYL')}catch(err){showToast(err.message,'FAYL')}})})();
 function takeAttachments(text){const imgs=ATT.items.filter(x=>x.kind==='image').map(x=>x.blob),docs=ATT.items.filter(x=>x.kind==='doc'&&x.text);
   const shown=ATT.items.slice();ATT.items=[];attBar();
   let extra='';docs.forEach(d=>{extra+=`\n\n[Biriktirilgan fayl: ${d.name}${/\.(docx|xlsx)$/i.test(d.name)?' — asl formatida tahrirlash uchun documents vositasida file="'+d.name+'"':''}]\n"""\n${d.text}\n"""`});
-  return{imgs,extra,shown,text:text||(imgs.length?'Bu rasmda nima bor? Batafsil tushuntir.':docs.length?'Bu faylni o\'qib, qisqa mazmunini ayt va nima qilish kerakligini so\'ra.':'')}}
+  return{imgs,extra,shown,text:text||(imgs.length?'Bu rasmni ko\'rib chiq: nima tasvirlangan, muhim tafsilotlar va fikringni qisqa ayt. Keyin so\'ra: tahrirlaymi, o\'xshashini qidiraymi, matnini ajratib beraymi yoki boshqa ish?':docs.length?'Men senga fayl tashladim. Uni ko\'rib chiq va o\'z fikringni bildir: 2-4 gapda bu qanday hujjat, asosiy mazmuni (muhim raqamlar, sanalar, ob\'ekt) va ko\'zingga tashlangan kamchilik yoki e\'tibor beradigan joylar. Keyin qisqa so\'ra: nima qilay — ovoz chiqarib o\'qib beraymi, tahrirlaymi (nimani o\'zgartirish kerak), xulosa yozaymi, xatolarini tekshiraymi yoki boshqa ish? Men aytganimga qarab ishla: o\'qish so\'ralsa read_aloud, tahrirlash so\'ralsa documents vositasi bilan asl formatda tahrirla — faylning ko\'rinishi va shakli (shrift, o\'lcham, jadval, chegaralar, kataklar, sahifa joylashuvi, sarlavhalar) aynan o\'zgarishsiz qolsin, faqat so\'ralgan matn yoki raqam almashsin; yangi fayl yaratma.':'')}}
 /* --- rasm bo'yicha qidiruv (Google Lens kabi) --- */
 async function imageSearch(blob){const N=NAT();
   ask('Bu rasmdagi narsani aniq aniqla (nima ekanligi, nomi, modeli, joyi). Keyin shunga o\'xshash rasmlarni web.images, ma\'lumot va narxlarni web.search bilan top va menga ko\'rsat. Eng yaxshi 3 variantni qisqa izohla.',{typed:true,images:[blob]});
@@ -2046,7 +2086,7 @@ async function tplLoad(name){let v=null;try{v=JSON.parse((await IDB.get('tpl_'+n
 async function tplSync(){const N=NAT();if(!N||!N.tplList)return;try{const r=await N.tplList();if(!r||!r.items)return;const idx=TPL.list;
   r.items.forEach(it=>{if(!idx.some(t=>t.name===it.name))idx.push({name:it.name,file:it.file||'',desc:it.desc||'',at:it.at||0,remote:true})});TPL.list=idx}catch(e){}}
 setTimeout(tplSync,9000);
-TOOLS.push({name:'documents',description:`HUJJATLAR bilan ishlash (Word/Excel ASL FORMATINI saqlagan holda). Biriktirilgan, yaratilgan va namuna fayllar shu yerda. action:
+TOOLS.push({name:'documents',description:`HUJJATLAR bilan ishlash (Word/Excel ASL FORMATINI saqlagan holda; faylning ko'rinishi — shrift, o'lcham, jadval, chegaralar, joylashuv — hech qachon o'zgarmasin, faqat so'ralgan matn almashadi). Biriktirilgan, yaratilgan va namuna fayllar shu yerda. action:
 - files — sessiyadagi fayllar ro'yxati;
 - read (file) — fayl matni: Word'da jadvallar [JADVAL n] va qatorlar r1, r2… bilan raqamlangan;
 - edit (file, output_name, replace:[{find,replace}], set_cells, add_rows:[{table,after_row?,rows:[[...]]}], delete_rows:[{table,rows:[..]}], delete_paragraphs:[matn], append: markdown) — Word: set_cells [{table,row,col,value}]; Excel: set_cells [{sheet,cell:'B5',value}] (raqam, matn yoki =formula), replace. ASL fayl o'zgarmaydi, YANGI fayl yaratilib foydalanuvchiga ko'rsatiladi. find — hujjatdagi matn bo'lagi AYNAN (bitta paragraf ichida); topilmasa — qisqaroq bo'lak bilan qayta urin.
@@ -2139,6 +2179,46 @@ TOOLS.push({name:'presenter',description:'NOTIQ — taqdimotni (PowerPoint .pptx
   execute:async a=>{let f=null;if(a.file){const x=findFile(a.file);if(x)f={bytes:x.bytes,name:x.name,mime:x.mime}}
     else{const x=Object.values(FILES).filter(v=>/\.(pptx|pdf)$/i.test(v.name)).sort((p,q)=>q.at-p.at)[0];if(x)f={bytes:x.bytes,name:x.name,mime:x.mime}}
     const r=await openNotiq(f);return r+(f?` — "${f.name}" yuklandi. Foydalanuvchiga ayt: "✨ Nutqni AI yozsin", keyin "▶ Namoyish" (yoki "🎬 MP4 video") ni bossin.`:'. Foydalanuvchi 📂 Ochish orqali taqdimot faylini tanlasin.')}});
+
+/* ============ O'QISH: istalgan faylni ovoz chiqarib o'qish ============ */
+// Kompyuter: O'QI (asl ko'rinish + Edge'ning tabiiy o'zbek ovozi). Telefon: O'QI oynasi. Brauzer: ichki o'qigich.
+async function openReader(file,o={}){
+  const N=NAT();
+  if(!file){const x=Object.values(FILES).filter(v=>/\.(pdf|docx|pptx|xlsx|txt|md|csv)$/i.test(v.name)).sort((p,q)=>q.at-p.at)[0];if(x)file=x}
+  if(N&&N.oqiOpen&&!window.JARVIS_MOBILE){
+    try{const r=await N.oqiOpen(file?{b64:await b2b64(new Blob([file.bytes])),name:file.name}:{});if(r&&!r.error){act('📖 O\'qish oynasi ochildi'+(file?': '+file.name:''));return file?`"${file.name}" alohida oynada asl ko'rinishida ochildi va ovoz chiqarib o'qilmoqda (tabiiy o'zbek ovozi). Boshqaruv: ▶/⏸, tezlik, 🎙 ovozli buyruqlar.`:'O\'qish oynasi ochildi — foydalanuvchi faylni o\'sha yerda tanlasin.'}}catch(e){console.warn('oqi',e)}}
+  if(window.JARVIS_MOBILE){let f=$('oqiFrame');
+    const send=()=>{if(file)$('oqiFrame').contentWindow.postMessage({oqiOpen:{bytes:file.bytes,name:file.name,auto:o.auto!==false}},'*')};
+    if(!f){f=document.createElement('iframe');f.id='oqiFrame';f.allow='autoplay';f.style.cssText='position:fixed;inset:0;width:100vw;height:100dvh;border:0;z-index:66;background:#e9edf3';f.src='oqi/index.html';document.body.appendChild(f);
+      const on=e=>{if(!e.data)return;if(e.data.oqi==='ready'){send()}if(e.data.oqi==='close'){const x=$('oqiFrame');if(x)x.remove();window.removeEventListener('message',on)}};window.addEventListener('message',on)}
+    else send();
+    stopSpeak();return file?`"${file.name}" o'qish oynasida ochildi va o'qilmoqda.`:'O\'qish oynasi ochildi.'}
+  // brauzer (va zaxira): ichki o'qigich
+  if(!file){pick('.docx,.xlsx,.pptx,.pdf,.txt,.csv,.md');return 'Foydalanuvchi faylni tanlasin — tanlangach o\'zi o\'qiy boshlaydi.'}
+  let text='';try{text=await fileText(file)}catch(e){addMsg('j','⚠ '+e.message);return 'Faylni o\'qib bo\'lmadi: '+e.message}
+  readerUI(file.name,text);return `"${file.name}" o'qilmoqda (ichki o'qigich).`}
+const RD={paras:[],i:0,on:false,gen:0,rate:1};
+function readerUI(name,text){let w=$('rdBox');if(w)w.remove();stopRead();
+  RD.paras=String(text).split(/\r?\n\s*\r?\n|\r?\n/).map(x=>x.replace(/^\s*\[(JADVAL|SLAYD|SAHIFA|VARAQ|LIST)[^\]]*\]\s*$/i,'').replace(/^\s*r\d+:\s*/,'').replace(/\s+\|\s+/g,', ').replace(/\s+/g,' ').trim()).filter(x=>/[\p{L}\d]/u.test(x));RD.i=0;
+  w=document.createElement('div');w.id='rdBox';w.innerHTML=`<div class="rdTop"><b>📖 ${esc(name)}</b><span id="rdPos"></span><button data-r="x" title="Yopish">✕</button></div><div class="rdBody">${RD.paras.map((p,i)=>`<p data-i="${i}">${esc(p)}</p>`).join('')}</div>
+   <div class="rdBar"><button data-r="prev">⏮</button><button data-r="play" class="big">▶</button><button data-r="next">⏭</button><button data-r="stop">⏹</button><span class="rdSp">${[0.8,1,1.25,1.5].map(v=>`<button data-sp="${v}" class="${v===RD.rate?'on':''}">${v===0.8?'🐢 ':v===1.5?'⚡ ':''}${v}×</button>`).join('')}</span></div>`;
+  document.body.appendChild(w);
+  w.onclick=e=>{const b=e.target.closest('button'),p=e.target.closest('p[data-i]');
+    if(p){readFrom(+p.dataset.i);return}if(!b)return;
+    if(b.dataset.sp){RD.rate=+b.dataset.sp;w.querySelectorAll('[data-sp]').forEach(x=>x.classList.toggle('on',x===b));if(RD.on)readFrom(RD.i);return}
+    ({x:()=>{stopRead();w.remove()},play:()=>RD.on?stopRead():readFrom(RD.i),stop:()=>{stopRead();RD.i=0;rdMark()},prev:()=>readFrom(Math.max(0,RD.i-1)),next:()=>readFrom(Math.min(RD.paras.length-1,RD.i+1))}[b.dataset.r]||(()=>{}))()};
+  rdMark();setTimeout(()=>readFrom(0),300)}
+function rdMark(){const w=$('rdBox');if(!w)return;w.querySelectorAll('p.cur').forEach(x=>x.classList.remove('cur'));const p=w.querySelector(`p[data-i="${RD.i}"]`);if(p){p.classList.add('cur');p.scrollIntoView({block:'center',behavior:'smooth'})}
+  $('rdPos').textContent=(RD.i+1)+' / '+RD.paras.length;const pb=w.querySelector('[data-r="play"]');if(pb)pb.textContent=RD.on?'⏸':'▶'}
+function stopRead(){RD.gen++;RD.on=false;stopSpeak();rdMark()}
+async function readFrom(i){stopSpeak();const g=++RD.gen;RD.on=true;RD.i=i;
+  for(;RD.i<RD.paras.length&&g===RD.gen;RD.i++){rdMark();const was=VS.rate;VS.rate=was*RD.rate;try{await speak(RD.paras[RD.i],{force:true})}catch(e){}finally{VS.rate=was}if(g!==RD.gen)return}
+  if(g===RD.gen){RD.on=false;RD.i=Math.max(0,RD.paras.length-1);rdMark();showToast('Hujjat oxirigacha o\'qildi','O\'QISH')}}
+TOOLS.push({name:'read_aloud',description:'HUJJATNI OVOZ CHIQARIB O\'QISH — istalgan fayl (PDF, Word .docx, PowerPoint .pptx, Excel .xlsx, matn) ni asl ko\'rinishida ochib, tabiiy o\'zbek ovozida o\'qib beradi (o\'qilayotgan joy belgilanadi, tezlik, pauza, ovozli buyruqlar). Foydalanuvchi "o\'qib ber", "ovoz chiqarib o\'qi", "faylni o\'qi", "eshittir" desa — shu vositani chaqir. file — biriktirilgan fayl nomi (bo\'lmasa oxirgisi). Matnni o\'zing qayta yozib o\'qima — shu vositani ishlat.',
+  inputSchema:{type:'object',properties:{file:{type:'string'}}},
+  execute:async a=>{const x=a.file?findFile(a.file):null;return await openReader(x?{bytes:x.bytes,name:x.name,mime:x.mime}:null)}});
+$('dockMore').onclick=e=>{e.stopPropagation();$('dock').classList.toggle('open');$('dockMore').textContent=$('dock').classList.contains('open')?'✕ Yopish':'☰ Yana'};
+$('dock').addEventListener('click',e=>{if(e.target.closest('.dx')){$('dock').classList.remove('open');$('dockMore').textContent='☰ Yana'}});
 
 /* ============ INPUT ============ */
 $('send').onclick=()=>ask($('inp').value,{typed:true});

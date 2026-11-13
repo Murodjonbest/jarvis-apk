@@ -5,6 +5,7 @@ package main
 
 import (
 	"crypto/rand"
+	"crypto/sha1"
 	"encoding/base64"
 	"unicode/utf16"
 	"embed"
@@ -19,6 +20,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -27,7 +29,7 @@ import (
 var appFS embed.FS
 
 const port = "47811"
-const version = "1.1.0"
+const version = "1.2.0"
 
 var (
 	token    string
@@ -142,6 +144,25 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{"path": strings.TrimSpace(strings.TrimPrefix(string(out), "\uFEFF"))})
 	})
+	mux.HandleFunc("/api/topdf", func(w http.ResponseWriter, r *http.Request) {
+		if !ok(r) || r.Method != "POST" {
+			http.Error(w, "no", 403)
+			return
+		}
+		body, err := io.ReadAll(io.LimitReader(r.Body, 200<<20))
+		if err != nil {
+			http.Error(w, "read", 400)
+			return
+		}
+		lastPing.Store(time.Now().Unix())
+		pdf, msg := docToPdf(body, r.URL.Query().Get("ext"))
+		if pdf == nil {
+			http.Error(w, msg, 422)
+			return
+		}
+		w.Header().Set("Content-Type", "application/pdf")
+		w.Write(pdf)
+	})
 	mux.HandleFunc("/api/file", func(w http.ResponseWriter, r *http.Request) {
 		if !ok(r) {
 			http.Error(w, "no", 403)
@@ -239,4 +260,59 @@ func install() {
 		reg(k+`\command`, "/ve", "/d", cmd)
 	}
 	os.WriteFile(marker, []byte(exe+"|"+version), 0644)
+}
+
+// Word/PowerPoint (yoki WPS) orqali PDF — hujjat ko'rinishi aynan asl fayldagidek chiqishi uchun
+var pdfCache = map[string][]byte{}
+var pdfMu sync.Mutex
+
+func docToPdf(buf []byte, ext string) ([]byte, string) {
+	ext = strings.ToLower(strings.TrimPrefix(ext, "."))
+	pdfMu.Lock()
+	defer pdfMu.Unlock()
+	h := sha1.Sum(buf)
+	key := hex.EncodeToString(h[:])
+	if b, ok := pdfCache[key]; ok {
+		return b, ""
+	}
+	dir, err := os.MkdirTemp("", "oqipdf")
+	if err != nil {
+		return nil, "temp"
+	}
+	defer os.RemoveAll(dir)
+	in := filepath.Join(dir, "in."+ext)
+	out := filepath.Join(dir, "out.pdf")
+	os.WriteFile(in, buf, 0644)
+	q := func(s string) string { return strings.ReplaceAll(s, "'", "''") }
+	var body string
+	if ext == "pptx" || ext == "ppt" || ext == "ppsx" || ext == "pps" {
+		body = `foreach($pid0 in @('PowerPoint.Application','KWPP.Application')){ if($ok){break}; try { $a=New-Object -ComObject $pid0; $p=$a.Presentations.Open($in,$true,$false,$false); $p.SaveAs($out,32); $p.Close(); try{$a.Quit()}catch{}; $ok=$true } catch { $err+=$_.Exception.Message+' | ' } }`
+	} else {
+		body = `foreach($pid0 in @('Word.Application','KWps.Application')){ if($ok){break}; try { $a=New-Object -ComObject $pid0; $a.Visible=$false; $a.DisplayAlerts=0; $d=$a.Documents.Open($in,$false,$true,$false); $d.ExportAsFixedFormat($out,17); $d.Close($false); try{$a.Quit()}catch{}; $ok=$true } catch { $err+=$_.Exception.Message+' | ' } }`
+	}
+	script := "$ErrorActionPreference='Stop'\n$in='" + q(in) + "'; $out='" + q(out) + "'; $ok=$false; $err=''\n" + body + "\nif($ok){'OK'}else{'ERR: '+$err}"
+	cmd := psCmd(script)
+	done := make(chan []byte, 1)
+	go func() { o, _ := cmd.CombinedOutput(); done <- o }()
+	var o []byte
+	select {
+	case o = <-done:
+	case <-time.After(120 * time.Second):
+		if cmd.Process != nil {
+			cmd.Process.Kill()
+		}
+		return nil, "vaqt tugadi"
+	}
+	b, err := os.ReadFile(out)
+	if err != nil || len(b) == 0 {
+		if strings.Contains(string(o), "80040154") {
+			return nil, "Word/PowerPoint topilmadi"
+		}
+		return nil, "aylantirib bo'lmadi"
+	}
+	if len(pdfCache) > 20 {
+		pdfCache = map[string][]byte{}
+	}
+	pdfCache[key] = b
+	return b, ""
 }

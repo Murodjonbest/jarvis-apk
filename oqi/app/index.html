@@ -110,6 +110,8 @@ body.dark .warn{background:#2c2410;border-color:#6b5320;color:#f2d18b}
 #heard{position:fixed;right:24px;bottom:112px;background:var(--panel);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;padding:8px 14px;font-size:14px;box-shadow:var(--shadow);opacity:0;transition:opacity .3s;z-index:7;max-width:420px}
 #toast{position:fixed;left:50%;top:72px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 18px;border-radius:14px;display:none;z-index:9;max-width:90vw;box-shadow:var(--shadow);font-size:14px}
 #loading{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.18);z-index:8}#loading div{background:var(--solid);padding:18px 26px;border-radius:16px;box-shadow:var(--shadow)}
+html.view #player,html.view #side,html.view #bOpen,html.view #bSet,html.view #bDark,html.view #bSide,html.view .brand,html.view #empty,html.view .slnum{display:none!important}html.view #main{padding:10px 8px 20px}html.view #top{display:none}html.view .s.cur,html.view .pg .hb.cur{background:none!important;box-shadow:none!important}html.view .s{cursor:default}html.view .s:hover,html.view .pg .hb:hover{background:none}
+@media(max-width:700px){#top{gap:6px;padding:0 8px}.brand{font-size:0;gap:0}#fname,.grp,#bSide{display:none}#bOpen{font-size:0;padding:0 10px}#bOpen::before{content:'📂';font-size:17px}.ib{min-width:34px;height:34px;padding:0 8px}#main{padding:12px 6px 210px}.spd>div:last-child{display:none}.chips button{padding:5px 7px;font-size:12px}#player{bottom:8px;padding:10px}}
 @media(max-width:900px){#side{display:none}.spd input{width:90px}#player{grid-template-columns:1fr;gap:8px}.right{justify-content:space-between}}
 </style>
 </head>

@@ -204,9 +204,11 @@ ipcMain.handle('g:login', async () => {
       const u = new URL(req.url, 'http://127.0.0.1'); const code = u.searchParams.get('code');
       if (!code && !u.searchParams.get('error')) { res.end(); return; }
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end('<html><body style="font-family:sans-serif;background:#03080f;color:#8be9ff;text-align:center;padding-top:80px"><h2>JARVIS: Google ulandi ✓</h2><p>Bu oynani yopib, Jarvisga qaytishingiz mumkin.</p></body></html>');
+      const gerr = u.searchParams.get('error');
+      res.end(gerr ? '<html><body style="font-family:sans-serif;background:#03080f;color:#ffd27a;padding:60px;max-width:760px;margin:auto;line-height:1.6"><h2>JARVIS: Google ruxsat bermadi (' + gerr + ')</h2><p>Bu odatda <b>403 access_denied</b> — Google loyihangiz "Testing" holatida va sizning hisobingiz sinovchilar ro\'yxatida yo\'q.</p><ol><li><a style="color:#8be9ff" href="https://console.cloud.google.com/auth/audience">console.cloud.google.com/auth/audience</a> ni oching</li><li><b>Test users → + Add users</b> → o\'z Gmail manzilingizni yozib <b>Save</b></li><li>(yoki <b>Publish app</b> tugmasini bosing)</li><li>Jarvisga qaytib, <b>Google bilan kirish</b> ni qayta bosing</li></ol><p>"Google hasn\'t verified this app" chiqsa: <b>Advanced → Go to … (unsafe)</b> → barcha belgilarni qo\'ying → <b>Continue</b>.</p></body></html>'
+        : '<html><body style="font-family:sans-serif;background:#03080f;color:#8be9ff;text-align:center;padding-top:80px"><h2>JARVIS: Google ulandi ✓</h2><p>Bu oynani yopib, Jarvisga qaytishingiz mumkin.</p></body></html>');
       srv.close();
-      if (u.searchParams.get('state') !== state || !code) return resolve({ error: u.searchParams.get('error') || 'state xato' });
+      if (u.searchParams.get('state') !== state || !code) return resolve({ error: u.searchParams.get('error') === 'access_denied' ? '403 access_denied — Google Cloud → Audience → Test users ga o\'z Gmail\'ingizni qo\'shing (yoki Publish app), keyin qayta kiring. Batafsil yo\'riqnoma brauzerda ochildi.' : (u.searchParams.get('error') || 'state xato') });
       try {
         const r = await fetchT('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({ code, client_id: c.clientId, client_secret: c.clientSecret, redirect_uri: redirect, grant_type: 'authorization_code', code_verifier: verifier }) }, 30000);
@@ -237,7 +239,12 @@ async function gToken() {
 async function gfetch(url, opts = {}) {
   const tok = await gToken();
   const r = await fetchT(url, { ...opts, headers: { ...(opts.headers || {}), Authorization: 'Bearer ' + tok } }, 60000);
-  if (!r.ok) { const t = await r.text(); throw Object.assign(new Error(r.status + ' ' + t.slice(0, 200)), { code: /storageQuota|quotaExceeded/.test(t) ? 'quota' : 'drive' }); }
+  if (!r.ok) { const t = await r.text();
+    if (r.status === 403) { let j = {}; try { j = JSON.parse(t); } catch (e) {} const det = JSON.stringify(j); const svc = (det.match(/"service":"([^"]+)"/) || [])[1] || (url.match(/googleapis\.com\/(\w+)/) || [])[1] || ''; const act = (det.match(/"activationUrl":"([^"]+)"/) || [])[1];
+      if (/SERVICE_DISABLED|accessNotConfigured|has not been used|is disabled/i.test(t)) throw Object.assign(new Error('403: Google Cloud loyihangizda ' + (svc || 'bu API') + ' yoqilmagan. Oching: ' + (act || ('https://console.cloud.google.com/apis/library/' + (svc || ''))) + ' → "Enable / Включить" ni bosing, 2-3 daqiqa kuting va qayta urinib ko\'ring.'), { code: 'api_disabled' });
+      if (/insufficient|ACCESS_TOKEN_SCOPE_INSUFFICIENT|insufficientPermissions/i.test(t)) throw Object.assign(new Error('403: Google\'ga kirishda hamma ruxsatlar berilmagan. ⚙ Sozlash → Google → "Chiqish" qiling va qayta kirib, Drive, Gmail, Calendar belgilarining hammasini qo\'ying.'), { code: 'relogin' });
+      if (/quota|rateLimit/i.test(t)) throw Object.assign(new Error('403: Google limitiga yetildi — birozdan keyin urinib ko\'ring.'), { code: 'quota' }); }
+    throw Object.assign(new Error(r.status + ' ' + t.slice(0, 200)), { code: /storageQuota|quotaExceeded/.test(t) ? 'quota' : 'drive' }); }
   return r;
 }
 const MEM_FILE = 'jarvis_xotira.json', MEM_FOLDER = 'Jarvis xotira';
@@ -370,7 +377,7 @@ ipcMain.handle('tts:cfg', (e, upd) => { let raw = {}; try { raw = JSON.parse(fs.
 const os = require('os'); const { execFile } = require('child_process');
 const APPS = { word: 'winword', excel: 'excel', powerpoint: 'powerpnt', chrome: 'chrome', edge: 'msedge', firefox: 'firefox', 'fayl': 'explorer', explorer: 'explorer', provodnik: 'explorer',
   kalkulyator: 'calc', calculator: 'calc', bloknot: 'notepad', notepad: 'notepad', paint: 'mspaint', telegram: 'telegram', autocad: 'acad', photoshop: 'photoshop', 'sozlamalar': 'ms-settings:', settings: 'ms-settings:', 'vazifalar': 'taskmgr', taskmgr: 'taskmgr', cmd: 'cmd', powershell: 'powershell' };
-const HOME = os.homedir(), ROOTS = ['Desktop', 'Documents', 'Downloads', 'OneDrive', 'Pictures'].map(d => path.join(HOME, d)).filter(d => fs.existsSync(d));
+const HOME = os.homedir(), ROOTS = ['Desktop', 'Documents', 'Downloads', 'OneDrive', 'Pictures', 'Videos', 'Music'].map(d => path.join(HOME, d)).concat(process.platform === 'win32' ? 'DEFGHIJ'.split('').map(l => l + ':\\') : []).filter(d => { try { return fs.existsSync(d); } catch (e) { return false; } });
 function walk(dir, q, out, depth) { if (depth > 5 || out.length >= 60) return; let ents = []; try { ents = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return; }
   for (const e of ents) { if (out.length >= 60) return; if (e.name.startsWith('.') || e.name === 'node_modules' || e.name === 'AppData') continue; const f = path.join(dir, e.name);
     if (e.name.toLowerCase().includes(q)) { let st = {}; try { st = fs.statSync(f); } catch (er) {} out.push({ path: f, dir: e.isDirectory(), size: st.size, modified: st.mtime }); }
@@ -728,7 +735,7 @@ ipcMain.handle('gapi:describe', (e, { tool }) => { const s = GSCHEMA[tool]; if (
 ipcMain.handle('gapi:call', async (e, { server, tool, input }) => {
   const f = GAPI[server] && GAPI[server][tool]; if (!f) return { error: { code: 'not_in_manifest', message: 'Bunday vosita yo\'q' } };
   try { return { payload: await f(input || {}) }; }
-  catch (err) { const m = String(err.message || err); return { error: { code: err.code === 'no_login' ? 'server_not_connected' : /\b401\b|invalid_grant|relogin/.test(m) ? 'needs_reauth' : /\b403\b/.test(m) ? 'not_in_manifest' : /fetch failed|ENOTFOUND|abort/i.test(m) ? 'server_unavailable' : 'tool_error', message: m.slice(0, 400) } }; }
+  catch (err) { const m = String(err.message || err); return { error: { code: err.code === 'no_login' ? 'server_not_connected' : /\b401\b|invalid_grant|relogin/.test(m) || err.code === 'relogin' ? 'needs_reauth' : /fetch failed|ENOTFOUND|abort/i.test(m) ? 'server_unavailable' : 'tool_error', message: m.slice(0, 400) } }; }
 });
 
 
@@ -802,7 +809,7 @@ function createWindow() {
   win.on('close', e => { if (!app.__quitting) { e.preventDefault(); win.hide(); if (!trayTipShown) { trayTipShown = true; try { new Notification({ title: 'JARVIS fonda ishlayapti', body: '"Jarvis" deb chaqiring yoki pastdagi belgini bosing. To\'liq chiqish — belgi ustida o\'ng tugma → Chiqish.' }).show(); } catch (er) {} } } });
   makeTray();
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:\/\//.test(url)) shell.openExternal(url); return { action: 'deny' }; });
-  win.webContents.on('will-navigate', (e, url) => { if (!url.startsWith('jarvis:')) { e.preventDefault(); shell.openExternal(url); } });
+  win.webContents.on('will-navigate', (e, url) => { if (url.startsWith('jarvis:')) return; e.preventDefault(); if (url.startsWith('file:')) { try { const { fileURLToPath } = require('url'); win.webContents.send('drop:path', fileURLToPath(url)); } catch (er) {} return; } shell.openExternal(url); });
   win.loadURL('jarvis://app/index.html');
   TG.win = win; const t = tgCfg(); if (t.token && t.owner && t.enabled !== false) { TG.on = true; tgLoop(); }
   if (process.argv.includes('--notiq')) openNotiq();
@@ -904,6 +911,100 @@ ipcMain.handle('tts:azure', async (e, { key, region, voice, text, rate }) => {
   } catch (err) { return { error: err.message }; }
 });
 // ish stoli va Pusk menyusida alohida "Notiq" belgisi (bir marta)
+ipcMain.handle('file:read', async (e, { path: p } = {}) => { try { const st = fs.statSync(p); if (!st.isFile()) return { error: 'Bu fayl emas' }; if (st.size > 80 * 1024 * 1024) return { error: 'Fayl juda katta (80 MB dan ortiq)' };
+  const ext = path.extname(p).toLowerCase(); const mime = { '.pdf': 'application/pdf', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif', '.txt': 'text/plain' }[ext] || '';
+  return { b64: fs.readFileSync(p).toString('base64'), name: path.basename(p), mime }; } catch (err) { return { error: String(err.message || err) }; } });
+/* ===== Hujjatni Word/PowerPoint orqali PDF ga aylantirish — ko'rinish aynan asl fayldagidek bo'lishi uchun ===== */
+const PDFCACHE = new Map();
+async function docToPdf(buf, ext) {
+  if (process.platform !== 'win32') return { error: 'Faqat Windows' };
+  ext = String(ext || '').toLowerCase().replace(/^\./, '');
+  const key = crypto.createHash('sha1').update(buf).digest('hex'); if (PDFCACHE.has(key)) return { pdf: PDFCACHE.get(key) };
+  const dir = path.join(app.getPath('temp'), 'jpdf-' + Date.now()); fs.mkdirSync(dir, { recursive: true });
+  const inp = path.join(dir, 'in.' + ext), out = path.join(dir, 'out.pdf'); fs.writeFileSync(inp, buf);
+  const q = s => s.replace(/'/g, "''"); const isP = /^(pptx|ppt|pps|ppsx)$/.test(ext);
+  const script = `$ErrorActionPreference='Stop'
+$in='${q(inp)}'; $out='${q(out)}'; $ok=$false; $err=''
+${isP ? `foreach($pid0 in @('PowerPoint.Application','KWPP.Application')){ if($ok){break}; try { $a=New-Object -ComObject $pid0; $p=$a.Presentations.Open($in,$true,$false,$false); $p.SaveAs($out,32); $p.Close(); try{$a.Quit()}catch{}; $ok=$true } catch { $err+=$_.Exception.Message+' | ' } }`
+         : `foreach($pid0 in @('Word.Application','KWps.Application')){ if($ok){break}; try { $a=New-Object -ComObject $pid0; $a.Visible=$false; $a.DisplayAlerts=0; $d=$a.Documents.Open($in,$false,$true,$false); $d.ExportAsFixedFormat($out,17); $d.Close($false); try{$a.Quit()}catch{}; $ok=$true } catch { $err+=$_.Exception.Message+' | ' } }`}
+if($ok -and (Test-Path $out)){ 'OK' } else { 'ERR: '+$err }`;
+  try {
+    const r = await psRun(script, 120000);
+    if (!fs.existsSync(out)) return { error: /80040154|not registered|ProgID/i.test(r.out + r.se) ? (isP ? 'PowerPoint' : 'Word') + ' topilmadi' : 'Aylantirib bo\'lmadi' };
+    const pdf = fs.readFileSync(out); PDFCACHE.set(key, pdf); if (PDFCACHE.size > 20) PDFCACHE.delete(PDFCACHE.keys().next().value); return { pdf };
+  } catch (err) { return { error: String(err.message || err) }; } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch (er) {} }
+}
+ipcMain.handle('doc:topdf', async (e, { b64, ext } = {}) => { const r = await docToPdf(Buffer.from(b64 || '', 'base64'), ext); return r.pdf ? { b64: r.pdf.toString('base64') } : r; });
+
+/* ===== O'QI: hujjatni asl ko'rinishda ochib, Edge'ning tabiiy o'zbek ovozida (Madina/Sardor) o'qish ===== */
+let OQI = null;
+function oqiRoot() { const a = path.join(__dirname, 'oqi'); return fs.existsSync(path.join(a, 'index.html')) ? a : path.join(BASE_APP, 'oqi'); }
+function oqiServer() {
+  if (OQI) return Promise.resolve(OQI);
+  return new Promise((res, rej) => {
+    const st = { token: crypto.randomBytes(16).toString('hex'), queue: [], waiters: [], mem: {}, ping: 0 };
+    const srv = http.createServer(async (req, resp) => {
+      try {
+        const u = new URL(req.url, 'http://x'); const send = (code, body, ct) => { resp.writeHead(code, { 'Content-Type': ct || 'text/plain', 'Cache-Control': 'no-cache' }); resp.end(body); };
+        const json = o => send(200, JSON.stringify(o), 'application/json');
+        if (u.pathname.startsWith('/api/')) {
+          if (u.searchParams.get('k') !== st.token) return send(403, 'no');
+          st.ping = Date.now();
+          if (u.pathname === '/api/ping') return send(200, 'jarvis');
+          if (u.pathname === '/api/next') {
+            if (st.queue.length) return json({ path: st.queue.shift() });
+            const fn = p => { clearTimeout(t); json({ path: p }); };
+            const t = setTimeout(() => { st.waiters = st.waiters.filter(w => w !== fn); json({}); }, 25000);
+            st.waiters.push(fn); req.on('close', () => { clearTimeout(t); st.waiters = st.waiters.filter(w => w !== fn); }); return;
+          }
+          if (u.pathname === '/api/topdf' && req.method === 'POST') { const ch = []; for await (const c of req) ch.push(c); const r = await docToPdf(Buffer.concat(ch), u.searchParams.get('ext')); return r.pdf ? send(200, r.pdf, 'application/pdf') : send(422, r.error || 'xato'); }
+          if (u.pathname === '/api/pick') { const { dialog } = require('electron'); const r = await dialog.showOpenDialog({ title: "O'QI — hujjatni tanlang", properties: ['openFile'], filters: [{ name: 'Hujjatlar', extensions: ['pdf', 'docx', 'pptx', 'xlsx', 'txt'] }, { name: 'Barcha fayllar', extensions: ['*'] }] }); return json({ path: r.canceled ? '' : r.filePaths[0] }); }
+          if (u.pathname === '/api/file') {
+            const p = u.searchParams.get('path') || '';
+            if (p.startsWith('mem:')) { const b = st.mem[p]; return b ? send(200, b, 'application/octet-stream') : send(404, 'no'); }
+            if (!/\.(pdf|docx|pptx|xlsx|txt|md|csv|doc|ppt|xls)$/i.test(p) || !fs.existsSync(p)) return send(404, 'no');
+            resp.writeHead(200, { 'Content-Type': 'application/octet-stream' }); return fs.createReadStream(p).pipe(resp);
+          }
+          return send(404, 'no');
+        }
+        const root = oqiRoot(); const f = path.normalize(path.join(root, decodeURIComponent(u.pathname === '/' ? '/index.html' : u.pathname)));
+        if (!f.startsWith(root) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) return send(404, 'no');
+        const ct = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.png': 'image/png', '.css': 'text/css', '.gz': 'application/gzip' }[path.extname(f).toLowerCase()] || 'application/octet-stream';
+        resp.writeHead(200, { 'Content-Type': ct, 'Cache-Control': 'no-cache' }); fs.createReadStream(f).pipe(resp);
+      } catch (e) { try { resp.writeHead(500); resp.end(String(e)); } catch (er) {} }
+    });
+    srv.once('error', () => { srv.listen(0, '127.0.0.1'); });
+    srv.on('listening', () => { st.port = srv.address().port; OQI = st; res(st); });
+    srv.listen(47812, '127.0.0.1');
+  });
+}
+function edgeExe() {
+  const c = [path.join(process.env['ProgramFiles(x86)'] || '', 'Microsoft\\Edge\\Application\\msedge.exe'), path.join(process.env.ProgramFiles || '', 'Microsoft\\Edge\\Application\\msedge.exe'), path.join(process.env.LOCALAPPDATA || '', 'Microsoft\\Edge\\Application\\msedge.exe')];
+  return c.find(x => { try { return fs.statSync(x).isFile(); } catch (e) { return false; } }) || '';
+}
+let OQIWIN = null;
+ipcMain.handle('oqi:open', async (e, a = {}) => {
+  try {
+    const st = await oqiServer(); let p = a.path || '';
+    if (a.b64) { p = 'mem:' + Date.now() + '/' + String(a.name || 'hujjat.txt').replace(/[\\/]/g, '_'); st.mem[p] = Buffer.from(a.b64, 'base64'); const ks = Object.keys(st.mem); if (ks.length > 12) delete st.mem[ks[0]]; }
+    const open = Date.now() - st.ping < 35000;
+    if (p) { const w = st.waiters.shift(); if (w) w(p); else st.queue.push(p); }
+    if (open) { if (OQIWIN && !OQIWIN.isDestroyed()) { OQIWIN.show(); OQIWIN.focus(); } return { ok: true, reused: true }; }
+    const url = `http://127.0.0.1:${st.port}/?k=${st.token}&auto=1`;
+    const edge = edgeExe();
+    if (edge && !a.inApp) {
+      const prof = path.join(app.getPath('userData'), 'oqi-edge');
+      if (!fs.existsSync(prof)) { fs.mkdirSync(path.join(prof, 'Default'), { recursive: true }); fs.writeFileSync(path.join(prof, 'Default', 'Preferences'), JSON.stringify({ browser: { has_seen_welcome_page: true }, profile: { content_settings: { exceptions: { media_stream_mic: { [`http://127.0.0.1:${st.port},*`]: { last_modified: '13370000000000000', setting: 1 } } } } } })); }
+      require('child_process').spawn(edge, ['--app=' + url, '--user-data-dir=' + prof, '--no-first-run', '--no-default-browser-check', '--window-size=1280,900', '--autoplay-policy=no-user-gesture-required'], { detached: true, stdio: 'ignore' }).unref();
+      return { ok: true, edge: true };
+    }
+    if (OQIWIN && !OQIWIN.isDestroyed()) { OQIWIN.show(); OQIWIN.focus(); return { ok: true }; }
+    OQIWIN = new BrowserWindow({ width: 1280, height: 880, title: "O'QI — hujjat o'qish", autoHideMenuBar: true, icon: path.join(oqiRoot(), 'icon.png'), webPreferences: { autoplayPolicy: 'no-user-gesture-required' } });
+    OQIWIN.loadURL(url); OQIWIN.on('closed', () => { OQIWIN = null; });
+    return { ok: true, edge: false };
+  } catch (err) { return { error: String(err.message || err) }; }
+});
+
 app.whenReady().then(() => { if (process.platform !== 'win32') return; try { const f = path.join(app.getPath('userData'), '.notiq-shortcut'); if (fs.existsSync(f)) return;
   const exe = process.execPath.replace(/'/g, "''"); const ico = path.join(BASE_APP, 'notiq.ico').replace(/'/g, "''");
   psRun(`$s=New-Object -ComObject WScript.Shell; foreach($d in @([Environment]::GetFolderPath('Desktop'),(Join-Path $env:APPDATA 'Microsoft\\Windows\\Start Menu\\Programs'))){ $l=$s.CreateShortcut((Join-Path $d 'Notiq — taqdimot.lnk')); $l.TargetPath='${exe}'; $l.Arguments='--notiq'; $l.WorkingDirectory='${path.dirname(process.execPath).replace(/'/g, "''")}'; if(Test-Path '${ico}'){ $l.IconLocation='${ico}' }; $l.Description='Taqdimotni tabiiy ovozda gapirib beradi'; $l.Save() }`, 30000)

@@ -42,7 +42,7 @@
   function dockBtn(re) { return [...document.querySelectorAll('#dock > button')].find(b => re.test(b.textContent)); }
   function splitLabel(t) { const m = /^(\p{Extended_Pictographic}[️‍\p{Extended_Pictographic}]*)\s*(.*)$/u.exec(t.trim()); return m ? [m[1], m[2]] : ['•', t.trim()]; }
   function openSheet() {
-    const apps = [...document.querySelectorAll('#dock > button')].filter(b => !/Modellar/.test(b.textContent));
+    const apps = [...document.querySelectorAll('#dock > button')].filter(b => !/Modellar/.test(b.textContent) && !b.classList.contains('dmore'));
     const wins = [...document.querySelectorAll('#dockWins button')];
     let h = '<div class="grab"></div>';
     if (wins.length) h += '<h4>OCHIQ OYNALAR</h4><div class="wl">' + wins.map((b, i) => `<button data-w="${i}"><span>${esc(b.textContent)}</span><i data-x="${i}">✕</i></button>`).join('') + '</div>';

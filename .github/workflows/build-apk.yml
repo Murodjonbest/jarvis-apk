@@ -2,7 +2,7 @@ name: APK yig'ish
 on:
   push:
     branches: [main]
-    paths-ignore: ['oqi/**', '.github/workflows/oqi.yml']
+    paths-ignore: ['.github/workflows/oqi.yml']
   workflow_dispatch:
 permissions:
   contents: write
@@ -74,6 +74,7 @@ jobs:
           node -e "const f='desktop/app/package.json';const p=JSON.parse(require('fs').readFileSync(f,'utf8'));p.version='$V';require('fs').writeFileSync(f,JSON.stringify(p))"
           tar -czf desktop/app/vendor/vosk-model.tar.gz -C /tmp/m vosk-model-small-en-us-0.15
           mkdir -p desktop/app/vendor/ffmpeg && curl -sSL https://github.com/eugeneware/ffmpeg-static/releases/download/b6.0/ffmpeg-win32-x64.gz | gunzip > desktop/app/vendor/ffmpeg/ffmpeg.exe && ls -la desktop/app/vendor/ffmpeg
+          rm -rf desktop/app/oqi && cp -r oqi/app desktop/app/oqi && rm -f desktop/app/oqi/vendor/vosk*
           (cd desktop/app && zip -qr ../../jarvis-desktop-update.zip . -x 'vendor/pyodide/*' -x 'vendor/model/*' -x 'vendor/vosk-model.tar.gz' -x 'vendor/ffmpeg/*')
           curl -sSL -o /tmp/el.zip https://github.com/electron/electron/releases/download/v45.3.0/electron-v45.3.0-win32-x64.zip
           rm -rf /tmp/J && mkdir -p /tmp/J/Jarvis && unzip -q /tmp/el.zip -d /tmp/J/Jarvis

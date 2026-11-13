@@ -1,9 +1,16 @@
 'use strict';
 /* O'QI — hujjatni asl ko'rinishida ko'rsatib, ovoz chiqarib o'qiydi */
+const EMBED = window.parent !== window;
+const PAR = (() => { try { return EMBED && window.parent.JARVIS_MOBILE ? window.parent : null; } catch (e) { return null; } })();
+const SS = PAR && PAR.speechSynthesis ? PAR.speechSynthesis : window.speechSynthesis;
+const SU = PAR && PAR.SpeechSynthesisUtterance ? PAR.SpeechSynthesisUtterance : window.SpeechSynthesisUtterance;
+const AUTO = new URLSearchParams(location.search).get('auto') === '1';
+const VIEW = new URLSearchParams(location.search).get('view') === '1'; // Jarvis ichidagi ko'rinish (faqat asl ko'rinishni ko'rsatadi)
+if (VIEW) document.documentElement.classList.add('view');
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-let toastT; function toast(t, ms) { const m = $('toast'); m.textContent = t; m.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => m.style.display = 'none', ms || 3000); }
+let toastT; function toast(t, ms) { if (VIEW) return; const m = $('toast'); m.textContent = t; m.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => m.style.display = 'none', ms || 3000); }
 const ST = { get(k, d) { try { const v = localStorage.getItem('oqi_' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('oqi_' + k, JSON.stringify(v)); } catch (e) {} } };
 const loading = on => $('loading').style.display = on ? 'grid' : 'none';
 
@@ -16,7 +23,7 @@ const NATIVE = { on: false,
   async pick() { const r = await fetch('/api/pick?k=' + K); const j = await r.json(); return j.path || ''; },
   async file(p) { const r = await fetch('/api/file?k=' + K + '&path=' + encodeURIComponent(p)); if (!r.ok) throw new Error(r.status === 404 ? 'Fayl topilmadi: ' + p : 'Faylni o\'qib bo\'lmadi'); return await r.blob(); }
 };
-async function openPath(p) { try { loading(true); const b = await NATIVE.file(p); await openFile(new File([b], p.split(/[\\/]/).pop()), p); } catch (e) { loading(false); toast('✕ ' + e.message, 6000); } }
+async function openPath(p) { try { loading(true); const b = await NATIVE.file(p); await openFile(new File([b], p.split(/[\\/]/).pop()), p); if (AUTO && DOC && DOC.paras.length) setTimeout(() => play(), 400); } catch (e) { loading(false); toast('✕ ' + e.message, 6000); } }
 async function pickFile() { if (NATIVE.on) { try { const p = await NATIVE.pick(); if (p) openPath(p); } catch (e) { $('fin').click(); } } else $('fin').click(); }
 
 /* ============ JUMLALARGA AJRATISH ============ */
@@ -71,7 +78,7 @@ async function rels(z, file) { const rp = joinPath(file, '_rels/' + file.split('
 /* ============ PDF ============ */
 let pdfLib = null;
 function pdfjs() { if (!pdfLib) { pdfLib = window.pdfjsLib; pdfLib.GlobalWorkerOptions.workerSrc = new URL('vendor/pdf.worker.min.js', location.href).href; } return pdfLib; }
-async function buildPdf(bytes, host) {
+async function buildPdf(bytes, host, unit = 'sahifa', notes = null) {
   const lib = pdfjs(); const pdf = await lib.getDocument({ data: bytes }).promise; const W = 880;
   const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting && !e.target._done) { e.target._done = 1; e.target._render(); } }), { rootMargin: '600px' });
   let anyText = false;
@@ -80,7 +87,7 @@ async function buildPdf(bytes, host) {
     const pg = document.createElement('div'); pg.className = 'pg'; pg.style.width = W + 'px'; pg.style.height = H + 'px';
     const cv = document.createElement('canvas'); const ov = document.createElement('div'); ov.className = 'ov'; pg.append(cv, ov); host.appendChild(pg);
     pg._render = async () => { const sc = W * Math.min(2.5, (devicePixelRatio || 1) * 1.6) / vp.width; const v2 = page.getViewport({ scale: sc }); cv.width = v2.width; cv.height = v2.height; await page.render({ canvasContext: cv.getContext('2d'), viewport: v2 }).promise; };
-    io.observe(pg); newPage(pg, i + '-sahifa');
+    io.observe(pg); newPage(pg, i + '-' + unit);
     const tc = await page.getTextContent(); const U = lib.Util;
     const items = tc.items.filter(it => it.str !== undefined).map(it => { const tx = U.transform(vp.transform, it.transform); const h = Math.hypot(tx[2], tx[3]) || 10; const w = it.width * (vp.scale || 1); return { s: it.str, x: tx[4], y: tx[5] - h * 0.9, w, h: h * 1.15, eol: it.hasEOL, base: tx[5] }; });
     // qatorlar
@@ -107,6 +114,7 @@ async function buildPdf(bytes, host) {
         if (gap > prev.h * 1.75 || gap < -2 || Math.abs(l.h - prev.h) > prev.h * 0.25 || (/[.!?:;]$/.test(prev.text) && pw < maxW * 0.9) || pw < maxW * 0.55 || /^([•\-–▪●○■◦►✓]|\d{1,2}[.)]\s)/.test(l.text)) flush(); }
       para.push(l); });
     flush();
+    if (notes && notes[i - 1] && notes[i - 1].length) { const nb = document.createElement('div'); nb.className = 'notes'; nb.style.width = W + 'px'; nb.innerHTML = '<b>📝 Ma\'ruzachi izohlari</b>'; host.insertBefore(nb, pg.nextSibling); for (const t of notes[i - 1]) { const p = document.createElement('p'); p.textContent = t; nb.appendChild(p); addBlock(p, { notes: true }); } }
   }
   if (!anyText) toast('⚠ Bu PDF skaner qilingan (ichida matn yo\'q) — sahifalar ko\'rinadi, lekin o\'qib bo\'lmaydi', 9000);
 }
@@ -247,23 +255,40 @@ async function plainZip(z, host, kind) {
 function buildText(text, host) { const card = document.createElement('div'); card.className = 'txt'; host.appendChild(card); newPage(card, 'Matn');
   text.split(/\r?\n\s*\r?\n|\r?\n/).map(s => s.trim()).filter(Boolean).forEach(s => { const p = document.createElement('p'); p.textContent = s; card.appendChild(p); addBlock(p); }); }
 
+/* ============ ASL KO'RINISH: Word/PowerPoint orqali PDF ============ */
+async function nativePdf(bytes, ext) {
+  try { const JN = EMBED && window.parent.jarvisNative; if (JN && JN.docToPdf) { let b = ''; for (let i = 0; i < bytes.length; i += 0x8000) b += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); const r = await JN.docToPdf({ b64: btoa(b), ext }); if (r && r.b64) { const bin = atob(r.b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; } return null; } } catch (e) {}
+  if (!NATIVE.on) return null;
+  try { const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 90000); const r = await fetch('/api/topdf?k=' + K + '&ext=' + ext, { method: 'POST', body: bytes, signal: ctl.signal }); clearTimeout(t); if (!r.ok) return null; return new Uint8Array(await r.arrayBuffer()); } catch (e) { return null; }
+}
+async function pptxNotes(z) { const out = []; try { const pres = XP(await z['ppt/presentation.xml'].text()); const pr = await rels(z, 'ppt/presentation.xml');
+  for (const e of pres.getElementsByTagName('p:sldId')) { const f = pr[e.getAttribute('r:id')]?.t; if (!f || !z[f]) { out.push([]); continue; } const r = await rels(z, f); const nf = Object.values(r).find(x => /notesSlide/.test(x.type))?.t; if (!nf || !z[nf]) { out.push([]); continue; }
+    const nd = XP(await z[nf].text()); const body = [...nd.getElementsByTagName('p:sp')].find(sp => { const ph = sp.getElementsByTagName('p:ph')[0]; return ph && ph.getAttribute('type') === 'body'; });
+    out.push(body ? [...body.getElementsByTagName('a:p')].map(a => [...a.getElementsByTagName('a:t')].map(t => t.textContent).join('')).filter(t => t.trim()) : []); } } catch (e) {} return out; }
+const canNative = () => NATIVE.on || (EMBED && (() => { try { return !!(window.parent.jarvisNative && window.parent.jarvisNative.docToPdf); } catch (e) { return false; } })());
+
 /* ============ FAYL OCHISH ============ */
 async function openFile(f, path) {
   const ext = f.name.split('.').pop().toLowerCase();
-  if (['doc', 'ppt', 'xls'].includes(ext)) { loading(false); toast(`Eski .${ext} formati. Faylni Word/PowerPoint'da ochib "Сохранить как" → .${ext}x qilib saqlang`, 9000); return; }
+  if (['doc', 'ppt', 'xls'].includes(ext) && !(ext !== 'xls' && canNative())) { loading(false); toast(`Eski .${ext} formati. Faylni Word/PowerPoint'da ochib "Сохранить как" → .${ext}x qilib saqlang`, 9000); return; }
   stop(); loading(true);
   try {
     const host = $('doc'); host.innerHTML = ''; host.style.zoom = ZOOM; $('empty').style.display = 'none';
     newDoc(f.name, ext, f.name + ':' + f.size);
     const bytes = new Uint8Array(await f.arrayBuffer());
     if (ext === 'pdf') await buildPdf(bytes, host);
+    else if (/^(docx|doc|rtf|pptx|ppt)$/.test(ext) && canNative() && ST.get('exact', true) && await (async () => {
+      $('loading').firstChild.textContent = '⏳ Asl ko\'rinish tayyorlanmoqda (' + (/^pp/.test(ext) ? 'PowerPoint' : 'Word') + ' orqali)…';
+      const pdf = await nativePdf(bytes, ext); $('loading').firstChild.textContent = '⏳ Ochilmoqda…'; if (!pdf) return false;
+      const notes = /^pp/.test(ext) ? await pptxNotes(await unzip(bytes)) : null; await buildPdf(pdf, host, /^pp/.test(ext) ? 'slayd' : 'sahifa', notes); return true; })()) { /* aniq ko'rinish */ }
     else if (ext === 'docx') { try { await buildDocx(bytes, host); } catch (e) { console.warn('docx-preview', e); host.innerHTML = ''; newDoc(f.name, ext, f.name + ':' + f.size); await plainZip(await unzip(bytes), host, 'docx'); } }
     else if (ext === 'pptx') { try { await buildPptx(await unzip(bytes), host); } catch (e) { console.warn('pptx', e); host.innerHTML = ''; newDoc(f.name, ext, f.name + ':' + f.size); await plainZip(await unzip(bytes), host, 'pptx'); } }
     else if (ext === 'xlsx') await buildXlsx(await unzip(bytes), host);
     else buildText(new TextDecoder().decode(bytes), host);
     $('fname').innerHTML = `<b>${esc(f.name)}</b><small>${DOC.pages.length} ${ext === 'pptx' ? 'slayd' : 'sahifa'} · ${DOC.paras.length} xatboshi</small>`;
     document.title = f.name + ' — O\'QI'; buildOutline();
-    if (path) { const rc = ST.get('recent', []).filter(r => r.path !== path); rc.unshift({ path, name: f.name, t: Date.now() }); ST.set('recent', rc.slice(0, 8)); }
+    if (innerWidth < 900) { const w = host.scrollWidth / (ZOOM || 1) || 900; ZOOM = Math.max(0.3, Math.min(1, (innerWidth - 20) / w)); host.style.zoom = ZOOM; $('zv').textContent = Math.round(ZOOM * 100) + '%'; }
+    if (path && !path.startsWith('mem:')) { const rc = ST.get('recent', []).filter(r => r.path !== path); rc.unshift({ path, name: f.name, t: Date.now() }); ST.set('recent', rc.slice(0, 8)); }
     const sp = ST.get('pos:' + DOC.key, null); POS.p = sp && sp.p < DOC.paras.length ? sp.p : 0; POS.s = sp ? sp.s || 0 : 0; skipNotes(1); mark(false); updProg();
     loading(false);
     if (!DOC.paras.length) toast('⚠ Hujjatda o\'qiladigan matn topilmadi', 6000);
@@ -323,7 +348,7 @@ let VOICES = [];
 const isNat = v => /natural|online|neural/i.test(v.name);
 function uzVoices() { return VOICES.filter(v => /^uz/i.test(v.lang)).sort((a, b) => isNat(b) - isNat(a)); }
 function pickVoices() {
-  VOICES = speechSynthesis.getVoices(); const sel = $('sVoice'); const saved = ST.get('voice', '');
+  VOICES = SS.getVoices(); const sel = $('sVoice'); const saved = ST.get('voice', '');
   const score = v => (/^uz/i.test(v.lang) ? 100 : /^ru/i.test(v.lang) ? 40 : /^en/i.test(v.lang) ? 10 : 0) + (isNat(v) ? 50 : 0);
   const list = [...VOICES].sort((a, b) => score(b) - score(a));
   sel.innerHTML = list.map(v => `<option value="${esc(v.name)}">${esc(v.name.replace(/^Microsoft /, '').replace(/ - .*/, ''))} (${v.lang})${isNat(v) ? ' ★' : ''}</option>`).join('') || '<option>(ovoz topilmadi)</option>';
@@ -336,7 +361,12 @@ function pickVoices() {
 function setVoice(name) { $('sVoice').value = name; ST.set('voice', name); pickVoices(); if (PLAY.on) play(POS.p, POS.s); }
 function mainVoice() { return VOICES.find(v => v.name === $('sVoice').value) || uzVoices()[0] || VOICES[0]; }
 function voiceFor(text) { const m = mainVoice(); if ($('cRu').checked && isRuText(text) && !/^ru/i.test(m?.lang || '')) { const ru = VOICES.filter(v => /^ru/i.test(v.lang)).sort((a, b) => isNat(b) - isNat(a))[0]; if (ru) return ru; } return m; }
-function prep(text, v) { if (v && /^ru/i.test(v.lang)) return applyDict(text, USERDICT).replace(/\s+/g, ' ').trim(); return normUz(text); }
+function lat2cyrRu(t) { // o'zbek ovozi bo'lmasa — rus ovozi o'zbekchani to'g'ri talaffuz qilishi uchun
+  const M = [["oʻ", 'у'], ["gʻ", 'г'], ['sh', 'ш'], ['ch', 'ч'], ['ya', 'я'], ['yu', 'ю'], ['yo', 'ё'], ['ye', 'е'], ['ts', 'ц'], ['a', 'а'], ['b', 'б'], ['d', 'д'], ['e', 'е'], ['f', 'ф'], ['g', 'г'], ['h', 'х'], ['i', 'и'], ['j', 'ж'], ['k', 'к'], ['l', 'л'], ['m', 'м'], ['n', 'н'], ['o', 'о'], ['p', 'п'], ['q', 'к'], ['r', 'р'], ['s', 'с'], ['t', 'т'], ['u', 'у'], ['v', 'в'], ['x', 'х'], ['y', 'й'], ['z', 'з'], ['ʼ', '']];
+  return t.replace(/[A-Za-zʻʼ]+/g, w => { const lo = w.toLowerCase(); let o = '', i = 0; while (i < lo.length) { if (i === 0 && lo[0] === 'e') { o += 'э'; i++; continue; } const m = M.find(([a]) => lo.startsWith(a, i)); if (m) { o += m[1]; i += m[0].length; } else { o += lo[i]; i++; } }
+    return w[0] !== w[0].toLowerCase() ? (w.length > 1 && w === w.toUpperCase() ? o.toUpperCase() : o[0].toUpperCase() + o.slice(1)) : o; }); }
+function prep(text, v) { if (v && /^ru/i.test(v.lang)) { if (isRuText(text) || !/[A-Za-z]/.test(text)) return applyDict(text, USERDICT).replace(/\s+/g, ' ').trim(); return lat2cyrRu(normUz(text)); }
+  if (v && !/^uz/i.test(v.lang) && /^(kk|ky|tg|uk|be|bg)/i.test(v.lang)) return lat2cyrRu(normUz(text)); return normUz(text); }
 
 /* ============ O'QISH ============ */
 const POS = { p: 0, s: 0 }; const PLAY = { on: false, paused: false }; let GEN = 0; let RATE = ST.get('rate', 1), VOL = ST.get('vol', 1);
@@ -355,34 +385,34 @@ function nextPos(pi, s) { while (DOC && pi < DOC.paras.length) { if (readable(pi
 function makeUtt(g, pi, s0) {
   const para = DOC.paras[pi]; const v = voiceFor(para.t); let txt = ''; const offs = []; let k = s0;
   for (; k < para.sents.length; k++) { if (txt.length > 700 && k > s0) break; offs.push([txt.length, k]); const pt = prep(para.sents[k].t, v); txt += pt + (/[.!?…:;]$/.test(pt) ? ' ' : (k === para.sents.length - 1 ? '. ' : ' ')); }
-  const u = new SpeechSynthesisUtterance(txt.trim() || '.'); if (v) { u.voice = v; u.lang = v.lang; } u.rate = RATE; u.volume = VOL; u._next = null;
+  const u = new SU(txt.trim() || '.'); if (v) { u.voice = v; u.lang = v.lang; } u.rate = RATE; u.volume = VOL; u._next = null;
   u.onstart = () => { if (g !== GEN) return; POS.p = pi; POS.s = s0; mark(); updProg(); savePos(); if (!u._next) u._next = queue(g, nextPos(pi, k)); };
   u.onboundary = e => { if (g !== GEN || e.name === 'sentence' && false) return; let kk = s0; for (const [o, x] of offs) if (e.charIndex >= o) kk = x; if (kk !== POS.s || POS.p !== pi) { POS.p = pi; POS.s = kk; mark(); savePos(); } };
   u.onend = () => { if (g !== GEN) return; if (!u._next) finish(); };
   u.onerror = e => { if (g !== GEN || /interrupted|canceled/.test(e.error)) return; console.warn('tts', e.error); if (!u._next) { u._next = queue(g, nextPos(pi, k)); if (!u._next) finish(); } };
   return u;
 }
-function queue(g, pos) { if (!pos || g !== GEN) return null; const u = makeUtt(g, pos[0], pos[1]); speechSynthesis.speak(u); return u; }
+function queue(g, pos) { if (!pos || g !== GEN) return null; const u = makeUtt(g, pos[0], pos[1]); SS.speak(u); return u; }
 function play(pi, s) {
   if (!DOC || !DOC.paras.length) { pickFile(); return; } loadDict();
-  speechSynthesis.cancel(); const g = ++GEN; PLAY.on = true; PLAY.paused = false; setBtn(); lastSpeak = Date.now();
+  SS.cancel(); const g = ++GEN; PLAY.on = true; PLAY.paused = false; setBtn(); lastSpeak = Date.now();
   if (pi != null) { POS.p = pi; POS.s = s || 0; } const np = nextPos(POS.p, POS.s); if (!np) { finish(); return; }
   [POS.p, POS.s] = np; mark(); updProg();
   setTimeout(() => { if (g === GEN) queue(g, np); }, 60);
 }
 function finish() { PLAY.on = false; PLAY.paused = false; setBtn(); if (DOC && !nextPos(POS.p + 1, 0)) { toast('✓ Hujjat oxirigacha o\'qildi'); ST.set('pos:' + DOC.key, { p: 0, s: 0 }); } }
-function pause() { if (!PLAY.on) return; PLAY.paused = true; speechSynthesis.pause(); setBtn(); }
-function resume() { if (!PLAY.on) return play(); PLAY.paused = false; setBtn(); speechSynthesis.resume(); const g = GEN; setTimeout(() => { if (g === GEN && PLAY.on && !PLAY.paused && !speechSynthesis.speaking) play(POS.p, POS.s); }, 600); }
-function stop() { GEN++; PLAY.on = false; PLAY.paused = false; try { speechSynthesis.cancel(); } catch (e) {} setBtn(); }
+function pause() { if (!PLAY.on) return; PLAY.paused = true; SS.pause(); setBtn(); }
+function resume() { if (!PLAY.on) return play(); PLAY.paused = false; setBtn(); SS.resume(); const g = GEN; setTimeout(() => { if (g === GEN && PLAY.on && !PLAY.paused && !SS.speaking) play(POS.p, POS.s); }, 600); }
+function stop() { GEN++; PLAY.on = false; PLAY.paused = false; try { SS.cancel(); } catch (e) {} setBtn(); }
 function toggle() { if (!PLAY.on) play(); else if (PLAY.paused) resume(); else pause(); }
-let lastSpeak = 0; setInterval(() => { if (PLAY.on && !PLAY.paused) { if (speechSynthesis.speaking || speechSynthesis.pending) lastSpeak = Date.now(); else if (Date.now() - lastSpeak > 4000) { lastSpeak = Date.now(); play(POS.p, POS.s); } } }, 1000);
+let lastSpeak = 0; setInterval(() => { if (PLAY.on && !PLAY.paused) { if (SS.speaking || SS.pending) lastSpeak = Date.now(); else if (Date.now() - lastSpeak > 4000) { lastSpeak = Date.now(); play(POS.p, POS.s); } } }, 1000);
 function jump(d) { if (!DOC) return; let p = POS.p + d; while (p >= 0 && p < DOC.paras.length && !readable(p)) p += d; p = Math.max(0, Math.min(DOC.paras.length - 1, p)); if (PLAY.on) play(p, 0); else { POS.p = p; POS.s = 0; mark(); updProg(); } }
 function gotoPage(n) { if (!DOC) return false; const pg = DOC.pages[n - 1]; if (!pg) return false; pg.el.scrollIntoView({ block: 'start' }); const np = nextPos(pg.p, 0); if (np) { if (PLAY.on) play(np[0], 0); else { [POS.p, POS.s] = np; mark(false); updProg(); } } return true; }
 function pageJump(d) { const p = cur(); if (!p) return; gotoPage(p.page + 1 + d); }
 function setRate(r) { RATE = Math.max(0.5, Math.min(2, Math.round(r * 20) / 20)); ST.set('rate', RATE); $('sRate').value = RATE; $('vRate').textContent = RATE.toFixed(2).replace(/0$/, '') + '×';
   document.querySelectorAll('#rateChips button').forEach(b => b.classList.toggle('on', Math.abs(+b.dataset.r - RATE) < 0.03)); if (PLAY.on && !PLAY.paused) play(POS.p, POS.s); }
 function setVol(v) { VOL = Math.max(0.1, Math.min(1, v)); ST.set('vol', VOL); $('sVol').value = VOL; if (PLAY.on && !PLAY.paused) play(POS.p, POS.s); }
-function say(t) { if (PLAY.on && !PLAY.paused) { toast(t); return; } toast(t); const v = uzVoices()[0] || mainVoice(); const u = new SpeechSynthesisUtterance(normUz(t)); if (v) { u.voice = v; u.lang = v.lang; } u.rate = Math.max(1, RATE); u.volume = VOL; if (!PLAY.on) speechSynthesis.cancel(); speechSynthesis.speak(u); }
+function say(t) { if (PLAY.on && !PLAY.paused) { toast(t); return; } toast(t); const v = uzVoices()[0] || mainVoice(); const u = new SU(normUz(t)); if (v) { u.voice = v; u.lang = v.lang; } u.rate = Math.max(1, RATE); u.volume = VOL; if (!PLAY.on) SS.cancel(); SS.speak(u); }
 
 /* ============ OVOZLI BUYRUQLAR ============ */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition; let REC = null, LISTEN = false, recLang = ST.get('recLang', 'uz-UZ');
@@ -469,7 +499,7 @@ function startRec() { if (!LISTEN || ENGINE !== 'edge') return; const r = new SR
 
 /* ============ UI ============ */
 let ZOOM = ST.get('zoom', 1);
-function setZoom(z) { ZOOM = Math.max(0.5, Math.min(2.2, Math.round(z * 20) / 20)); ST.set('zoom', ZOOM); $('doc').style.zoom = ZOOM; $('zv').textContent = Math.round(ZOOM * 100) + '%'; }
+function setZoom(z) { ZOOM = Math.max(0.3, Math.min(2.2, Math.round(z * 20) / 20)); ST.set('zoom', ZOOM); $('doc').style.zoom = ZOOM; $('zv').textContent = Math.round(ZOOM * 100) + '%'; }
 function setDark(on) { document.body.classList.toggle('dark', on); ST.set('dark', on); }
 $('bZi').onclick = () => setZoom(ZOOM + 0.1); $('bZo').onclick = () => setZoom(ZOOM - 0.1); setZoom(ZOOM);
 $('bDark').onclick = () => setDark(!document.body.classList.contains('dark')); setDark(ST.get('dark', false));
@@ -480,7 +510,7 @@ $('bOpen').onclick = pickFile; $('fin').onchange = () => { const f = $('fin').fi
 $('bPlay').onclick = toggle; $('bStop').onclick = () => { stop(); }; $('bPrev').onclick = () => jump(-1); $('bNext').onclick = () => jump(1);
 $('bMic').onclick = () => LISTEN ? micOff() : micOn();
 $('prog').onclick = e => { if (!DOC) return; const r = $('prog').getBoundingClientRect(); const p = Math.round((e.clientX - r.left) / r.width * (DOC.paras.length - 1)); const np = nextPos(p, 0); if (!np) return; if (PLAY.on) play(np[0], 0); else { [POS.p, POS.s] = np; mark(); updProg(); } };
-$('doc').addEventListener('click', e => { const el = e.target.closest('[data-p]'); if (!el || !DOC) return; play(+el.dataset.p, +el.dataset.k || 0); });
+$('doc').addEventListener('click', e => { if (VIEW) return; const el = e.target.closest('[data-p]'); if (!el || !DOC) return; play(+el.dataset.p, +el.dataset.k || 0); });
 $('sRate').oninput = () => { RATE = +$('sRate').value; $('vRate').textContent = RATE.toFixed(2).replace(/0$/, '') + '×'; document.querySelectorAll('#rateChips button').forEach(b => b.classList.toggle('on', Math.abs(+b.dataset.r - RATE) < 0.03)); };
 $('sRate').onchange = () => setRate(+$('sRate').value);
 document.querySelectorAll('#rateChips button').forEach(b => b.onclick = () => setRate(+b.dataset.r)); setRate(RATE);
@@ -495,6 +525,10 @@ document.addEventListener('keydown', e => { if (/INPUT|SELECT|TEXTAREA/.test(doc
   else if (e.ctrlKey && e.key.toLowerCase() === 'o') { e.preventDefault(); pickFile(); } });
 document.addEventListener('dragover', e => { e.preventDefault(); document.body.classList.add('drag'); }); document.addEventListener('dragleave', e => { if (!e.relatedTarget) document.body.classList.remove('drag'); });
 document.addEventListener('drop', e => { e.preventDefault(); document.body.classList.remove('drag'); const f = e.dataTransfer.files[0]; if (f) openFile(f); });
-speechSynthesis.onvoiceschanged = pickVoices; pickVoices(); setTimeout(pickVoices, 1500); setTimeout(pickVoices, 4000);
-window.addEventListener('beforeunload', () => { savePos(); speechSynthesis.cancel(); });
+if (!PAR) SS.onvoiceschanged = pickVoices; pickVoices(); setTimeout(pickVoices, 1500); setTimeout(pickVoices, 4000);
+window.addEventListener('beforeunload', () => { savePos(); SS.cancel(); });
+if (EMBED && !VIEW) { const b = document.createElement('button'); b.className = 'ib'; b.textContent = '✕'; b.title = 'Yopish'; b.onclick = () => { stop(); window.parent.postMessage({ oqi: 'close' }, '*'); }; $('top').appendChild(b);
+  window.addEventListener('message', async e => { const d = e.data && e.data.oqiOpen; if (!d) return; await openFile(new File([d.bytes], d.name || 'hujjat'), null); if (d.auto !== false && DOC && DOC.paras.length) setTimeout(() => play(), 300); });
+  try { window.parent.postMessage({ oqi: 'ready' }, '*'); } catch (e) {} }
+if (EMBED && VIEW) { window.addEventListener('message', async e => { const d = e.data && e.data.oqiOpen; if (!d) return; await openFile(new File([d.bytes], d.name || 'hujjat'), null); $('side').classList.add('hide'); }); try { window.parent.postMessage({ oqi: 'ready' }, '*'); } catch (e) {} }
 NATIVE.init().then(() => { renderRecent(); if (NATIVE.on && ST.get('micAuto', false)) micOn(); });
