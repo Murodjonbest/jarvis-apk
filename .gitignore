@@ -8,3 +8,4 @@ android/local.properties
 *.keystore
 *.jks
 android/app/src/main/assets/vosk-model/
+oqi/app/vendor/vosk-uz.tar.gz

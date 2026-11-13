@@ -1,4 +1,4 @@
-O'QI 1.0 - hujjatlarni ovoz chiqarib o'qiydigan dastur
+O'QI 1.1 - hujjatlarni ovoz chiqarib o'qiydigan dastur
 
 O'RNATISH: OQI.exe ni istalgan papkaga qo'ying (masalan D:\Dasturlar\OQI) va ikki marta bosing.
 Birinchi ochilganda Ish stoli va Pusk menyusida "O'QI - hujjat o'qish" belgisi paydo bo'ladi.
@@ -7,7 +7,8 @@ Windows "Windows protected your PC" desa: "Подробнее / More info" -> "�
 FAYL OCHISH: dasturdagi "Fayl ochish", faylni oynaga tashlash, yoki faylni o'ng tugma bilan bosib
 "O'QI bilan ovoz chiqarib o'qish" (Windows 11 da: "Показать доп. параметры").
 
-OVOZLI BUYRUQLAR (mikrofon tugmasi yoki M tugmasi):
+OVOZLI BUYRUQLAR (mikrofon tugmasi yoki M tugmasi). O'zbek nutqini internetsiz tushunadi
+(birinchi yoqilganda model 10-20 soniya yuklanadi):
   o'qi / boshla / davom et, to'xta / pauza, tezroq / sekinroq / oddiy tezlik,
   keyingi / oldingi, keyingi sahifa, 5-sahifaga o't, boshidan o'qi,
   "shartnoma"ni top, baland / pastroq, Sardor / Madina, fayl och,

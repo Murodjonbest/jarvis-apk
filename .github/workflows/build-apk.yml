@@ -2,6 +2,7 @@ name: APK yig'ish
 on:
   push:
     branches: [main]
+    paths-ignore: ['oqi/**', '.github/workflows/oqi.yml']
   workflow_dispatch:
 permissions:
   contents: write

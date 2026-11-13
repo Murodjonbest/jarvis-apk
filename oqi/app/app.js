@@ -237,6 +237,13 @@ async function buildXlsx(z, host) {
     for (const row of d.getElementsByTagName('row')) { const cells = []; for (const c of row.getElementsByTagName('c')) { const ty = c.getAttribute('t'); let v = desc(c, 'v')?.textContent ?? ''; if (ty === 's') v = ss[+v] ?? ''; else if (ty === 'inlineStr') v = [...c.getElementsByTagName('t')].map(x => x.textContent).join(''); else if (v && !isNaN(v) && v.includes('.')) v = String(Math.round(+v * 1e6) / 1e6).replace('.', ','); cells[col(c.getAttribute('r') || 'A1')] = v; }
       if (!cells.some(v => v)) continue; const tr = t.insertRow(); for (let i = 0; i < cells.length; i++) tr.insertCell().textContent = cells[i] ?? ''; addBlock(tr); } }
 }
+// Zaxira: chizib bo'lmasa — matnni oddiy ko'rinishda chiqarish
+async function plainZip(z, host, kind) {
+  const files = kind === 'docx' ? ['word/document.xml'] : Object.keys(z).filter(k => /^ppt\/slides\/slide\d+\.xml$/.test(k)).sort((a, b) => parseInt(a.match(/\d+/)) - parseInt(b.match(/\d+/)));
+  for (let i = 0; i < files.length; i++) { if (!z[files[i]]) continue; const d = XP(await z[files[i]].text()); const card = document.createElement('div'); card.className = 'txt'; card.style.marginBottom = '22px'; host.appendChild(card); newPage(card, kind === 'pptx' ? (i + 1) + '-slayd' : 'Matn');
+    for (const p of d.getElementsByTagName(kind === 'docx' ? 'w:p' : 'a:p')) { const t = [...p.getElementsByTagName(kind === 'docx' ? 'w:t' : 'a:t')].map(x => x.textContent).join(''); if (!t.trim()) continue; const el = document.createElement('p'); el.textContent = t; card.appendChild(el); addBlock(el); } }
+  toast('⚠ Asl ko\'rinishda chizib bo\'lmadi — matn oddiy ko\'rinishda ochildi', 6000);
+}
 function buildText(text, host) { const card = document.createElement('div'); card.className = 'txt'; host.appendChild(card); newPage(card, 'Matn');
   text.split(/\r?\n\s*\r?\n|\r?\n/).map(s => s.trim()).filter(Boolean).forEach(s => { const p = document.createElement('p'); p.textContent = s; card.appendChild(p); addBlock(p); }); }
 
@@ -250,8 +257,8 @@ async function openFile(f, path) {
     newDoc(f.name, ext, f.name + ':' + f.size);
     const bytes = new Uint8Array(await f.arrayBuffer());
     if (ext === 'pdf') await buildPdf(bytes, host);
-    else if (ext === 'docx') await buildDocx(bytes, host);
-    else if (ext === 'pptx') await buildPptx(await unzip(bytes), host);
+    else if (ext === 'docx') { try { await buildDocx(bytes, host); } catch (e) { console.warn('docx-preview', e); host.innerHTML = ''; newDoc(f.name, ext, f.name + ':' + f.size); await plainZip(await unzip(bytes), host, 'docx'); } }
+    else if (ext === 'pptx') { try { await buildPptx(await unzip(bytes), host); } catch (e) { console.warn('pptx', e); host.innerHTML = ''; newDoc(f.name, ext, f.name + ':' + f.size); await plainZip(await unzip(bytes), host, 'pptx'); } }
     else if (ext === 'xlsx') await buildXlsx(await unzip(bytes), host);
     else buildText(new TextDecoder().decode(bytes), host);
     $('fname').innerHTML = `<b>${esc(f.name)}</b><small>${DOC.pages.length} ${ext === 'pptx' ? 'slayd' : 'sahifa'} · ${DOC.paras.length} xatboshi</small>`;
@@ -384,7 +391,7 @@ function wordsNum(s) { const m = s.match(/(\d+)/); if (m) return +m[1]; let n = 
 function normCmd(t) { return cyr2lat(t).toLowerCase().replace(/[ʻʼ'`’‘]/g, '').replace(/[.,!?;:«»"]/g, ' ').replace(/\s+/g, ' ').trim(); }
 const CMDS = [
   [/(tinglashni|eshitishni|mikrofonni?)\s*(toxtat|ochir|bas)/, () => { micOff(); say('Tinglash oʻchirildi'); }],
-  [/(yopil|dasturni yop|chiqib ket|vikhod|vyhod|zakroy)/, () => { say('Xayr'); setTimeout(() => window.close(), 900); }],
+  [/(yopil|dasturni yop|yopish|chiqib ket|vikhod|vyhod|zakroy)/, () => { say('Xayr'); setTimeout(() => window.close(), 900); }],
   [/(yordam|nima qila olasan|buyruqlar|pomosh)/, () => { $('set').classList.add('open'); say('Oʻqi, toʻxta, tezroq, sekinroq, keyingi, oldingi, beshinchi sahifaga oʻt, biror soʻzni top deb ayting.'); }],
   [/(qayerda|qaysi (sahifa|slayd|bet)|nechanchi)/, () => { const p = cur(); say(p ? `Hozir ${p.page + 1}-${DOC.type === 'pptx' ? 'slayd' : 'sahifa'}, jami ${DOC.pages.length} ta` : 'Hujjat ochilmagan'); }],
   [/(fayl|hujjat|dokument|fail).*(och|tanla|top)|^och(ish)?$|otkroy/, () => pickFile()],
@@ -404,8 +411,8 @@ const CMDS = [
   [/(pastroq|ovozni pasaytir|tishe|ohista)/, () => { setVol(VOL - 0.2); toast('🔉 ' + Math.round(VOL * 100) + '%'); }],
   [/(sardor|erkak ovoz)/, () => { const v = uzVoices().find(v => /sardor/i.test(v.name)); v ? setVoice(v.name) : say('Sardor ovozi topilmadi'); }],
   [/(madina|ayol ovoz)/, () => { const v = uzVoices().find(v => /madina/i.test(v.name)); v ? setVoice(v.name) : say('Madina ovozi topilmadi'); }],
-  [/(kattalashtir|kattaroq|yaqinlashtir|uvelich)/, () => setZoom(ZOOM + 0.15)],
-  [/(kichraytir|kichikroq|uzoqlashtir|umensh)/, () => setZoom(ZOOM - 0.15)],
+  [/(kattalashtir|katta|yaqinlashtir|uvelich)/, () => setZoom(ZOOM + 0.15)],
+  [/(kichraytir|kichik|uzoqlashtir|umensh)/, () => setZoom(ZOOM - 0.15)],
   [/(tungi|qorongi|tyomn|temn)/, () => setDark(true)],
   [/(kunduzgi|yorug|svetl)/, () => setDark(false)],
   [/^(toxta|tuxta|toxtat|tuxtat|stop|pauza|pauz|jim|bas|tinch|hop|ostanov)/, () => pause()],
@@ -417,17 +424,45 @@ const CMDS = [
 function handleCmd(raw) {
   const t = normCmd(raw); if (!t) return; const words = t.split(' ').length;
   if (PLAY.on && !PLAY.paused) { if (words > 5) return; const s = cur()?.sents[POS.s]; if (s && normCmd(s.t).includes(t) && words > 1) return; }
-  toast('🎙 «' + raw.trim() + '»', 2500);
+  showHeard('«' + raw.trim() + '»');
   for (const [re, fn] of CMDS) if (re.test(t)) { fn(t); return; }
   if (!PLAY.on || PLAY.paused) say('Tushunmadim. Yordam deb ayting');
 }
 function findText(q) { if (!DOC) return say('Avval fayl oching'); const nq = normCmd(q); const from = POS.p + 1;
   const all = DOC.paras.map((p, i) => [i, normCmd(p.t)]); const hit = [...all.slice(from), ...all.slice(0, from)].find(([, t]) => t.includes(nq)) || [...all.slice(from), ...all.slice(0, from)].find(([, t]) => nq.split(' ').filter(w => w.length > 2).every(w => t.includes(w)));
   if (!hit) return say(`«${q}» topilmadi`); const [i] = hit; const k = Math.max(0, DOC.paras[i].sents.findIndex(s => normCmd(s.t).includes(nq.split(' ')[0]))); play(i, k); }
-function micOn() { if (!SR) { toast('Bu brauzerda ovozni tanish yoʻq. Microsoft Edge kerak', 6000); return; } LISTEN = true; $('bMic').classList.add('on'); startRec(); toast('🎙 Tinglayapman — buyruq ayting'); }
-function micOff() { LISTEN = false; $('bMic').classList.remove('on'); try { REC && REC.abort(); } catch (e) {} REC = null; }
-function startRec() { if (!LISTEN) return; const r = new SR(); REC = r; r.lang = recLang; r.continuous = true; r.interimResults = false; r.maxAlternatives = 1;
-  r.onresult = e => { for (let i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) handleCmd(e.results[i][0].transcript); };
+/* --- O'zbek nutqini tanish: 1) oflayn Vosk o'zbek modeli  2) Edge onlayn tanish (zaxira) --- */
+const VOSK = { model: null, rec: null, ctx: null, src: null, node: null, stream: null, loading: null,
+  async avail() { try { const r = await fetch('vendor/vosk-uz.tar.gz', { method: 'HEAD' }); return r.ok; } catch (e) { return false; } },
+  loadLib() { return window.Vosk ? Promise.resolve() : new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'vendor/vosk.js'; sc.onload = ok; sc.onerror = () => no(new Error('vosk.js yuklanmadi')); document.head.appendChild(sc); }); },
+  async start() {
+    if (!this.model) { if (!this.loading) this.loading = (async () => { await this.loadLib(); toast('🎙 O\'zbek nutq modeli yuklanmoqda… (birinchi marta 10–20 soniya)', 20000); const m = await Vosk.createModel(new URL('vendor/vosk-uz.tar.gz', location.href).href); this.model = m; })(); await this.loading; }
+    this.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } });
+    this.ctx = new AudioContext(); const rec = new this.model.KaldiRecognizer(this.ctx.sampleRate); this.rec = rec;
+    rec.on('result', m => { const t = m && m.result && m.result.text; if (t && t.trim()) handleCmd(t); });
+    rec.on('partialresult', m => { const t = m && m.result && m.result.partial; if (t) showHeard(t + '…'); });
+    this.src = this.ctx.createMediaStreamSource(this.stream); this.node = this.ctx.createScriptProcessor(4096, 1, 1);
+    this.node.onaudioprocess = e => { try { rec.acceptWaveform(e.inputBuffer); } catch (err) {} };
+    this.src.connect(this.node); this.node.connect(this.ctx.destination);
+  },
+  stop() { try { this.node && this.node.disconnect(); this.src && this.src.disconnect(); } catch (e) {} try { this.stream && this.stream.getTracks().forEach(t => t.stop()); } catch (e) {} try { this.ctx && this.ctx.close(); } catch (e) {} try { this.rec && this.rec.remove(); } catch (e) {} this.node = this.src = this.stream = this.ctx = this.rec = null; }
+};
+let ENGINE = '';
+function showHeard(t) { const h = $('heard'); h.textContent = '🎙 ' + t; h.style.opacity = 1; clearTimeout(h._t); h._t = setTimeout(() => h.style.opacity = 0, 3000); }
+async function micOn() {
+  LISTEN = true; $('bMic').classList.add('on');
+  const pref = ST.get('engine', 'auto');
+  if (pref !== 'edge' && await VOSK.avail()) {
+    try { await VOSK.start(); ENGINE = 'vosk'; toast('🎙 Tinglayapman (o\'zbekcha, oflayn) — buyruq ayting'); setEngineLbl(); return; }
+    catch (e) { console.warn(e); VOSK.stop(); if (e && /NotAllowed|Permission/i.test(e.name + e.message)) { micOff(); toast('🎙 Mikrofonga ruxsat bering (manzil satridagi 🔒 belgisi)', 7000); return; } toast('Oflayn model ishlamadi, onlayn tanishga o\'tdim', 4000); }
+  }
+  if (!SR) { micOff(); toast('Ovozni tanish imkoni yo\'q', 6000); return; }
+  ENGINE = 'edge'; startRec(); setEngineLbl(); toast('🎙 Tinglayapman — buyruq ayting');
+}
+function micOff() { LISTEN = false; $('bMic').classList.remove('on'); VOSK.stop(); try { REC && REC.abort(); } catch (e) {} REC = null; ENGINE = ''; setEngineLbl(); }
+function setEngineLbl() { const l = $('engLbl'); if (l) l.textContent = ENGINE === 'vosk' ? 'oflayn' : ENGINE === 'edge' ? 'onlayn' : ''; }
+function startRec() { if (!LISTEN || ENGINE !== 'edge') return; const r = new SR(); REC = r; r.lang = recLang; r.continuous = true; r.interimResults = true; r.maxAlternatives = 3;
+  r.onresult = e => { for (let i = e.resultIndex; i < e.results.length; i++) { const res = e.results[i]; if (res.isFinal) { let best = res[0].transcript; for (let a = 0; a < res.length; a++) if (CMDS.some(([re]) => re.test(normCmd(res[a].transcript)))) { best = res[a].transcript; break; } handleCmd(best); } else showHeard(res[0].transcript + '…'); } };
   r.onerror = e => { if (e.error === 'language-not-supported' && recLang !== 'ru-RU') { recLang = recLang === 'uz-UZ' ? 'tr-TR' : 'ru-RU'; ST.set('recLang', recLang); } else if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { micOff(); toast('🎙 Mikrofonga ruxsat bering (manzil satridagi 🔒 belgisi)', 7000); } };
   r.onend = () => { if (LISTEN && REC === r) setTimeout(startRec, 250); };
   try { r.start(); } catch (e) { setTimeout(startRec, 1000); } }
@@ -452,6 +487,7 @@ document.querySelectorAll('#rateChips button').forEach(b => b.onclick = () => se
 $('sVol').value = VOL; $('sVol').onchange = () => setVol(+$('sVol').value);
 $('sVoice').onchange = () => setVoice($('sVoice').value);
 for (const [id, def] of [['cTr', true], ['cRu', true], ['cNotes', true], ['cAbbr', true]]) { $(id).checked = ST.get(id, def); $(id).onchange = () => { ST.set(id, $(id).checked); if (PLAY.on && !PLAY.paused) play(POS.p, POS.s); }; }
+$('sEng').value = ST.get('engine', 'auto'); $('sEng').onchange = () => { ST.set('engine', $('sEng').value); if (LISTEN) { micOff(); micOn(); } };
 $('dict').value = ST.get('dict', ''); $('dict').oninput = () => { ST.set('dict', $('dict').value); loadDict(); }; loadDict();
 document.addEventListener('keydown', e => { if (/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
   if (e.key === ' ') { e.preventDefault(); toggle(); } else if (e.key === 'ArrowRight') jump(1); else if (e.key === 'ArrowLeft') jump(-1); else if (e.key === 'PageDown') { e.preventDefault(); pageJump(1); } else if (e.key === 'PageUp') { e.preventDefault(); pageJump(-1); }

@@ -27,7 +27,7 @@ import (
 var appFS embed.FS
 
 const port = "47811"
-const version = "1.0.0"
+const version = "1.1.0"
 
 var (
 	token    string
@@ -167,7 +167,7 @@ func main() {
 	launch(token)
 	for {
 		time.Sleep(5 * time.Second)
-		if time.Now().Unix()-lastPing.Load() > 40 {
+		if time.Now().Unix()-lastPing.Load() > 120 {
 			os.Exit(0)
 		}
 	}
