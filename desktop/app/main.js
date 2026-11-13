@@ -1051,6 +1051,18 @@ ipcMain.handle('voice:stop', async () => { try { if (VC.ws && VC.ws.readyState =
 ipcMain.handle('voice:list', async () => { try { const up = await voiceUp(); if (up.ok && up.mode === 'cdp') VC.voices = await vcEval('window.jvVoices()', 8000) || VC.voices; else if (up.ok) VC.voices = OQI.V.voices || []; else return { error: up.error }; } catch (e) {} return VC.voices || []; });
 app.on('will-quit', () => { try { VC.proc && VC.proc.kill(); } catch (e) {} });
 
+/* Edge'ni avtomatik o'rnatish: avval winget (Windows'ning o'z o'rnatuvchisi), bo'lmasa rasmiy sahifa */
+ipcMain.handle('edge:install', async () => {
+  if (process.platform !== 'win32') return { error: 'Faqat Windows' };
+  EDGE_CACHE = null; if (edgeExe()) return { ok: true, already: true };
+  const run = (cmd, args, t) => new Promise(res => execFile(cmd, args, { windowsHide: true, timeout: t, maxBuffer: 1 << 24 }, (err, out, se) => res({ err, out: String(out || '') + String(se || '') })));
+  const w = await run('winget', ['install', '-e', '--id', 'Microsoft.Edge', '--accept-package-agreements', '--accept-source-agreements', '--silent', '--disable-interactivity'], 15 * 60000);
+  logw('EDGE winget: ' + (w.err ? w.err.message : 'ok') + ' ' + w.out.slice(-400));
+  for (let i = 0; i < 20; i++) { EDGE_CACHE = null; if (edgeExe()) return { ok: true, via: 'winget' }; await new Promise(r => setTimeout(r, 1500)); }
+  shell.openExternal('https://www.microsoft.com/edge/download');
+  return { error: /not recognized|ENOENT|не является/i.test((w.err && w.err.message || '') + w.out) ? 'winget yo\'q — Edge yuklab olish sahifasi ochildi, u yerdan o\'rnating' : 'avtomatik o\'rnatilmadi — Edge sahifasi ochildi, u yerdan o\'rnating' };
+});
+
 let OQIWIN = null;
 ipcMain.handle('oqi:open', async (e, a = {}) => {
   try {

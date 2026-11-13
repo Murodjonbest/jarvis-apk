@@ -42,6 +42,7 @@ contextBridge.exposeInMainWorld('jarvisNative', {
   voiceSay: (a) => ipcRenderer.invoke('voice:say', a),
   voiceStop: () => ipcRenderer.invoke('voice:stop'),
   voiceList: () => ipcRenderer.invoke('voice:list'),
+  edgeInstall: () => ipcRenderer.invoke('edge:install'),
   onDropPath: (cb) => ipcRenderer.on('drop:path', (e, p) => cb(p)),
   notiqRender: (a) => ipcRenderer.invoke('notiq:render', a),
   notiqVideo: (a) => ipcRenderer.invoke('notiq:video', a),
