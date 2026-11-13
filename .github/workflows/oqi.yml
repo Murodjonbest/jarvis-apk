@@ -1,0 +1,43 @@
+name: OQI
+on:
+  workflow_dispatch:
+  push:
+    paths: ['oqi/**', '.github/workflows/oqi.yml']
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: O'zbek nutq modeli (Vosk)
+        run: |
+          curl -sSL --retry 3 -o /tmp/uz.zip https://alphacephei.com/vosk/models/vosk-model-small-uz-0.22.zip
+          rm -rf /tmp/uz && mkdir -p /tmp/uz && unzip -q -o /tmp/uz.zip -d /tmp/uz
+          M=$(ls -d /tmp/uz/*/ | head -1); echo "MODEL=$M"; ls -R "$M" | head -40; du -sh "$M"
+          mkdir -p /tmp/pack && rm -rf /tmp/pack/model && cp -r "$M" /tmp/pack/model
+          tar -C /tmp/pack -czf oqi/app/vendor/vosk-uz.tar.gz model
+          ls -la oqi/app/vendor/vosk-uz.tar.gz
+          W=$(find /tmp/pack/model -name words.txt | head -1); echo "WORDS=$W"
+          if [ -n "$W" ]; then wc -l "$W"; for w in oqi o\'qi oʻqi o‘qi toxta to\'xta toʻxta keyingi oldingi tezroq sekinroq sahifa slayd davom boshla qayerdaman yordam top fayl och tez sekin baland past besh beshinchi uchinchi ikkinchi; do printf "%s: " "$w"; grep -m3 -i "^$w" "$W" | tr '\n' ' '; echo; done; sed -n '1000,1040p' "$W" | tr '\n' ' '; fi
+      - name: Vosk tekshiruvi
+        run: |
+          pip install -q vosk
+          python3 -c "
+          from vosk import Model, KaldiRecognizer
+          import json
+          m=Model('/tmp/pack/model')
+          r=KaldiRecognizer(m,16000,json.dumps(['oʻqi','toʻxta','keyingi','[unk]']))
+          print('OK')" 2>&1 | tail -5
+      - name: OQI.exe
+        run: |
+          cd oqi
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -H=windowsgui" -o OQI.exe .
+          mkdir -p dist/OQI && cp OQI.exe dist/OQI/ && cp "O'QING.txt" dist/OQI/ 2>/dev/null || true
+          cd dist && zip -qr ../../OQI.zip OQI && ls -la ../../OQI.zip
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete oqi-latest -y --cleanup-tag 2>/dev/null || true
+          gh release create oqi-latest OQI.zip oqi/app/vendor/vosk-uz.tar.gz --title "O'QI" --notes "O'QI - hujjatlarni ovoz chiqarib o'qiydigan dastur" --prerelease

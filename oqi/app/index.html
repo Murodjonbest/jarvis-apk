@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>O'QI</title>
+<link rel="icon" href="icon.png">
+<style>
+:root{
+  --bg:#e9edf3;--panel:rgba(255,255,255,.86);--solid:#fff;--ink:#162033;--mut:#667085;--line:#dfe4ec;
+  --a1:#0ea5a4;--a2:#2563eb;--grad:linear-gradient(135deg,var(--a1),var(--a2));--soft:#e6f4f6;
+  --hl:rgba(255,205,60,.42);--hlb:rgba(255,190,30,.9);--shadow:0 12px 40px rgba(16,24,40,.12)
+}
+body.dark{--bg:#0b1018;--panel:rgba(20,27,38,.88);--solid:#151c27;--ink:#e6ebf2;--mut:#93a0b3;--line:#263142;--soft:#112a33;--hl:rgba(255,200,60,.33);--shadow:0 12px 40px rgba(0,0,0,.45)}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI Variable","Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column;overflow:hidden}
+button,select,input,textarea{font:inherit;color:inherit}
+/* top bar */
+#top{height:58px;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--panel);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);z-index:5}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;letter-spacing:.02em}
+.brand i{width:34px;height:34px;border-radius:10px;background:var(--grad);display:grid;place-items:center;color:#fff;font-style:normal;font-size:17px;box-shadow:0 4px 14px rgba(37,99,235,.35)}
+#fname{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2;padding-left:8px;border-left:1px solid var(--line);margin-left:6px}
+#fname b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#fname small{color:var(--mut);font-size:12px}
+.ib{height:38px;min-width:38px;border-radius:11px;border:1px solid var(--line);background:var(--solid);cursor:pointer;padding:0 11px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:.15s}
+.ib:hover{border-color:var(--a1);transform:translateY(-1px)}.ib.pri{background:var(--grad);border:0;color:#fff;font-weight:600;box-shadow:0 4px 14px rgba(37,99,235,.3)}
+.grp{display:flex;align-items:center;gap:2px;border:1px solid var(--line);border-radius:11px;background:var(--solid);padding:2px}
+.grp .ib{border:0;height:32px;min-width:32px}.grp span{font-size:12px;color:var(--mut);min-width:40px;text-align:center}
+/* layout */
+#body{flex:1;min-height:0;display:flex}
+#side{width:250px;flex:none;border-right:1px solid var(--line);background:var(--panel);overflow:auto;padding:12px 10px 140px;transition:margin .25s}
+#side.hide{margin-left:-250px}
+#side h4{margin:4px 8px 8px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+#side a{display:block;padding:7px 10px;border-radius:9px;color:var(--ink);text-decoration:none;font-size:13.5px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#side a:hover{background:var(--soft)}#side a.on{background:var(--soft);color:var(--a2);font-weight:600}#side a.sub{padding-left:22px;color:var(--mut);font-size:13px}
+#main{flex:1;min-width:0;overflow:auto;padding:28px 20px 190px;scroll-behavior:smooth}
+#doc{margin:0 auto;width:max-content;max-width:100%}
+/* sentence highlight (layout-neutral) */
+.s{cursor:pointer;border-radius:3px;transition:background .15s}
+.s:hover{background:rgba(14,165,164,.12)}
+.s.cur{background:var(--hl);box-shadow:0 0 0 2px var(--hl)}
+/* PDF */
+.pg{position:relative;background:#fff;margin:0 auto 22px;box-shadow:var(--shadow);border-radius:4px;overflow:hidden}
+.pg canvas{position:absolute;inset:0;width:100%;height:100%}
+.pg .ov{position:absolute;inset:0}
+.pg .hb{position:absolute;border-radius:2px;cursor:pointer}
+.pg .hb:hover{background:rgba(14,165,164,.14)}.pg .hb.cur{background:rgba(255,200,40,.38);box-shadow:none;mix-blend-mode:multiply}
+/* DOCX */
+#doc .docx-wrapper{background:transparent!important;padding:0!important}
+#doc .docx-wrapper>section.docx{box-shadow:var(--shadow)!important;margin-bottom:22px!important;border-radius:4px}
+/* PPTX */
+.sl{position:relative;width:960px;overflow:hidden;background:#fff;box-shadow:var(--shadow);border-radius:6px;margin:0 auto 10px}
+.sl .sh{position:absolute;display:flex;flex-direction:column}
+.sl .sh p{margin:0;white-space:pre-wrap;overflow-wrap:break-word}
+.sl .sh p.bul{padding-left:1.1em;text-indent:-1.1em}.sl .sh p.bul::before{content:"•";display:inline-block;width:1.1em;text-indent:0}
+.sl img{position:absolute;object-fit:fill}
+.sl table{border-collapse:collapse;width:100%;height:100%}.sl td{border:1px solid #bfc6d1;padding:4px 7px;vertical-align:top}
+.slnum{width:960px;margin:0 auto 6px;color:var(--mut);font-size:12px;font-weight:600;letter-spacing:.08em}
+.notes{width:960px;margin:0 auto 30px;background:var(--solid);border:1px dashed var(--line);border-radius:10px;padding:10px 14px;font-size:14px}
+.notes b{display:block;font-size:11px;color:var(--mut);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}.notes p{margin:2px 0}
+/* XLSX / TXT */
+.sheet{background:#fff;color:#111;box-shadow:var(--shadow);border-radius:6px;margin:0 auto 24px;padding:16px;overflow:auto;max-width:1100px}
+.sheet h3{margin:0 0 10px;font-size:14px;color:#2563eb}.sheet table{border-collapse:collapse;font:13px Calibri,"Segoe UI",sans-serif}
+.sheet td{border:1px solid #d0d5dd;padding:3px 8px;white-space:nowrap}
+.txt{width:min(820px,100%);background:#fff;color:#111;box-shadow:var(--shadow);border-radius:6px;padding:48px 56px;font:17px/1.75 Georgia,"Times New Roman",serif}
+.txt p{margin:0 0 .8em}
+/* empty state */
+#empty{max-width:760px;margin:4vh auto 0;text-align:center}
+.hero{background:var(--solid);border:1px solid var(--line);border-radius:22px;padding:38px 30px;box-shadow:var(--shadow)}
+.hero .big{width:78px;height:78px;margin:0 auto 14px;border-radius:24px;background:var(--grad);display:grid;place-items:center;font-size:38px;color:#fff;box-shadow:0 10px 30px rgba(37,99,235,.35)}
+.hero h1{margin:0 0 6px;font-size:28px}.hero p{margin:0 auto;color:var(--mut);max-width:520px}
+.drop{margin:22px auto 0;border:2px dashed var(--line);border-radius:16px;padding:22px;color:var(--mut);transition:.2s}
+body.drag .drop{border-color:var(--a1);background:var(--soft);color:var(--a2)}
+.fmt{display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap}.fmt span{font-size:12px;padding:4px 10px;border-radius:20px;background:var(--soft);color:var(--a2);font-weight:600}
+#recent{margin-top:18px;text-align:left}#recent h4{font-size:12px;color:var(--mut);letter-spacing:.1em;text-transform:uppercase;margin:0 4px 8px}
+#recent a{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--solid);border:1px solid var(--line);margin-bottom:6px;cursor:pointer;color:var(--ink);text-decoration:none}
+#recent a:hover{border-color:var(--a1)}#recent a small{color:var(--mut);margin-left:auto;font-size:12px;white-space:nowrap}
+.warn{margin-top:16px;text-align:left;background:#fff6e0;border:1px solid #f4d48b;color:#7a5200;border-radius:14px;padding:12px 15px;font-size:14px}
+body.dark .warn{background:#2c2410;border-color:#6b5320;color:#f2d18b}
+.tips{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}.tips div{background:var(--solid);border:1px solid var(--line);border-radius:14px;padding:12px;font-size:13px;color:var(--mut);text-align:left}.tips b{display:block;color:var(--ink);font-size:14px;margin-bottom:2px}
+/* player */
+#player{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);width:min(1000px,calc(100vw - 24px));background:var(--panel);backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:12px 16px;display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;z-index:6}
+.ctl{display:flex;align-items:center;gap:6px}
+.rb{width:42px;height:42px;border-radius:50%;border:0;background:var(--soft);color:var(--a2);font-size:17px;cursor:pointer;display:grid;place-items:center;transition:.15s}.rb:hover{transform:scale(1.07)}
+.rb.play{width:58px;height:58px;background:var(--grad);color:#fff;font-size:23px;box-shadow:0 8px 22px rgba(37,99,235,.35)}
+.mid{min-width:0}
+#now{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:7px;color:var(--ink)}#now.mut{color:var(--mut)}
+.pr{display:flex;align-items:center;gap:10px}
+#prog{flex:1;height:7px;border-radius:4px;background:var(--line);cursor:pointer;position:relative}
+#prog i{position:absolute;inset:0 auto 0 0;width:0;background:var(--grad);border-radius:4px;transition:width .3s}
+#ptxt{font-size:12px;color:var(--mut);white-space:nowrap}
+.right{display:flex;align-items:center;gap:10px}
+.spd{display:flex;flex-direction:column;align-items:center;gap:3px}
+.chips{display:flex;background:var(--soft);border-radius:12px;padding:3px}
+.chips button{border:0;background:transparent;padding:5px 9px;border-radius:9px;font-size:13px;cursor:pointer;color:var(--mut);font-weight:600}
+.chips button.on{background:var(--solid);color:var(--a2);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.spd input{width:150px;accent-color:var(--a2)}.spd small{font-size:11px;color:var(--mut)}
+#bMic{position:relative}#bMic.on{background:#ef4444;color:#fff}
+#bMic.on::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid #ef4444;animation:pulse 1.4s infinite}
+@keyframes pulse{0%{opacity:.9;transform:scale(.95)}100%{opacity:0;transform:scale(1.35)}}
+/* settings drawer */
+#set{position:fixed;top:66px;right:12px;width:360px;max-height:calc(100vh - 190px);overflow:auto;background:var(--solid);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:16px;z-index:7;display:none}
+#set.open{display:block}#set h3{margin:0 0 10px;font-size:16px}
+#set label{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+#set select{max-width:200px;border:1px solid var(--line);border-radius:9px;padding:5px 7px;background:var(--solid)}
+#set textarea{width:100%;height:110px;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--bg);font:13px Consolas,monospace;resize:vertical}
+#set .hint{font-size:12px;color:var(--mut);margin:6px 0}
+.vchips{display:flex;gap:8px;margin:8px 0 4px}.vchips button{flex:1;border:1px solid var(--line);background:var(--solid);border-radius:12px;padding:10px;cursor:pointer;font-weight:600}
+.vchips button.on{border-color:var(--a2);background:var(--soft);color:var(--a2)}.vchips button small{display:block;font-weight:400;font-size:11px;color:var(--mut)}
+#cmdlist{font-size:13px;color:var(--mut);margin:8px 0 0;padding-left:18px}#cmdlist b{color:var(--ink)}
+#toast{position:fixed;left:50%;top:72px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 18px;border-radius:14px;display:none;z-index:9;max-width:90vw;box-shadow:var(--shadow);font-size:14px}
+#loading{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.18);z-index:8}#loading div{background:var(--solid);padding:18px 26px;border-radius:16px;box-shadow:var(--shadow)}
+@media(max-width:900px){#side{display:none}.spd input{width:90px}#player{grid-template-columns:1fr;gap:8px}.right{justify-content:space-between}}
+</style>
+</head>
+<body>
+<div id="top">
+  <div class="brand"><i>▶</i>O'QI</div>
+  <div id="fname"><b>Hujjat tanlanmagan</b><small>PDF · Word · PowerPoint · Excel · TXT</small></div>
+  <button class="ib" id="bSide" title="Mundarija">☰</button>
+  <div class="grp" title="Kattalashtirish"><button class="ib" id="bZo">−</button><span id="zv">100%</span><button class="ib" id="bZi">+</button></div>
+  <button class="ib pri" id="bOpen">📂 Fayl ochish</button>
+  <button class="ib" id="bDark" title="Tungi rejim">🌙</button>
+  <button class="ib" id="bSet" title="Sozlamalar">⚙️</button>
+</div>
+<div id="body">
+  <nav id="side" class="hide"><h4>Mundarija</h4><div id="outline"></div></nav>
+  <main id="main">
+    <div id="doc"></div>
+    <div id="empty">
+      <div class="hero">
+        <div class="big">🔊</div>
+        <h1>Hujjatni ovoz chiqarib o'qiydi</h1>
+        <p>Faylni oching — u asl ko'rinishida chiqadi, O'QI esa toza o'zbek tilida o'qib beradi. Ovoz bilan boshqarish: 🎙 ni bosib <b>"o'qi"</b>, <b>"to'xta"</b>, <b>"tezroq"</b>, <b>"5-sahifaga o't"</b> deng.</p>
+        <div class="drop">Faylni shu yerga tashlang yoki <b>📂 Fayl ochish</b> ni bosing</div>
+        <div class="fmt"><span>PDF</span><span>DOCX</span><span>PPTX</span><span>XLSX</span><span>TXT</span></div>
+        <div id="vwarn"></div>
+      </div>
+      <div id="recent"></div>
+      <div class="tips"><div><b>Joydan o'qish</b>Istalgan jumlani bossangiz — o'sha yerdan o'qiydi.</div><div><b>Klaviatura</b>Bo'sh joy — o'qish/pauza, ← → xatboshi, + − tezlik, M — mikrofon.</div><div><b>Eslab qoladi</b>Faylni qayta ochsangiz, to'xtagan joyidan davom etadi.</div></div>
+    </div>
+  </main>
+</div>
+
+<div id="player">
+  <div class="ctl">
+    <button class="rb" id="bPrev" title="Oldingi (←)">⏮</button>
+    <button class="rb play" id="bPlay" title="O'qish / pauza (bo'sh joy)">▶</button>
+    <button class="rb" id="bNext" title="Keyingi (→)">⏭</button>
+    <button class="rb" id="bStop" title="To'xtatish (Esc)">⏹</button>
+  </div>
+  <div class="mid">
+    <div id="now" class="mut">Fayl oching va ▶ ni bosing</div>
+    <div class="pr"><div id="prog"><i></i></div><div id="ptxt">—</div></div>
+  </div>
+  <div class="right">
+    <div class="spd">
+      <div class="chips" id="rateChips"><button data-r="0.7">🐢 Sekin</button><button data-r="1">Oddiy</button><button data-r="1.3">Tez</button><button data-r="1.6">⚡ Juda tez</button></div>
+      <div style="display:flex;align-items:center;gap:6px"><input type="range" id="sRate" min="0.5" max="2" step="0.05"><small id="vRate">1.0×</small></div>
+    </div>
+    <button class="rb" id="bMic" title="Ovoz bilan boshqarish (M)">🎙</button>
+  </div>
+</div>
+
+<div id="set">
+  <h3>⚙️ Sozlamalar</h3>
+  <div class="hint">Ovoz</div>
+  <div class="vchips" id="vchips"></div>
+  <label>Boshqa ovoz <select id="sVoice"></select></label>
+  <label>Ovoz balandligi <input type="range" id="sVol" min="0.2" max="1" step="0.05" style="width:140px"></label>
+  <label>Kirill o'zbekchani lotinga o'girib o'qish <input type="checkbox" id="cTr"></label>
+  <label>Ruscha matnni rus ovozida o'qish <input type="checkbox" id="cRu"></label>
+  <label>Slayd izohlarini ham o'qish <input type="checkbox" id="cNotes"></label>
+  <label>Qisqartmalarni to'liq aytish (MFY, QQS…) <input type="checkbox" id="cAbbr"></label>
+  <div class="hint" style="margin-top:12px"><b>Talaffuz lug'ati</b> — har qatorga: <code>yozilishi = aytilishi</code></div>
+  <textarea id="dict" placeholder="DMNI = davlat moliyaviy nazorati inspeksiyasi&#10;Sirdaryo vil. = Sirdaryo viloyati"></textarea>
+  <div class="hint" style="margin-top:12px"><b>🎙 Ovozli buyruqlar</b></div>
+  <ul id="cmdlist">
+    <li><b>o'qi / boshla / davom et</b> — o'qishni boshlaydi</li>
+    <li><b>to'xta / pauza / jim</b> — to'xtatadi</li>
+    <li><b>tezroq / sekinroq / oddiy tezlik</b></li>
+    <li><b>keyingi / oldingi</b> (xatboshi), <b>keyingi sahifa / slayd</b></li>
+    <li><b>5-sahifaga o't</b>, <b>uchinchi slayd</b>, <b>boshidan o'qi</b></li>
+    <li><b>"shartnoma" ni top</b> — matndan topib o'qiydi</li>
+    <li><b>baland / past</b> — ovoz balandligi</li>
+    <li><b>Sardor / Madina</b> — ovozni almashtiradi</li>
+    <li><b>fayl och</b>, <b>kattalashtir / kichraytir</b>, <b>tungi rejim</b></li>
+    <li><b>qayerdaman</b>, <b>yordam</b>, <b>tinglashni to'xtat</b>, <b>yopil</b></li>
+  </ul>
+</div>
+<div id="toast"></div>
+<div id="loading"><div>⏳ Ochilmoqda…</div></div>
+<input type="file" id="fin" accept=".pdf,.docx,.pptx,.xlsx,.txt,.md,.csv" style="display:none">
+<script src="vendor/pdf.min.js"></script>
+<script src="vendor/jszip.min.js"></script>
+<script src="vendor/docx-preview.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
