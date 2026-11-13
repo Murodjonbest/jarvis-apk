@@ -171,3 +171,47 @@ body.desk .modal .box{width:min(520px,92vw);border-radius:18px;border-width:1px;
 body.desk .toast{left:auto!important;right:18px!important;width:380px;top:calc(var(--topH) + 10px)!important}
 body.desk #attMenu{left:calc(var(--navW) + 14px);right:auto;bottom:80px;width:300px}
 body.desk #imgEd{left:var(--navW)}
+
+/* ===== KOMPYUTER: yoqimli, yumshoq ko'rinish (v2) ===== */
+body.desk{--g1:#17b6e6;--g2:#5b6cff;--panel:rgba(14,26,42,.72);--edge:rgba(120,190,255,.14);font-family:"Segoe UI Variable Text","Segoe UI",Inter,system-ui,sans-serif;
+  background:radial-gradient(1200px 700px at 85% -10%,rgba(91,108,255,.18),transparent 60%),radial-gradient(900px 600px at -10% 110%,rgba(23,182,230,.16),transparent 60%),linear-gradient(180deg,#07111d,#050b14)!important}
+body.desk *{scrollbar-width:thin;scrollbar-color:rgba(120,190,255,.25) transparent}
+body.desk ::-webkit-scrollbar{width:8px;height:8px}body.desk ::-webkit-scrollbar-thumb{background:rgba(120,190,255,.22);border-radius:8px}body.desk ::-webkit-scrollbar-track{background:transparent}
+/* yuqori panel */
+body.desk #mTop{background:rgba(8,16,28,.6)!important;backdrop-filter:blur(18px) saturate(1.2);border-bottom:1px solid var(--edge)!important}
+body.desk #mTop .mb b{background:linear-gradient(90deg,#9fe9ff,#b9c2ff);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:.24em}
+body.desk #mTop button{background:rgba(255,255,255,.05);border:1px solid var(--edge);transition:.2s}
+body.desk #mTop button:hover{background:rgba(23,182,230,.18);transform:translateY(-1px)}
+/* chap menyu */
+body.desk #mNav{background:rgba(8,16,28,.55)!important;backdrop-filter:blur(18px);border-right:1px solid var(--edge)!important;border-top:0!important}
+body.desk #mNav button{border-radius:14px;margin:3px 8px;transition:background .2s,color .2s;color:#8aa4b8}
+body.desk #mNav button:hover{background:rgba(255,255,255,.05);color:#d6ecff}
+body.desk #mNav button.on{background:linear-gradient(135deg,rgba(23,182,230,.22),rgba(91,108,255,.22));color:#e8f6ff;box-shadow:inset 0 0 0 1px rgba(140,200,255,.25)}
+body.desk #mNav button.on::before{display:none}
+body.desk #mNav button .i{filter:none;opacity:.85}
+/* suhbat */
+body.desk .log{gap:12px!important;padding:22px 18px 10px!important;scroll-behavior:smooth}
+body.desk .msg{border-radius:18px!important;padding:12px 16px!important;line-height:1.55!important;font-size:15.5px!important;box-shadow:0 6px 24px rgba(0,0,0,.25);animation:msgIn .25s ease-out}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+body.desk .msg.j{background:var(--panel)!important;border:1px solid var(--edge)!important;backdrop-filter:blur(10px);color:#e3f1fb!important;border-bottom-left-radius:6px!important}
+body.desk .msg.u{background:linear-gradient(135deg,var(--g1),var(--g2))!important;color:#fff!important;border-bottom-right-radius:6px!important;box-shadow:0 8px 26px rgba(60,120,255,.28)}
+body.desk .msg .chip,body.desk .fchips .chip{border-radius:999px!important;padding:6px 14px!important;background:rgba(255,255,255,.06)!important;border:1px solid var(--edge)!important;color:#dff3ff!important;font-weight:600;transition:.2s}
+body.desk .msg .chip:hover,body.desk .fchips .chip:hover{background:linear-gradient(135deg,rgba(23,182,230,.3),rgba(91,108,255,.3))!important;transform:translateY(-1px)}
+body.desk .msg a{color:#8fdcff}
+body.desk .fprev{border-radius:14px;overflow:hidden;border:1px solid var(--edge)!important}
+/* yozish paneli — suzuvchi kapsula */
+body.desk .bar{background:transparent!important;border:0!important;padding:10px 18px 18px!important}
+body.desk #inp{background:rgba(14,26,42,.85)!important;border:1px solid var(--edge)!important;border-radius:26px!important;box-shadow:0 10px 30px rgba(0,0,0,.35);transition:border-color .2s,box-shadow .2s}
+body.desk #inp:focus{border-color:rgba(23,182,230,.6)!important;box-shadow:0 10px 34px rgba(23,182,230,.18)}
+body.desk .bar #mic,body.desk .bar #send{background:linear-gradient(135deg,var(--g1),var(--g2))!important;box-shadow:0 8px 24px rgba(60,120,255,.35)!important}
+body.desk #attBtn{color:#9fc3d9!important}
+/* oynalar va panellar */
+body.desk .win{border-radius:18px!important;background:rgba(10,20,34,.92)!important;backdrop-filter:blur(18px);border:1px solid var(--edge)!important;box-shadow:0 24px 70px rgba(0,0,0,.5)!important;overflow:hidden}
+body.desk .win .wh{background:rgba(255,255,255,.03)!important;border-bottom:1px solid var(--edge)!important}
+body.desk .wmsg{border-radius:14px!important;background:rgba(255,255,255,.03)!important;border:1px solid var(--edge)!important}
+body.desk .left .panel,body.desk .right .panel{border-radius:18px!important;background:var(--panel)!important;border:1px solid var(--edge)!important;backdrop-filter:blur(12px)}
+body.desk .hud::before,body.desk .hud::after,body.desk .panel::before,body.desk .panel::after{display:none!important}
+body.desk #attBar .att{border-radius:12px!important}
+body.desk .toast,body.desk #toast{border-radius:14px!important}
+body.desk button,body.desk select,body.desk input,body.desk textarea,body.desk #inp{font-family:"Segoe UI Variable Text","Segoe UI",Inter,system-ui,sans-serif!important}
+body.desk .msg.j .body{font-family:inherit}
