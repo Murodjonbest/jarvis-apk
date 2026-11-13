@@ -15,7 +15,7 @@
   $('mLive').onclick = () => { const b = $('liveBtn'); if (b) b.click(); else toast('Jonli suhbat uchun Gemini kaliti kerak (⚙ Sozlash)'); };
 
   /* ---- pastki menyu ---- */
-  const NAV = [['center', '💬', 'Suhbat'], ['read', '📖', "O'qish"], ['right', '📋', 'Eslatma'], ['apps', '🧩', 'Ilovalar'], ['left', '📊', 'Holat'], ['mods', '🛠', "O'zgartirish"], ['set', '⚙', 'Sozlash']];
+  const NAV = [['center', '💬', 'Suhbat'], ['read', '📖', "O'qish"], ['build', '🏗', 'Yaratish'], ['right', '📋', 'Eslatma'], ['apps', '🧩', 'Ilovalar'], ['left', '📊', 'Holat'], ['mods', '🛠', DESK ? 'Ustaxona' : "O'zgartirish"], ['set', '⚙', 'Sozlash']].filter(([v]) => DESK || !['read', 'build', 'mods'].includes(v));
   const nav = document.createElement('nav'); nav.id = 'mNav';
   nav.innerHTML = NAV.map(([v, i, t]) => `<button data-v="${v}"><span class="i">${i}</span>${t}<span class="badge"></span></button>`).join('');
   document.body.appendChild(nav);
@@ -37,7 +37,8 @@
     if (v === 'apps') { sheet.classList.contains('open') ? closeSheet() : openSheet(); return; }
     if (v === 'set') { closeSheet(); const m = dockBtn(/Modellar/); if (m) m.click(); setOn('set'); return; }
     if (v === 'read') { closeSheet(); try { openReader(null); } catch (er) {} return; }
-    if (v === 'mods') { closeSheet(); try { openCustomize(); } catch (er) {} return; }
+    if (v === 'mods') { closeSheet(); try { const NV = window.jarvisNative; NV && NV.ustaOpen ? NV.ustaOpen() : openCustomize(); } catch (er) {} return; }
+    if (v === 'build') { closeSheet(); try { openBuilder(); } catch (er) {} return; }
     show(v);
   });
 

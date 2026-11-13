@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<title>Jarvis Ustaxona</title>
+<style>
+:root{--bg:#070d16;--pan:rgba(16,28,46,.78);--edge:rgba(120,190,255,.16);--txt:#e3f1fb;--mut:#8aa4b8;--g1:#17b6e6;--g2:#5b6cff;--ok:#3ddc97;--bad:#ff6b7a;--amb:#ffc35a}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{background:radial-gradient(1000px 600px at 90% -10%,rgba(91,108,255,.18),transparent 60%),radial-gradient(800px 500px at -10% 110%,rgba(23,182,230,.14),transparent 60%),var(--bg);color:var(--txt);font:15px/1.5 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column}
+button,input,textarea,select{font:inherit;color:inherit}
+header{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--edge);background:rgba(8,16,28,.6);backdrop-filter:blur(14px)}
+header .logo{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--g1),var(--g2));display:grid;place-items:center;font-size:19px;box-shadow:0 6px 20px rgba(60,120,255,.35)}
+header h1{margin:0;font-size:18px;letter-spacing:.04em}header small{color:var(--mut);display:block;font-size:12px}
+header .sp{flex:1}
+.b{border:1px solid var(--edge);background:rgba(255,255,255,.05);border-radius:12px;padding:8px 14px;cursor:pointer;transition:.15s;white-space:nowrap}
+.b:hover{background:rgba(23,182,230,.16)}.b.pri{background:linear-gradient(135deg,var(--g1),var(--g2));border:0;color:#fff;font-weight:600;box-shadow:0 6px 20px rgba(60,120,255,.3)}
+.b.red{border-color:rgba(255,107,122,.5);color:#ffb3bb}.b:disabled{opacity:.5;cursor:default}
+main{flex:1;min-height:0;display:grid;grid-template-columns:1.25fr 1fr;gap:16px;padding:16px 18px}
+.card{background:var(--pan);border:1px solid var(--edge);border-radius:18px;padding:16px;backdrop-filter:blur(10px);display:flex;flex-direction:column;min-height:0}
+.card h2{margin:0 0 4px;font-size:15px;letter-spacing:.06em;color:#9fe9ff}.card .hint{color:var(--mut);font-size:13px;margin:0 0 10px}
+textarea{width:100%;background:rgba(0,0,0,.3);border:1px solid var(--edge);border-radius:12px;padding:10px 12px;resize:vertical;outline:none}
+textarea:focus{border-color:rgba(23,182,230,.6)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+#out{flex:1;min-height:0;overflow:auto;margin-top:12px;display:flex;flex-direction:column;gap:10px}
+.step{border:1px solid var(--edge);border-radius:14px;padding:10px 12px;background:rgba(255,255,255,.03);font-size:14px}
+.step b{color:#cfe9ff}.step.ok{border-color:rgba(61,220,151,.45)}.step.bad{border-color:rgba(255,107,122,.5)}.step.run{border-color:rgba(255,195,90,.45)}
+.edit{margin-top:6px;border-radius:10px;overflow:hidden;border:1px solid var(--edge);font:12.5px/1.45 Consolas,monospace}
+.edit div{padding:6px 9px;white-space:pre-wrap;word-break:break-word;max-height:180px;overflow:auto}
+.edit .f{background:rgba(255,255,255,.05);color:var(--mut);font:600 12px "Segoe UI",sans-serif}
+.edit .m{background:rgba(255,107,122,.10)}.edit .p{background:rgba(61,220,151,.10)}
+.side{display:flex;flex-direction:column;gap:16px;min-height:0}
+.list{overflow:auto;max-height:240px;display:flex;flex-direction:column;gap:6px}
+.it{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid var(--edge);font-size:13px}
+.it span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.it .tag{color:var(--amb);font-size:12px;flex:none}
+.stat{font-size:13px;color:var(--mut)}.stat b{color:var(--txt)}
+.good{color:var(--ok)}.badc{color:var(--bad)}
+input.k{flex:1;min-width:180px;background:rgba(0,0,0,.3);border:1px solid var(--edge);border-radius:10px;padding:8px 10px;outline:none}
+#ed{display:none;position:fixed;inset:20px;z-index:9;background:#0a1422;border:1px solid var(--edge);border-radius:18px;padding:14px;flex-direction:column;gap:8px;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+#ed.on{display:flex}#ed textarea{flex:1;font:13px/1.45 Consolas,monospace;resize:none}
+</style>
+</head>
+<body>
+<header><div class="logo">🛠</div><div><h1>JARVIS USTAXONA</h1><small>Jarvisni tuzatish, tahrirlash va kuchaytirish — har o'zgarishdan oldin zaxira, xato bo'lsa o'zi qaytaradi</small></div><div class="sp"></div>
+  <span class="stat" id="st">…</span><button class="b" id="bReload">🔄 Jarvisni qayta yuklash</button></header>
+<main>
+  <section class="card">
+    <h2>NIMANI TUZATAY YOKI QO'SHAY?</h2>
+    <p class="hint">Oddiy so'z bilan yozing: "ovoz sozlamasini Sozlash oynasiga ko'chir", "xabarlar shriftini kattaroq qil", "Eslatma qo'shilganda Telegram'ga ham yubor", "fayl tashlaganda Excel uchun 'Jadvalni tekshir' tugmasi bo'lsin". Usta kodni topadi, o'zgartirishni ko'rsatadi, siz tasdiqlaysiz.</p>
+    <textarea id="req" rows="4" placeholder="Masalan: Jarvis javoblari ostiga 'Ovoz chiqarib o'qi' tugmasini qo'sh"></textarea>
+    <div class="row"><button class="b pri" id="bGo">✨ Tayyorlash</button><button class="b" id="bApply" disabled>✅ Qo'llash</button><button class="b" id="bCancel" disabled>✕ Bekor qilish</button><span class="stat" id="model"></span></div>
+    <div id="out"></div>
+  </section>
+  <div class="side">
+    <section class="card"><h2>🔑 ENG KUCHLI USTA — CLAUDE</h2><p class="hint">Usta Jarvisdagi sun'iy intellektdan foydalanadi. Pullik <b>Claude API</b> kalitini kiritsangiz, eng murakkab ishlar uchun avval Claude ishlatiladi (console.anthropic.com → API Keys).</p>
+      <div class="row" style="margin-top:0"><input class="k" id="ck" type="password" placeholder="sk-ant-… (Claude API kaliti)"><button class="b" id="bCk">Saqlash</button></div><div class="stat" id="ckSt" style="margin-top:6px"></div></section>
+    <section class="card"><h2>📂 FAYLLAR</h2><p class="hint">Sariq belgili fayllar o'zgartirilgan. Qo'lda tahrirlash ham mumkin — saqlashdan oldin xatolar tekshiriladi.</p><div class="list" id="files"></div></section>
+    <section class="card" style="flex:1"><h2>🕘 TARIX VA QAYTARISH</h2><p class="hint">Har o'zgarishdan oldingi holat saqlanadi.</p><div class="list" id="hist"></div>
+      <div class="row"><button class="b red" id="bReset">↺ Hammasini asl holatga qaytarish</button></div></section>
+  </div>
+</main>
+<div id="ed"><div class="row" style="margin:0"><b id="edName" style="flex:1"></b><input class="k" id="edFind" placeholder="Qidirish…" style="max-width:260px"><button class="b" id="edNext">↓</button><button class="b pri" id="edSave">💾 Saqlash</button><button class="b" id="edClose">✕</button></div><textarea id="edText" spellcheck="false"></textarea><div class="stat" id="edSt"></div></div>
+<script>
+'use strict';
+const N = window.jarvisNative; const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let PLAN = null; // {edits:[{rel,find,replace}], files:{rel:newText}, note}
+function step(html, cls) { const d = document.createElement('div'); d.className = 'step ' + (cls || ''); d.innerHTML = html; $('out').appendChild(d); $('out').scrollTop = 1e9; return d; }
+async function ai(prompt, tier) {
+  const r = await N.chat({ id: 'usta' + Date.now(), messages: [{ role: 'user', content: prompt }], tools: [], tier: tier || 'complex' });
+  if (r.error) throw new Error(r.error.message || r.error.code || 'AI xatosi');
+  $('model').textContent = '🧠 ' + (r.provider || '') + ' · ' + (r.model || '');
+  const c = r.message && r.message.content; return typeof c === 'string' ? c : Array.isArray(c) ? c.map(x => x.text || '').join('') : '';
+}
+const FILES = {};
+async function loadFiles() { for (const f of await N.ustaFiles()) { const r = await N.ustaRead({ rel: f.rel }); FILES[f.rel] = r.text; } }
+// so'rovga tegishli kod bo'laklarini topish
+function snippets(req, extraWords) {
+  const stop = new Set(['uchun', 'bilan', 'qilib', 'qilsin', 'bo\'lsin', 'jarvis', 'kerak', 'yana', 'ham', 'shu', 'bu', 'va', 'yoki', 'the', 'qil', 'qo\'sh']);
+  const words = [...new Set((req + ' ' + (extraWords || '')).toLowerCase().replace(/[^\p{L}\p{N}_'\s-]/gu, ' ').split(/\s+/).filter(w => w.length > 3 && !stop.has(w)))];
+  const out = [];
+  for (const [rel, text] of Object.entries(FILES)) {
+    const lines = text.split('\n'); const score = new Array(lines.length).fill(0);
+    lines.forEach((l, i) => { const lo = l.toLowerCase(); for (const w of words) if (lo.includes(w.slice(0, Math.max(4, w.length - 2)))) score[i] += 1; });
+    const idx = score.map((s, i) => [s, i]).filter(x => x[0] > 0).sort((a, b) => b[0] - a[0]).slice(0, 5);
+    for (const [s, i] of idx) out.push({ rel, s, a: Math.max(0, i - 8), b: Math.min(lines.length, i + 9), lines });
+  }
+  out.sort((x, y) => y.s - x.s); const pick = []; let total = 0;
+  for (const o of out) { if (pick.some(p => p.rel === o.rel && !(o.b < p.a || o.a > p.b))) continue; const t = o.lines.slice(o.a, o.b).map(l => l.length > 1600 ? l.slice(0, 1600) + ' …[qisqartirildi]' : l).join('\n'); if (total + t.length > 26000) break; total += t.length; pick.push({ rel: o.rel, a: o.a, b: o.b, t }); if (pick.length >= 9) break; }
+  return pick;
+}
+const RULES = `Sen JARVIS dasturining ustasisan (Electron ilova, o'zbekcha interfeys). Senga faqat ruxsat berilgan fayllar bo'laklari beriladi: ${Object.keys({ 'index.html': 1, 'shim.js': 1, 'ui.js': 1, 'ui.css': 1, 'notiq.html': 1, 'oqi/index.html': 1, 'oqi/app.js': 1 }).join(', ')}.
+VAZIFA: foydalanuvchi so'rovini bajaradigan ANIQ, KICHIK tahrirlar yoz. Faqat JSON qaytar, boshqa hech narsa:
+{"plan":"o'zbekcha 1-3 gapda nima qilasan","edits":[{"file":"index.html","find":"fayldagi ANIQ mavjud matn (bo'lakdan so'zma-so'z ko'chir, 1-5 qator, fayl ichida yagona bo'lsin)","replace":"yangi matn"}],"need":"agar kerakli kod bo'laklarda ko'rinmasa — qidirish uchun 2-5 kalit so'z, aks holda bo'sh"}
+QOIDALAR: find aynan bo'laklardagi matn bo'lsin (bo'sh joylar bilan). Mavjud funksiyalarni buzma. Yangi funksiya qo'shsang — mavjud blok yoniga qo'sh. Interfeys matnlari o'zbekcha. Agar so'rovni xavfsiz bajarib bo'lmasa — edits bo'sh, plan'da sababini yoz.`;
+function parseJSON(t) { const m = String(t).match(/\{[\s\S]*\}/); if (!m) throw new Error('AI javobi JSON emas'); return JSON.parse(m[0]); }
+function applyEdits(edits) {
+  const files = {}; const errs = [];
+  for (const e of edits || []) { const rel = String(e.file || '').replace(/^\.?\//, ''); if (!(rel in FILES)) { errs.push('Noma\'lum fayl: ' + rel); continue; }
+    const cur = files[rel] ?? FILES[rel]; const f = String(e.find || ''); if (!f) { errs.push(rel + ': find bo\'sh'); continue; }
+    const n = cur.split(f).length - 1; if (n !== 1) { errs.push(rel + ': "' + f.slice(0, 60) + '…" ' + (n ? n + ' marta uchradi' : 'topilmadi')); continue; }
+    files[rel] = cur.replace(f, () => String(e.replace ?? '')); }
+  return { files, errs };
+}
+async function prepare() {
+  const req = $('req').value.trim(); if (!req) return; $('out').innerHTML = ''; PLAN = null; $('bApply').disabled = $('bCancel').disabled = true; $('bGo').disabled = true;
+  try {
+    const s0 = step('⏳ <b>1.</b> Jarvis kodini o\'qiyapman…', 'run'); await loadFiles(); s0.className = 'step ok'; s0.innerHTML = '✓ <b>1.</b> Kod o\'qildi (' + Object.keys(FILES).length + ' fayl)';
+    let extra = '', res = null, last = '';
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const sn = snippets(req, extra); const s1 = step(`⏳ <b>${attempt + 1}.</b> Usta o'ylayapti${attempt > 1 ? ' (qayta urinish)' : ''}…`, 'run');
+      const prompt = RULES + '\n\nSO\'ROV: ' + req + (last ? '\n\nOLDINGI URINISH XATOSI: ' + last + ' — find matnini bo\'lakdan aynan ko\'chir.' : '') + '\n\nKOD BO\'LAKLARI:\n' + sn.map(x => `### ${x.rel} (${x.a + 1}-${x.b}-qatorlar)\n${x.t}`).join('\n\n');
+      const j = parseJSON(await ai(prompt));
+      if ((!j.edits || !j.edits.length) && j.need && attempt < 3) { extra = j.need; s1.className = 'step'; s1.innerHTML = '🔎 Qo\'shimcha qidiryapman: <i>' + esc(j.need) + '</i>'; continue; }
+      const ap = applyEdits(j.edits);
+      if (ap.errs.length && attempt < 3) { last = ap.errs.join('; '); s1.className = 'step bad'; s1.innerHTML = '⚠ ' + esc(last); continue; }
+      res = { j, ap }; s1.className = 'step ok'; s1.innerHTML = '✓ <b>Reja:</b> ' + esc(j.plan || ''); break;
+    }
+    if (!res || !Object.keys(res.ap.files).length) { step('✕ Usta aniq o\'zgarish tayyorlay olmadi. So\'rovni aniqroq yozing (qaysi tugma, qaysi oyna).', 'bad'); return; }
+    const d = step('<b>Tayyorlangan o\'zgarishlar:</b>');
+    for (const e of res.j.edits || []) d.insertAdjacentHTML('beforeend', `<div class="edit"><div class="f">${esc(e.file)}</div><div class="m">− ${esc(String(e.find).slice(0, 1200))}</div><div class="p">+ ${esc(String(e.replace).slice(0, 1600))}</div></div>`);
+    if (res.ap.errs.length) step('⚠ Ba\'zi tahrirlar o\'tkazib yuborildi: ' + esc(res.ap.errs.join('; ')), 'bad');
+    PLAN = { files: res.ap.files, note: req }; $('bApply').disabled = $('bCancel').disabled = false;
+    step('👉 Ko\'rib chiqing va <b>✅ Qo\'llash</b> ni bosing. Qo\'llangach Jarvis qayta yuklanadi; ishlamay qolsa — o\'zi oldingi holatga qaytadi.');
+  } catch (e) { step('✕ ' + esc(e.message), 'bad'); } finally { $('bGo').disabled = false; }
+}
+async function apply() {
+  if (!PLAN) return; $('bApply').disabled = $('bCancel').disabled = true;
+  const s = step('⏳ Saqlanmoqda va tekshirilmoqda…', 'run');
+  const r = await N.ustaWrite({ files: Object.entries(PLAN.files).map(([rel, text]) => ({ rel, text })), note: PLAN.note });
+  if (r.error) { s.className = 'step bad'; s.innerHTML = '✕ ' + esc(r.error).replace(/\n/g, '<br>') + '<br>Hech narsa o\'zgarmadi.'; return; }
+  s.className = 'step ok'; s.innerHTML = '✓ Saqlandi (zaxira: ' + esc(r.backup) + ')';
+  const s2 = step('⏳ Jarvis qayta yuklanmoqda va tekshirilmoqda…', 'run'); const rl = await N.ustaReload();
+  if (rl.ok) { s2.className = 'step ok'; s2.innerHTML = '✅ Tayyor — Jarvis yangi holatda ishlayapti.'; } else { s2.className = 'step bad'; s2.innerHTML = '⚠ ' + esc(rl.error) + ' — kerak bo\'lsa Tarix\'dan qaytaring (40 soniyada ishga tushmasa, o\'zi qaytaradi).'; }
+  PLAN = null; refresh();
+}
+$('bGo').onclick = prepare; $('bApply').onclick = apply; $('bCancel').onclick = () => { PLAN = null; $('bApply').disabled = $('bCancel').disabled = true; step('Bekor qilindi.'); };
+$('req').onkeydown = e => { if (e.key === 'Enter' && e.ctrlKey) prepare(); };
+$('bReload').onclick = async () => { $('bReload').textContent = '⏳…'; const r = await N.ustaReload(); $('bReload').textContent = '🔄 Jarvisni qayta yuklash'; refresh(); if (r.error) alert(r.error); };
+$('bReset').onclick = async () => { if (!confirm('Ustaxonada qilingan barcha o\'zgarishlar olib tashlanadi (zaxira saqlanadi). Davom etaymi?')) return; await N.ustaReset(); await N.ustaReload(); refresh(); };
+let ED = null;
+async function openEd(rel) { const r = await N.ustaRead({ rel }); ED = rel; $('edName').textContent = '📝 ' + rel; $('edText').value = r.text; $('edSt').textContent = Math.round(r.text.length / 1024) + ' KB'; $('ed').classList.add('on'); }
+$('edClose').onclick = () => $('ed').classList.remove('on');
+$('edNext').onclick = () => { const t = $('edText'), q = $('edFind').value; if (!q) return; let i = t.value.indexOf(q, t.selectionEnd); if (i < 0) i = t.value.indexOf(q); if (i < 0) { $('edSt').textContent = 'Topilmadi'; return; } t.focus(); t.setSelectionRange(i, i + q.length); const lh = 19; t.scrollTop = Math.max(0, t.value.slice(0, i).split('\n').length * lh - 200); };
+$('edFind').onkeydown = e => { if (e.key === 'Enter') $('edNext').click(); };
+$('edSave').onclick = async () => { $('edSt').textContent = '⏳ Tekshirilmoqda…'; const r = await N.ustaWrite({ files: [{ rel: ED, text: $('edText').value }], note: 'Qo\'lda tahrir: ' + ED }); if (r.error) { $('edSt').textContent = '✕ ' + r.error; return; } $('edSt').textContent = '✓ Saqlandi — Jarvis qayta yuklanmoqda…'; const rl = await N.ustaReload(); $('edSt').textContent = rl.ok ? '✅ Saqlandi va ishlayapti' : '⚠ ' + rl.error; refresh(); };
+async function refresh() {
+  try { const st = await N.ustaStatus(); $('st').innerHTML = 'v' + esc(st.version) + ' · ' + (st.lastOk ? '<span class="good">● Jarvis ishlayapti</span>' : '<span class="badc">● Jarvis javob bermayapti</span>') + (st.lastErr ? ' · <span class="badc">' + esc(st.lastErr) + '</span>' : ''); } catch (e) {}
+  const fs = await N.ustaFiles(); $('files').innerHTML = fs.map(f => `<div class="it"><span>${f.changed ? '🟡' : '⚪'} ${esc(f.rel)}</span><span class="tag">${Math.round(f.size / 1024)} KB</span><button class="b" data-ed="${esc(f.rel)}">📝</button></div>`).join('');
+  $('files').querySelectorAll('[data-ed]').forEach(b => b.onclick = () => openEd(b.dataset.ed));
+  const h = await N.ustaHistory(); $('hist').innerHTML = h.length ? h.map(x => `<div class="it"><span title="${esc(x.note)}">${esc(x.ts.slice(0, 16).replace('T', ' '))} — ${esc(x.note || '')}</span><button class="b" data-rs="${esc(x.ts)}">↶</button></div>`).join('') : '<div class="stat">Hali o\'zgarish yo\'q.</div>';
+  $('hist').querySelectorAll('[data-rs]').forEach(b => b.onclick = async () => { if (!confirm('Shu holatga qaytaraymi?')) return; const r = await N.ustaRestore({ ts: b.dataset.rs }); if (r.error) return alert(r.error); await N.ustaReload(); refresh(); });
+  try { const c = await N.getCfg(); const p = (c.providers || []).find(x => x.id === 'claude'); $('ckSt').innerHTML = p && p.hasKey && p.enabled ? '<span class="good">✓ Claude ulangan — usta eng kuchli rejimda</span>' : 'Claude ulanmagan — bepul modellar ishlatiladi'; } catch (e) {}
+}
+$('bCk').onclick = async () => { const k = $('ck').value.trim(); if (!k) return; await N.setCfg({ providers: [{ id: 'claude', key: k, enabled: true }] }); $('ck').value = ''; const t = await N.test('claude'); $('ckSt').innerHTML = t && !t.error ? '<span class="good">✓ Claude ulandi</span>' : '<span class="badc">✕ ' + esc((t && (t.error.message || t.error)) || 'kalit ishlamadi') + '</span>'; };
+if (N.onUsta) N.onUsta(d => { if (d.type === 'rollback') step('🛡 Jarvis ishga tushmadi (' + esc(d.why) + ') — oxirgi o\'zgarish avtomatik olib tashlandi.', 'bad'); refresh(); });
+refresh(); setInterval(refresh, 15000);
+</script>
+</body>
+</html>

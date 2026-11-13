@@ -71,6 +71,7 @@ const VISION = { gemini: null, groq: ['meta-llama/llama-4-scout-17b-16e-instruct
 ipcMain.handle('llm:chat', async (e, { id, messages, tools, tier, vision }) => {
   const cfg = loadCfg();
   let provs = cfg.providers.filter(p => p.enabled && (p.key || p.local) && p.models && p.models.length);
+  if (tier === 'complex') provs.sort((a, b) => (b.id === 'claude') - (a.id === 'claude'));
   if (vision) { provs = provs.filter(p => p.key && p.id in VISION).sort((a, b) => (a.id === 'gemini' ? -1 : 0) - (b.id === 'gemini' ? -1 : 0)); if (!provs.length) return { error: { code: 'no_keys', message: 'Rasmni tushunish uchun Google Gemini yoki Groq kaliti kerak (⚙ Modellar).' } }; }
   let netErrs = 0, attempts = 0;
   if (!provs.length) return { error: { code: 'no_keys', message: 'Hech qanday model sozlanmagan. "⚙ Modellar" oynasida kamida bitta bepul API kalit kiriting.' } };
@@ -798,11 +799,89 @@ ipcMain.handle('diag', async () => {
   return { items };
 });
 
+/* ===== USTAXONA: Jarvisni tuzatish/tahrirlash/kuchaytirish — o'zgarishlar alohida qatlamda (override), zaxira va avtomatik qaytarish bilan ===== */
+const OVR = () => path.join(app.getPath('userData'), 'usta', 'override');
+const HIST = () => path.join(app.getPath('userData'), 'usta', 'history');
+const USTA_EDIT = ['index.html', 'shim.js', 'ui.js', 'ui.css', 'notiq.html', 'oqi/index.html', 'oqi/app.js'];
+const BOOT = { ok: 0, t: null, lastOk: 0, safeAt: 0, lastErr: '' };
+let USTAWIN = null;
+function baseFile(rel) { for (const d of [__dirname, BASE_APP]) { const f = path.join(d, rel); if (fs.existsSync(f)) return f; } return null; }
+function ustaRead(rel) { const o = path.join(OVR(), rel); if (fs.existsSync(o)) return { text: fs.readFileSync(o, 'utf8'), changed: true }; const b = baseFile(rel); return { text: b ? fs.readFileSync(b, 'utf8') : '', changed: false }; }
+function ustaCheck(rel, text) {
+  const vm = require('vm'); const errs = [];
+  const chk = (code, where) => { try { new vm.Script(code, { filename: where }); } catch (e) { errs.push(where + ': ' + e.message); } };
+  if (/\.js$/.test(rel)) chk(text, rel);
+  else if (/\.html$/.test(rel)) { let i = 0; text.replace(/<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/gi, (m, attr, code) => { i++; if (!/module|text\/plain|json/i.test(attr)) chk(code, rel + ' #' + i); return m; }); if (!/<\/html>\s*$/i.test(text.trim()) && !/<\/body>/i.test(text)) errs.push(rel + ': HTML oxiri yo\'q'); }
+  return errs;
+}
+function ustaSnapshot(note) { const ts = new Date().toISOString().replace(/[:.]/g, '-'); const d = path.join(HIST(), ts); fs.mkdirSync(d, { recursive: true });
+  for (const rel of USTA_EDIT) { const o = path.join(OVR(), rel); if (fs.existsSync(o)) { fs.mkdirSync(path.dirname(path.join(d, rel)), { recursive: true }); fs.copyFileSync(o, path.join(d, rel)); } }
+  fs.writeFileSync(path.join(d, 'izoh.txt'), String(note || '')); return ts; }
+function ustaSafe(why) {
+  if (!fs.existsSync(OVR()) || !fs.readdirSync(OVR()).length) return;
+  if (Date.now() - BOOT.safeAt < 60000) return; BOOT.safeAt = Date.now(); BOOT.lastErr = why;
+  try { ustaSnapshot('Avtomatik qaytarishdan oldin: ' + why); fs.rmSync(OVR(), { recursive: true, force: true }); } catch (e) {}
+  logw('USTA: xavfsiz rejim — ' + why);
+  try { new Notification({ title: 'Jarvis o\'zini tikladi', body: why + '. Oxirgi o\'zgarishlar olib tashlandi (Ustaxona → Tarix orqali qaytarish mumkin).' }).show(); } catch (e) {}
+  try { MAINWIN && MAINWIN.webContents.reload(); } catch (e) {}
+  try { USTAWIN && USTAWIN.webContents.send('usta:event', { type: 'rollback', why }); } catch (e) {}
+}
+ipcMain.handle('app:ok', () => { BOOT.ok = Date.now(); BOOT.lastOk = Date.now(); clearTimeout(BOOT.t); return true; });
+ipcMain.handle('usta:files', () => USTA_EDIT.map(rel => { const r = ustaRead(rel); return { rel, size: r.text.length, changed: r.changed }; }));
+ipcMain.handle('usta:read', (e, { rel }) => USTA_EDIT.includes(rel) ? ustaRead(rel) : { error: 'ruxsat yo\'q' });
+ipcMain.handle('usta:write', (e, { files, note }) => {
+  try { const errs = []; for (const f of files || []) { if (!USTA_EDIT.includes(f.rel)) return { error: f.rel + ' ni o\'zgartirish mumkin emas' }; errs.push(...ustaCheck(f.rel, f.text)); }
+    if (errs.length) return { error: 'Kodda xato bor, saqlanmadi:\n' + errs.join('\n') };
+    const ts = ustaSnapshot('O\'zgarishdan oldin: ' + (note || ''));
+    for (const f of files) { const o = path.join(OVR(), f.rel); fs.mkdirSync(path.dirname(o), { recursive: true }); fs.writeFileSync(o, f.text); }
+    fs.appendFileSync(path.join(app.getPath('userData'), 'usta', 'jurnal.txt'), new Date().toLocaleString('ru-RU') + ' — ' + (note || '') + ' [' + files.map(f => f.rel).join(', ') + ']\n');
+    return { ok: true, backup: ts };
+  } catch (err) { return { error: String(err.message || err) }; }
+});
+ipcMain.handle('usta:history', () => { try { return fs.readdirSync(HIST()).sort().reverse().slice(0, 40).map(ts => { let note = ''; try { note = fs.readFileSync(path.join(HIST(), ts, 'izoh.txt'), 'utf8'); } catch (e) {} return { ts, note }; }); } catch (e) { return []; } });
+ipcMain.handle('usta:restore', (e, { ts }) => { try { const d = path.join(HIST(), ts); if (!fs.existsSync(d)) return { error: 'topilmadi' }; ustaSnapshot('Tiklashdan oldin'); fs.rmSync(OVR(), { recursive: true, force: true });
+  for (const rel of USTA_EDIT) { const f = path.join(d, rel); if (fs.existsSync(f)) { const o = path.join(OVR(), rel); fs.mkdirSync(path.dirname(o), { recursive: true }); fs.copyFileSync(f, o); } } return { ok: true }; } catch (err) { return { error: String(err.message || err) }; } });
+ipcMain.handle('usta:reset', () => { try { ustaSnapshot('Asl holatga qaytarishdan oldin'); fs.rmSync(OVR(), { recursive: true, force: true }); return { ok: true }; } catch (err) { return { error: String(err.message || err) }; } });
+ipcMain.handle('usta:reload', async () => { if (!MAINWIN) return { error: 'Jarvis oynasi yo\'q' }; BOOT.ok = 0; MAINWIN.webContents.reload(); for (let i = 0; i < 80 && !BOOT.ok; i++) await new Promise(r => setTimeout(r, 250)); return BOOT.ok ? { ok: true } : { error: 'Jarvis 20 soniyada javob bermadi' }; });
+ipcMain.handle('usta:status', () => { let jur = ''; try { jur = fs.readFileSync(path.join(app.getPath('userData'), 'usta', 'jurnal.txt'), 'utf8').split('\n').slice(-15).join('\n'); } catch (e) {} let log = ''; try { log = fs.readFileSync(LOG_FILE(), 'utf8').slice(-4000); } catch (e) {}
+  return { version: require('./package.json').version, lastOk: BOOT.lastOk, lastErr: BOOT.lastErr, jurnal: jur, log }; });
+function openUstaxona() {
+  if (USTAWIN && !USTAWIN.isDestroyed()) { USTAWIN.show(); USTAWIN.focus(); return; }
+  const f = [path.join(BASE_APP, 'ustaxona.html'), path.join(__dirname, 'ustaxona.html')].find(x => fs.existsSync(x));
+  USTAWIN = new BrowserWindow({ width: 1280, height: 860, minWidth: 900, minHeight: 600, backgroundColor: '#070d16', title: 'Jarvis Ustaxona', autoHideMenuBar: true, icon: path.join(BASE_APP, 'icon.png'),
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
+  USTAWIN.loadFile(f); USTAWIN.on('closed', () => { USTAWIN = null; });
+}
+ipcMain.handle('usta:open', () => { openUstaxona(); return true; });
+/* 📦 Yaratilgan sahifani alohida .exe dasturga aylantirish (Jarvis'ning o'z dvigatelidan nusxa) */
+ipcMain.handle('build:exe', async (e, { name, html }) => {
+  try {
+    if (process.platform !== 'win32') return { error: 'Faqat Windows' };
+    const safe = String(name || 'Dastur').replace(/[\\/:*?"<>|]+/g, ' ').trim().slice(0, 60) || 'Dastur';
+    const srcDir = path.dirname(process.execPath); const out = path.join(app.getPath('desktop'), safe);
+    if (fs.existsSync(out)) fs.rmSync(out, { recursive: true, force: true });
+    fs.mkdirSync(out, { recursive: true });
+    for (const ent of fs.readdirSync(srcDir, { withFileTypes: true })) {
+      if (ent.name === 'resources') continue; const a = path.join(srcDir, ent.name), b = path.join(out, ent.name);
+      if (ent.isDirectory()) fs.cpSync(a, b, { recursive: true }); else fs.copyFileSync(a, b);
+    }
+    const exeName = path.basename(process.execPath); fs.renameSync(path.join(out, exeName), path.join(out, safe + '.exe'));
+    const ad = path.join(out, 'resources', 'app'); fs.mkdirSync(ad, { recursive: true });
+    fs.writeFileSync(path.join(ad, 'package.json'), JSON.stringify({ name: 'jarvis-made-app', productName: safe, version: '1.0.0', main: 'main.js' }));
+    fs.writeFileSync(path.join(ad, 'main.js'), `const {app,BrowserWindow,Menu}=require('electron');const path=require('path');Menu.setApplicationMenu(null);app.whenReady().then(()=>{const w=new BrowserWindow({width:1200,height:820,title:${JSON.stringify(safe)},autoHideMenuBar:true,webPreferences:{contextIsolation:true,sandbox:true}});w.loadFile(path.join(__dirname,'index.html'))});app.on('window-all-closed',()=>app.quit());`);
+    fs.writeFileSync(path.join(ad, 'index.html'), String(html || ''));
+    try { const ico = path.join(BASE_APP, 'icon.png'); if (fs.existsSync(ico)) fs.copyFileSync(ico, path.join(ad, 'icon.png')); } catch (er) {}
+    const exe = path.join(out, safe + '.exe');
+    try { await psRun(`$s=(New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Desktop')+'\\${safe.replace(/'/g, "''")}.lnk');$s.TargetPath='${exe.replace(/'/g, "''")}';$s.WorkingDirectory='${out.replace(/'/g, "''")}';$s.Save()`, 30000); } catch (er) {}
+    return { ok: true, dir: out, exe };
+  } catch (err) { return { error: String(err.message || err) }; }
+});
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1400, height: 900, minWidth: 900, minHeight: 600, backgroundColor: '#03080f', title: 'JARVIS',
     autoHideMenuBar: true,
-    show: !process.argv.includes('--hidden') && !process.argv.includes('--notiq'), icon: path.join(BASE_APP, 'icon.png'),
+    show: !process.argv.includes('--hidden') && !process.argv.includes('--notiq') && !process.argv.includes('--ustaxona'), icon: path.join(BASE_APP, 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false }
   });
   MAINWIN = win;
@@ -810,12 +889,15 @@ function createWindow() {
   makeTray();
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:\/\//.test(url)) shell.openExternal(url); return { action: 'deny' }; });
   win.webContents.on('will-navigate', (e, url) => { if (url.startsWith('jarvis:')) return; e.preventDefault(); if (url.startsWith('file:')) { try { const { fileURLToPath } = require('url'); win.webContents.send('drop:path', fileURLToPath(url)); } catch (er) {} return; } shell.openExternal(url); });
+  win.webContents.on('did-finish-load', () => { BOOT.ok = 0; clearTimeout(BOOT.t); BOOT.t = setTimeout(() => { if (!BOOT.ok) ustaSafe('Jarvis 40 soniyada ishga tushmadi'); }, 40000); });
+  win.webContents.on('render-process-gone', (e, d) => ustaSafe('Jarvis oynasi yiqildi (' + (d && d.reason) + ')'));
   win.loadURL('jarvis://app/index.html');
   TG.win = win; const t = tgCfg(); if (t.token && t.owner && t.enabled !== false) { TG.on = true; tgLoop(); }
   if (process.argv.includes('--notiq')) openNotiq();
+  if (process.argv.includes('--ustaxona')) openUstaxona();
 }
 app.whenReady().then(() => {
-  protocol.handle('jarvis', req => { const u = new URL(req.url); const rel = decodeURIComponent(u.pathname); let f = path.normalize(path.join(__dirname, rel)); if (!f.startsWith(__dirname)) return new Response('no', { status: 403 }); if (!fs.existsSync(f) && BASE_APP !== __dirname) { const g = path.normalize(path.join(BASE_APP, rel)); if (g.startsWith(BASE_APP)) f = g; } return net.fetch(pathToFileURL(f).toString()); });
+  protocol.handle('jarvis', req => { const u = new URL(req.url); const rel = decodeURIComponent(u.pathname); { const o = path.normalize(path.join(OVR(), rel)); if (o.startsWith(OVR()) && USTA_EDIT.includes(rel.replace(/^\/+/, '')) && fs.existsSync(o)) return net.fetch(pathToFileURL(o).toString()); } let f = path.normalize(path.join(__dirname, rel)); if (!f.startsWith(__dirname)) return new Response('no', { status: 403 }); if (!fs.existsSync(f) && BASE_APP !== __dirname) { const g = path.normalize(path.join(BASE_APP, rel)); if (g.startsWith(BASE_APP)) f = g; } return net.fetch(pathToFileURL(f).toString()); });
   session.defaultSession.webRequest.onBeforeSendHeaders({ urls: ['*://*.youtube.com/*', '*://*.youtube-nocookie.com/*', '*://*.googlevideo.com/*', '*://*.ytimg.com/*'] }, (d, cb) => { const h = d.requestHeaders; if (!h.Referer || /^jarvis:/.test(h.Referer)) h.Referer = 'https://jarvis.uz/'; cb({ requestHeaders: h }); });
   session.defaultSession.setPermissionRequestHandler((wc, perm, cb) => cb(['media', 'clipboard-sanitized-write', 'clipboard-read', 'notifications'].includes(perm)));
   session.defaultSession.setPermissionCheckHandler((wc, perm) => ['media', 'clipboard-sanitized-write'].includes(perm));
@@ -1086,12 +1168,14 @@ ipcMain.handle('oqi:open', async (e, a = {}) => {
   } catch (err) { return { error: String(err.message || err) }; }
 });
 
+app.whenReady().then(() => { if (process.platform !== 'win32') return; try { const f = path.join(app.getPath('userData'), '.usta-shortcut'); if (fs.existsSync(f)) return; const exe = process.execPath.replace(/'/g, "''"); const ico = path.join(BASE_APP, 'icon.png').replace(/'/g, "''");
+  psRun(`$s=New-Object -ComObject WScript.Shell; foreach($d in @([Environment]::GetFolderPath('Desktop'),(Join-Path $env:APPDATA 'Microsoft\\Windows\\Start Menu\\Programs'))){ $l=$s.CreateShortcut((Join-Path $d 'Jarvis Ustaxona.lnk')); $l.TargetPath='${exe}'; $l.Arguments='--ustaxona'; $l.Description='Jarvisni tuzatish va kuchaytirish'; $l.Save() }`, 30000).then(() => fs.writeFileSync(f, '1')).catch(() => {}); } catch (e) {} });
 app.whenReady().then(() => { if (process.platform !== 'win32') return; try { const f = path.join(app.getPath('userData'), '.notiq-shortcut'); if (fs.existsSync(f)) return;
   const exe = process.execPath.replace(/'/g, "''"); const ico = path.join(BASE_APP, 'notiq.ico').replace(/'/g, "''");
   psRun(`$s=New-Object -ComObject WScript.Shell; foreach($d in @([Environment]::GetFolderPath('Desktop'),(Join-Path $env:APPDATA 'Microsoft\\Windows\\Start Menu\\Programs'))){ $l=$s.CreateShortcut((Join-Path $d 'Notiq — taqdimot.lnk')); $l.TargetPath='${exe}'; $l.Arguments='--notiq'; $l.WorkingDirectory='${path.dirname(process.execPath).replace(/'/g, "''")}'; if(Test-Path '${ico}'){ $l.IconLocation='${ico}' }; $l.Description='Taqdimotni tabiiy ovozda gapirib beradi'; $l.Save() }`, 30000)
     .then(r => { if (!r.err) fs.writeFileSync(f, '1'); else logw('NOTIQ shortcut: ' + r.se.slice(0, 200)); }); } catch (er) {} });
 
-if (!app.requestSingleInstanceLock()) { app.__quitting = true; app.exit(0); } else app.on('second-instance', (e, argv) => { if ((argv || []).includes('--notiq')) openNotiq(); else showMain(); });
+if (!app.requestSingleInstanceLock()) { app.__quitting = true; app.exit(0); } else app.on('second-instance', (e, argv) => { if ((argv || []).includes('--notiq')) openNotiq(); else if ((argv || []).includes('--ustaxona')) openUstaxona(); else showMain(); });
 // birinchi ishga tushishda — Windows bilan birga ochilsin (fonda)
 app.whenReady().then(() => { try { const f = path.join(app.getPath('userData'), '.autostart-set'); if (!fs.existsSync(f)) { app.setLoginItemSettings({ openAtLogin: true, args: ['--hidden'] }); fs.writeFileSync(f, '1'); } } catch (e) {} });
 
