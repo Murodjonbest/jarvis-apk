@@ -1,0 +1,45 @@
+name: Takror APK
+on:
+  push:
+    branches: [main]
+    paths: ['takror/**', '.github/workflows/takror.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Imzo kaliti (doimiy — yangilanishlar ustidan o'rnatilsin)
+        uses: actions/cache@v4
+        with:
+          path: ~/takror-key
+          key: takror-signing-key-v1
+      - name: Kalitni tayyorlash
+        run: |
+          mkdir -p ~/takror-key
+          if [ ! -f ~/takror-key/takror.jks ]; then
+            P=$(openssl rand -hex 16); echo "$P" > ~/takror-key/pass
+            keytool -genkeypair -keystore ~/takror-key/takror.jks -alias takror -keyalg RSA -keysize 2048 -validity 10000 -storepass "$P" -keypass "$P" -dname "CN=Takror, C=UZ"
+          fi
+      - name: APK yig'ish
+        run: |
+          export TK_KS=$HOME/takror-key/takror.jks TK_PASS=$(cat ~/takror-key/pass)
+          cd takror && gradle assembleRelease --no-daemon -q
+          cp app/build/outputs/apk/release/app-release.apk ../Takror.apk
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: takror-v${{ github.run_number }}
+          name: Takror ${{ github.run_number }}
+          files: Takror.apk
+          make_latest: false
+          prerelease: true
+          body: Takror — audioni qayta-qayta tinglash ilovasi.

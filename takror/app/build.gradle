@@ -1,0 +1,22 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'uz.murodjon.takror'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'uz.murodjon.takror'
+        minSdk 24
+        targetSdk 35
+        versionCode((System.getenv('GITHUB_RUN_NUMBER') ?: '1') as int)
+        versionName "1.0." + (System.getenv('GITHUB_RUN_NUMBER') ?: '1')
+    }
+    signingConfigs {
+        rel {
+            storeFile file(System.getenv('TK_KS') ?: 'none.jks')
+            storePassword System.getenv('TK_PASS') ?: ''
+            keyAlias 'takror'
+            keyPassword System.getenv('TK_PASS') ?: ''
+        }
+    }
+    buildTypes { release { minifyEnabled false; signingConfig signingConfigs.rel } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}

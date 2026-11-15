@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Takror</title>
+<style>
+:root{--bg:#03080f;--card:#0a1825;--line:rgba(64,200,255,.16);--cy:#3fd2ff;--txt:#e6f4fb;--mut:#86a3b8;--warn:#ffb547}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:560px;margin:0 auto;padding:16px 16px 28px}
+h1{margin:4px 0 2px;font-size:22px;letter-spacing:.04em}
+.sub{color:var(--mut);font-size:14px;margin-bottom:14px}
+button,select{font:inherit;color:var(--txt);background:#0f2233;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+button:active{transform:scale(.97)}
+.pick{width:100%;padding:16px;font-size:17px;font-weight:600;background:var(--cy);color:#021018;border:none}
+.list{display:flex;flex-direction:column;gap:6px;margin:14px 0}
+.item{display:flex;gap:10px;align-items:center;padding:12px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:15px}
+.item.on{border-color:var(--cy);box-shadow:0 0 14px rgba(63,210,255,.25)}
+.item span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.empty{color:var(--mut);text-align:center;padding:18px 0;font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:12px}
+.now{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:8px}
+input[type=range]{width:100%;accent-color:var(--cy);height:28px}
+.time{display:flex;justify-content:space-between;color:var(--mut);font-size:13px;font-variant-numeric:tabular-nums}
+.ctl{display:flex;justify-content:center;align-items:center;gap:12px;margin:14px 0 6px}
+.ctl button{width:56px;height:56px;border-radius:28px;padding:0;font-size:18px}
+.ctl .main{width:76px;height:76px;border-radius:38px;font-size:30px;background:var(--cy);color:#021018;border:none}
+.cnt{text-align:center;color:var(--cy);font-weight:700;letter-spacing:.08em;font-size:14px;min-height:20px}
+.lbl{color:var(--mut);font-size:13px;margin:12px 0 6px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1;min-width:0;padding:10px 6px;font-size:14px}
+.seg button.sel{background:var(--cy);color:#021018;border-color:var(--cy)}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.grid label{display:flex;flex-direction:column;gap:4px;color:var(--mut);font-size:12px}
+.grid select{width:100%}
+.ab{color:var(--warn);font-size:13px;text-align:center;min-height:18px;margin-top:6px}
+.tip{color:var(--mut);font-size:12.5px;margin-top:14px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔁 Takror</h1>
+  <div class="sub">Audioni siz to'xtatmaguncha qayta-qayta o'qiydi. Ekran o'chsa ham ijro davom etadi.</div>
+  <button class="pick" id="pick">📂 Audio tanlash</button>
+  <input type="file" id="file" accept="audio/*" multiple hidden>
+  <div class="list" id="list"><div class="empty">Hali fayl tanlanmagan</div></div>
+
+  <div class="card">
+    <div class="now" id="now">—</div>
+    <input type="range" id="seek" min="0" max="1000" value="0">
+    <div class="time"><span id="cur">0:00</span><span id="dur">0:00</span></div>
+    <div class="ctl">
+      <button id="prev" aria-label="Oldingi">⏮</button>
+      <button id="back" aria-label="10 soniya orqaga">−10</button>
+      <button class="main" id="play" aria-label="Ijro">▶</button>
+      <button id="fwd" aria-label="10 soniya oldinga">+10</button>
+      <button id="next" aria-label="Keyingi">⏭</button>
+    </div>
+    <div class="cnt" id="cnt"></div>
+
+    <div class="lbl">Takrorlash</div>
+    <div class="seg" id="mode">
+      <button data-m="one" class="sel">🔂 Shu fayl</button>
+      <button data-m="all">🔁 Ro'yxat</button>
+      <button data-m="off">⏹ Yo'q</button>
+    </div>
+
+    <div class="lbl">Faqat bir bo'lakni takrorlash (A–B)</div>
+    <div class="seg">
+      <button id="setA">A — boshi</button>
+      <button id="setB">B — oxiri</button>
+      <button id="clrAB">✕ Bekor</button>
+    </div>
+    <div class="ab" id="ab"></div>
+
+    <div class="grid" style="margin-top:12px">
+      <label>Tezlik<select id="rate"><option>0.5</option><option>0.75</option><option>0.9</option><option selected>1</option><option>1.1</option><option>1.25</option><option>1.5</option><option>1.75</option><option>2</option></select></label>
+      <label>Orada pauza<select id="gap"><option value="0">yo'q</option><option value="2">2 son</option><option value="3">3 son</option><option value="5">5 son</option><option value="10">10 son</option><option value="20">20 son</option></select></label>
+      <label>Uxlash taymeri<select id="sleep"><option value="0">o'chiq</option><option value="10">10 daq</option><option value="15">15 daq</option><option value="20">20 daq</option><option value="30">30 daq</option><option value="45">45 daq</option><option value="60">60 daq</option></select></label>
+    </div>
+  </div>
+  <div class="tip">Maslahat: yodlash uchun bo'lakni A–B bilan belgilang, pauzani 3–5 soniya qiling — pauzada eshitganingizni ovoz chiqarib takrorlang.</div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const S={files:[],idx:0,mode:'one',rate:1,gap:0,count:0,a:null,b:null,sleepAt:0,gapT:0,url:null,user:false};
+const au=new Audio();au.preload='auto';
+const fmt=s=>{s=Math.max(0,Math.floor(s||0));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nat=(on)=>{try{window.Takror&&Takror.playing(on,S.files[S.idx]?S.files[S.idx].name:'')}catch(e){}};
+function load(i,play){if(!S.files.length)return;S.idx=(i+S.files.length)%S.files.length;
+  if(S.url)URL.revokeObjectURL(S.url);S.url=URL.createObjectURL(S.files[S.idx]);au.src=S.url;au.playbackRate=S.rate;S.a=S.b=null;
+  if(play)start();draw()}
+function start(){clearTimeout(S.gapT);au.playbackRate=S.rate;au.play().then(()=>nat(true)).catch(()=>{})}
+function stop(){clearTimeout(S.gapT);au.pause();nat(false);draw()}
+function again(){
+  if(S.sleepAt&&Date.now()>=S.sleepAt){S.sleepAt=0;$('sleep').value='0';stop();return}
+  S.count++;
+  const go=()=>{if(S.mode==='all'&&S.files.length>1)load(S.idx+1,true);else{au.currentTime=S.a||0;start()}};
+  if(S.mode==='off'){nat(false);draw();return}
+  if(S.gap)S.gapT=setTimeout(go,S.gap*1000);else go();draw()}
+au.addEventListener('ended',again);
+au.addEventListener('timeupdate',()=>{
+  if(S.b!=null&&au.currentTime>=S.b){au.pause();au.currentTime=S.a||0;again();return}
+  if(S.sleepAt&&Date.now()>=S.sleepAt){S.sleepAt=0;$('sleep').value='0';stop();return}
+  tick()});
+au.addEventListener('play',draw);au.addEventListener('pause',draw);au.addEventListener('loadedmetadata',tick);
+let drag=false;
+function tick(){if(!drag&&au.duration)$('seek').value=Math.round(au.currentTime/au.duration*1000);$('cur').textContent=fmt(au.currentTime);$('dur').textContent=fmt(au.duration)}
+function draw(){
+  $('list').innerHTML=S.files.length?S.files.map((f,i)=>`<div class="item${i===S.idx?' on':''}" data-i="${i}">${i===S.idx&&!au.paused?'🔊':'🎵'}<span>${esc(f.name)}</span></div>`).join(''):'<div class="empty">Hali fayl tanlanmagan</div>';
+  $('now').textContent=S.files[S.idx]?S.files[S.idx].name:'—';
+  $('play').textContent=au.paused?'▶':'⏸';
+  document.querySelectorAll('#mode button').forEach(b=>b.classList.toggle('sel',b.dataset.m===S.mode));
+  $('ab').textContent=(S.a!=null||S.b!=null)?`Bo'lak: A ${fmt(S.a||0)} — B ${S.b!=null?fmt(S.b):'…'}`:'';
+  $('cnt').textContent=S.files.length?`TAKRORLANDI: ${S.count} marta`:'';tick()}
+$('pick').onclick=()=>$('file').click();
+$('file').onchange=e=>{const fs=[...e.target.files];if(!fs.length)return;S.files=fs;S.count=0;load(0,true);e.target.value=''};
+$('list').onclick=e=>{const it=e.target.closest('[data-i]');if(it){S.count=0;load(+it.dataset.i,true)}};
+$('play').onclick=()=>{if(!S.files.length)return $('file').click();au.paused?start():stop()};
+$('prev').onclick=()=>{S.count=0;load(S.idx-1,true)};$('next').onclick=()=>{S.count=0;load(S.idx+1,true)};
+$('back').onclick=()=>{au.currentTime=Math.max(0,au.currentTime-10)};
+$('fwd').onclick=()=>{if(au.duration)au.currentTime=Math.min(au.duration-0.1,au.currentTime+10)};
+$('seek').oninput=()=>{drag=true;if(au.duration)$('cur').textContent=fmt($('seek').value/1000*au.duration)};
+$('seek').onchange=()=>{if(au.duration)au.currentTime=$('seek').value/1000*au.duration;drag=false};
+document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{S.mode=b.dataset.m;draw()});
+$('setA').onclick=()=>{S.a=au.currentTime;if(S.b!=null&&S.b<=S.a)S.b=null;draw()};
+$('setB').onclick=()=>{if(au.currentTime>(S.a||0)){S.b=au.currentTime;au.currentTime=S.a||0}draw()};
+$('clrAB').onclick=()=>{S.a=S.b=null;draw()};
+$('rate').onchange=e=>{S.rate=+e.target.value;au.playbackRate=S.rate};
+$('gap').onchange=e=>{S.gap=+e.target.value};
+$('sleep').onchange=e=>{const m=+e.target.value;S.sleepAt=m?Date.now()+m*60000:0};
+draw();
+</script>
+</body>
+</html>

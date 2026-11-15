@@ -2,7 +2,7 @@ name: APK yig'ish
 on:
   push:
     branches: [main]
-    paths-ignore: ['.github/workflows/oqi.yml']
+    paths-ignore: ['.github/workflows/oqi.yml', '.github/workflows/takror.yml', 'takror/**']
   workflow_dispatch:
 permissions:
   contents: write
