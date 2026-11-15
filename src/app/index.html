@@ -2809,7 +2809,7 @@ const _rc=runCommand;runCommand=function(text){const c=(String(text).match(/^\/(
 
 /* pastki panelga tugmalar (telefonda ilovalar varag'iga ham chiqadi) */
 const dock=$('dock');if(dock){const mk=(ic,fn)=>{const b=document.createElement('button');b.textContent=ic;b.onclick=fn;dock.insertBefore(b,dock.firstChild);return b};
-  mk('👥 Jamoa',()=>openAgents(false));mk('☀️ Tong',()=>morningBrief());}
+  mk('☀️ Tong',()=>morningBrief());const tb=dock.querySelector('[data-app="team"]');if(tb)tb.onclick=()=>openAgents(false);else mk('👥 Jamoa',()=>openAgents(false));}
 
 /* ertalab birinchi ochilganda — hisobotni taklif qilish */
 setTimeout(()=>{const n=new Date(),h=n.getHours();if(h<5||h>=12||LSg('jarvis_brief_day','')===dayKey(n))return;
