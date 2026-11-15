@@ -698,7 +698,7 @@ Murodjon haqida: Sirdaryo viloyatida qurilish nazorati bo'yicha bosh taftishchi;
 Qoidalar:
 - Javob qisqa va lo'nda bo'lsin (odatda 1–5 gap), chunki ovoz chiqarib o'qiladi. Foydalanuvchi batafsil matn, hujjat yoki jadval so'rasa — to'liq yoz.
 - Har qanday hisob-kitob uchun calculate vositasidan foydalan; murakkab yoki ko'p qadamli hisob, jadval tahlili, ko'p elementni qayta ishlash uchun run_code (Python) bilan kod yozib bajar — internetsiz ham ishlaydi. Asfalt zichligi taxminan 2.35 t/m³, beton ~2.4 t/m³, QQS 12% — boshqa qiymat berilmasa shularni ishlat va aytib o't.
-- Vaqt/sana uchun get_datetime; eslatma uchun avval get_datetime, keyin set_reminder; qayd uchun add_note; saytlar uchun open_website; ob-havo uchun weather_link (jonli ob-havoni bilmasligingni ayt).
+- Vaqt/sana uchun get_datetime; eslatma uchun avval get_datetime, keyin set_reminder; qayd uchun add_note; saytlar uchun open_website; ob-havo uchun weather_link (jonli ob-havo uchun esa weather_now vositasidan foydalan).
 - Rasmiy hujjat matnlarini rasmiy o'zbek uslubida yoz. Normativ hujjat raqamlarini aniq bilmasang — taxmin qilma, tekshirishni maslahat ber.
 - Bilmagan narsangni o'ylab topma.
 - HAR QANDAY ISHNI O'ZING BAJAR. Hech qachon "qila olmayman", "imkonim yo'q", "kira olmayman", "havolani yuboraman — o'zingiz qarang" dema. Buning o'rniga: "Xo'p, ser, hozir hal qilaman" deb, darhol vositalar bilan ishga kirish.
@@ -2511,5 +2511,312 @@ img.onload=()=>{const tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);g
     gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);requestAnimationFrame(loop)})(t0)};
 })();
 </script>
+<!-- ===== JARVIS+ ===== -->
+<style>
+/* ===== JARVIS+ : chaqiruv animatsiyasi, jamoa paneli, ertalabki hisobot ===== */
+#arcFx{position:fixed;inset:0;z-index:59;display:none;background:#01050b;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#arcFx.on{display:block;animation:arcIn .35s ease-out}
+@keyframes arcIn{from{opacity:0;transform:scale(1.04)}to{opacity:1;transform:none}}
+#arcFx canvas{position:absolute;inset:0;width:100%;height:100%}
+#arcFx .arcTop{position:absolute;top:calc(env(safe-area-inset-top) + 26px);left:0;right:0;text-align:center;font:700 15px Orbitron,sans-serif;letter-spacing:.9em;padding-left:.9em;color:rgba(190,235,255,.85);text-shadow:0 0 14px rgba(63,210,255,.8)}
+#arcFx .arcTop small{display:block;margin-top:8px;font:500 11px Rajdhani,sans-serif;letter-spacing:.35em;color:rgba(150,200,230,.55)}
+#arcFx .arcSt{position:absolute;left:0;right:0;top:calc(47% + min(44vw,44vh));text-align:center;font:700 13px Orbitron,sans-serif;letter-spacing:.45em;padding-left:.45em;color:var(--arcCol,#8be9ff);text-shadow:0 0 12px var(--arcCol,#8be9ff)}
+#arcFx .arcSub{position:absolute;left:8%;right:8%;bottom:calc(env(safe-area-inset-bottom) + 52px);text-align:center;font:600 19px Rajdhani,sans-serif;line-height:1.35;color:#e6f7ff;text-shadow:0 2px 12px #000;max-height:30vh;overflow:hidden}
+@media (orientation:landscape){#arcFx .arcSt{top:calc(47% + 35vh)}#arcFx .arcAg{top:calc(47% + 35vh + 26px)}#arcFx .arcSub{bottom:36px}}
+#arcFx .arcX{position:absolute;top:calc(env(safe-area-inset-top) + 14px);right:14px;width:40px;height:40px;border-radius:20px;border:1px solid rgba(139,233,255,.3);background:rgba(3,15,28,.6);color:#8be9ff;font-size:16px}
+#arcFx .arcOpt{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 18px);left:0;right:0;text-align:center;font:500 12px Rajdhani,sans-serif;color:rgba(150,200,230,.5)}
+#arcFx .arcAg{position:absolute;left:0;right:0;top:calc(47% + min(44vw,44vh) + 28px);text-align:center;font:600 13px Rajdhani,sans-serif;color:rgba(200,235,255,.75);letter-spacing:.05em}
+
+.agStage{display:flex;flex-direction:column;align-items:center;padding:16px 8px 10px;background:radial-gradient(ellipse at 50% 40%,rgba(30,60,90,.35),transparent 70%);border-radius:14px;margin-bottom:10px}
+.agOrb{--c:#3fd2ff;width:76px;height:76px;border-radius:50%;position:relative;background:radial-gradient(circle at 50% 50%,#fff 0 14%,var(--c) 34%,color-mix(in srgb,var(--c) 25%,transparent) 62%,transparent 71%);box-shadow:0 0 34px color-mix(in srgb,var(--c) 70%,transparent);transition:.35s}
+.agOrb::before,.agOrb::after{content:'';position:absolute;inset:-9px;border-radius:50%;border:2px solid color-mix(in srgb,var(--c) 70%,transparent);border-left-color:transparent;border-bottom-color:transparent;animation:agSpin 3s linear infinite}
+.agOrb::after{inset:-17px;border-width:1px;border-style:dashed;animation-duration:7s;animation-direction:reverse;opacity:.6}
+.agOrb.busy::before{animation-duration:.8s}.agOrb.busy{animation:agPulse 1s ease-in-out infinite}
+@keyframes agSpin{to{transform:rotate(360deg)}}@keyframes agPulse{50%{transform:scale(1.08)}}
+.agStage .agOrb{width:96px;height:96px;margin:18px 0 22px}
+.agStage .nm{font:700 14px Orbitron,sans-serif;letter-spacing:.3em;color:var(--c,#8be9ff)}
+.agStage .ln{min-height:40px;margin-top:8px;text-align:center;font:600 15px Rajdhani,sans-serif;color:#d9eef8;max-width:420px}
+.agGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin-bottom:10px}
+.agCell{background:#071523;border:1px solid rgba(64,200,255,.12);border-radius:12px;padding:12px 6px 8px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;color:var(--txt)}
+.agCell.sel{border-color:var(--c);box-shadow:0 0 14px color-mix(in srgb,var(--c) 40%,transparent)}
+.agCell .agOrb{width:38px;height:38px;margin:14px 0 8px}
+.agCell b{font:700 11px Rajdhani,sans-serif;letter-spacing:.06em;text-align:center;line-height:1.1}
+.agCell small{font-size:11px;color:var(--mut);text-align:center;min-height:13px}
+.agCell small.busy{color:var(--amber)}
+
+.tongHead{padding:14px 12px;border-radius:14px;background:linear-gradient(135deg,#0b2236,#071422);border:1px solid rgba(64,200,255,.18);margin-bottom:10px}
+.tongHead .g{font:700 20px Rajdhani,sans-serif;color:#eafaff}.tongHead .d{color:var(--mut);font-size:13px;margin-top:2px}
+.tongGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.tongCard{background:#0a1825;border:1px solid rgba(64,200,255,.12);border-radius:12px;padding:10px 12px}
+.tongCard .h{font:700 10px Orbitron,sans-serif;letter-spacing:.18em;color:var(--cy2);margin-bottom:8px}
+.tongCard .big{font:700 34px Rajdhani,sans-serif;color:#eafaff;line-height:1}
+.tongCard .row{display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-size:14px;border-bottom:1px solid rgba(64,200,255,.06)}
+.tongCard .row:last-child{border:0}.tongCard .row span:last-child{color:var(--mut);white-space:nowrap}
+.tongCard .num{font:700 22px Rajdhani,sans-serif;color:var(--green)}
+</style>
+<div id="arcFx" aria-hidden="true"><canvas></canvas>
+  <div class="arcTop">J A R V I S<small>SHAXSIY YORDAMCHI</small></div>
+  <div class="arcSt">TAYYOR</div><div class="arcAg"></div><div class="arcSub"></div>
+  <button class="arcX" title="Yopish">✕</button>
+  <div class="arcOpt">Bosib yopish mumkin · "animatsiyani o'chir" deb o'chirasiz</div>
+</div>
+<script>
+/* =====================================================================
+   JARVIS+  —  1) "Jarvis" chaqirilganda to'liq ekran energiya shari
+               2) Agentlar jamoasi paneli (har birining rangli shari, hisobot)
+               3) "Xayrli tong" — ertalabki hisobot (ob-havo, bugun, kecha, pochta/kalendar)
+               4) Ovozli boshqaruv: model, ovoz, jamoa, ulanishlar
+   ===================================================================== */
+(function(){
+const LSg=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}};
+const LSs=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+const NAT2=()=>window.jarvisNative||null;
+
+/* ---------------- 1) CHAQIRUV ANIMATSIYASI ---------------- */
+const FX=$('arcFx'),FC=FX.querySelector('canvas'),fx=FC.getContext('2d');
+const MODE_COL={idle:[90,170,255],listening:[130,225,255],thinking:[255,190,80],speaking:[110,255,205]};
+const MODE_TXT={idle:'TAYYOR',listening:'TINGLAYAPMAN',thinking:'O\'YLAYAPMAN',speaking:'GAPIRYAPMAN'};
+const ARC={on:false,raf:0,t0:0,idleAt:0,col:[90,170,255],lvl:.2,bolts:[],boltAt:0,sub:'',agent:''};
+const arcEnabled=()=>LSg('jarvis_arc','1')!=='0';
+// tasodifiy, lekin har safar bir xil — shar iplari
+let seed=7;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647};
+const STRANDS=Array.from({length:18},(_,i)=>{const th=rnd()*Math.PI*2,ph=Math.acos(2*rnd()-1);
+  const n=[Math.sin(ph)*Math.cos(th),Math.sin(ph)*Math.sin(th),Math.cos(ph)];
+  let u=Math.abs(n[0])<.9?[0,-n[2],n[1]]:[-n[2],0,n[0]];const ul=Math.hypot(...u);u=u.map(x=>x/ul);
+  const v=[n[1]*u[2]-n[2]*u[1],n[2]*u[0]-n[0]*u[2],n[0]*u[1]-n[1]*u[0]];
+  return{u,v,r:.78+rnd()*.3,len:1.1+rnd()*2.4,sp:(rnd()<.5?-1:1)*(.35+rnd()*.9),a0:rnd()*7,w:1+rnd()*1.6,wob:rnd()*7}});
+const BLOBS=Array.from({length:5},()=>({x:rnd(),y:rnd(),r:.35+rnd()*.4,sx:(rnd()-.5)*.05,sy:(rnd()-.5)*.05,p:rnd()*7}));
+function fit(){const d=Math.min(devicePixelRatio||1,1.5);FC.width=Math.round(innerWidth*d);FC.height=Math.round(innerHeight*d);fx.setTransform(d,0,0,d,0,0)}
+function bolt(W,H,R,cxp,cyp){ // shar atrofidan chetga qarab chaqmoq
+  const a=rnd()*Math.PI*2,r0=R*(1.05+rnd()*.5),r1=Math.max(W,H)*(.45+rnd()*.4);
+  let pts=[[cxp+Math.cos(a)*r0,cyp+Math.sin(a)*r0],[cxp+Math.cos(a+(rnd()-.5)*.6)*r1,cyp+Math.sin(a+(rnd()-.5)*.6)*r1]];
+  for(let k=0;k<5;k++){const np=[pts[0]];for(let i=1;i<pts.length;i++){const[p,q]=[pts[i-1],pts[i]];const d=Math.hypot(q[0]-p[0],q[1]-p[1])*.22;
+      np.push([(p[0]+q[0])/2+(rnd()-.5)*d,(p[1]+q[1])/2+(rnd()-.5)*d],q)}pts=np}
+  return{pts,life:1,dec:.06+rnd()*.06,w:.6+rnd()*1.4}}
+function arcFrame(now){
+  if(!ARC.on)return;ARC.raf=requestAnimationFrame(arcFrame);
+  const t=(now-ARC.t0)/1000,Wd=innerWidth,H=innerHeight,cxp=Wd/2,cyp=H*.47,R=Math.min(Wd,H)*(H<Wd?.2:.25);
+  const tc=MODE_COL[S.mode]||MODE_COL.idle;for(let i=0;i<3;i++)ARC.col[i]+=(tc[i]-ARC.col[i])*.06;const C=ARC.col.map(Math.round).join(',');
+  const tl=S.mode==='speaking'?1:S.mode==='thinking'?.65:S.mode==='listening'?.55:.2;ARC.lvl+=(tl-ARC.lvl)*.05;const L=ARC.lvl;
+  // fon: chuqur ko'k plazma
+  fx.globalCompositeOperation='source-over';fx.fillStyle='#01050b';fx.fillRect(0,0,Wd,H);
+  fx.globalCompositeOperation='lighter';
+  BLOBS.forEach((b,i)=>{const x=(b.x+Math.sin(t*.13+b.p)*.18)*Wd,y=(b.y+Math.cos(t*.11+b.p)*.18)*H,r=b.r*Math.max(Wd,H);
+    const g=fx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,`rgba(${i%2?'20,70,170':C},${.10+.05*L})`);g.addColorStop(1,'rgba(0,0,0,0)');fx.fillStyle=g;fx.fillRect(0,0,Wd,H)});
+  // chaqmoqlar
+  if(now-ARC.boltAt>(140-90*L)){ARC.boltAt=now;const n=1+Math.floor(L*3);for(let i=0;i<n&&ARC.bolts.length<9;i++)ARC.bolts.push(bolt(Wd,H,R,cxp,cyp))}
+  ARC.bolts=ARC.bolts.filter(b=>(b.life-=b.dec)>0);
+  ARC.bolts.forEach(b=>{fx.beginPath();b.pts.forEach((p,i)=>i?fx.lineTo(p[0],p[1]):fx.moveTo(p[0],p[1]));
+    fx.strokeStyle=`rgba(80,150,255,${.10*b.life})`;fx.lineWidth=b.w*7;fx.stroke();fx.strokeStyle=`rgba(190,225,255,${.55*b.life})`;fx.lineWidth=b.w;fx.stroke()});
+  // ichki nur
+  const pulse=1+Math.sin(t*(2+6*L))*.05*(.3+L);
+  let g=fx.createRadialGradient(cxp,cyp,0,cxp,cyp,R*1.6);g.addColorStop(0,`rgba(${C},${.35+.25*L})`);g.addColorStop(.45,`rgba(${C},.08)`);g.addColorStop(1,'rgba(0,0,0,0)');
+  fx.fillStyle=g;fx.beginPath();fx.arc(cxp,cyp,R*1.6,0,7);fx.fill();
+  // energiya iplari (3D aylanuvchi doiralar)
+  const ry=t*(.35+.6*L),rx=t*.23,cy_=Math.cos(ry),sy_=Math.sin(ry),cx_=Math.cos(rx),sx_=Math.sin(rx);fx.lineCap='round';
+  STRANDS.forEach(s=>{const front=new Path2D(),back=new Path2D();let pf=null;const steps=34,a0=s.a0+t*s.sp*(1+L),rr=R*s.r*(1+Math.sin(t*3+s.wob)*.06*L);
+    for(let i=0;i<=steps;i++){const a=a0+s.len*i/steps,ca=Math.cos(a),sa=Math.sin(a);
+      let x=ca*s.u[0]+sa*s.v[0],y=ca*s.u[1]+sa*s.v[1],z=ca*s.u[2]+sa*s.v[2];
+      const x1=x*cy_+z*sy_,z1=-x*sy_+z*cy_,y1=y*cx_-z1*sx_,z2=y*sx_+z1*cx_;
+      const k=1/(1.9-z2*.45),X=cxp+x1*rr*k*1.25,Y=cyp+y1*rr*k*1.25,isF=z2>-.15;
+      if(pf!==null&&pf!==isF){(pf?front:back).lineTo(X,Y);(isF?front:back).moveTo(X,Y)}else if(pf===null)(isF?front:back).moveTo(X,Y);else(isF?front:back).lineTo(X,Y);pf=isF}
+    fx.strokeStyle=`rgba(${C},.18)`;fx.lineWidth=s.w;fx.stroke(back);
+    fx.strokeStyle=`rgba(${C},.22)`;fx.lineWidth=s.w*5;fx.stroke(front);
+    fx.strokeStyle=`rgba(235,250,255,${.55+.4*L})`;fx.lineWidth=s.w;fx.stroke(front)});
+  // yadro
+  g=fx.createRadialGradient(cxp,cyp,0,cxp,cyp,R*.42*pulse);g.addColorStop(0,'rgba(255,255,255,.95)');g.addColorStop(.3,`rgba(${C},.75)`);g.addColorStop(1,'rgba(0,0,0,0)');
+  fx.fillStyle=g;fx.beginPath();fx.arc(cxp,cyp,R*.42*pulse,0,7);fx.fill();
+  // tashqi halqalar
+  fx.globalCompositeOperation='source-over';
+  fx.strokeStyle=`rgba(${C},.28)`;fx.lineWidth=1;fx.setLineDash([2,7]);fx.beginPath();fx.arc(cxp,cyp,R*1.32,t*.2,t*.2+6.283);fx.stroke();fx.setLineDash([]);
+  for(let i=0;i<72;i++){const a=i/72*Math.PI*2-t*.12,r1=R*1.42,r2=R*(i%6?1.45:1.5);fx.strokeStyle=`rgba(${C},${i%6?.25:.7})`;fx.lineWidth=i%6?1:2;
+    fx.beginPath();fx.moveTo(cxp+Math.cos(a)*r1,cyp+Math.sin(a)*r1);fx.lineTo(cxp+Math.cos(a)*r2,cyp+Math.sin(a)*r2);fx.stroke()}
+  fx.lineWidth=3;fx.strokeStyle=`rgba(${C},.65)`;for(let k=0;k<3;k++){const a=t*(.5+L)+k*2.094;fx.beginPath();fx.arc(cxp,cyp,R*1.6,a,a+.55+.4*L);fx.stroke()}
+  // ovoz to'lqini (gapirganda / tinglaganda)
+  if(L>.3){fx.strokeStyle=`rgba(${C},.5)`;fx.lineWidth=1.5;fx.beginPath();for(let i=0;i<=120;i++){const a=i/120*Math.PI*2;const n=Math.sin(a*8+t*9)*Math.sin(a*3-t*4)+Math.sin(a*13+t*13)*.5;
+      const r=R*1.18+n*R*.07*L;const X=cxp+Math.cos(a)*r,Y=cyp+Math.sin(a)*r;i?fx.lineTo(X,Y):fx.moveTo(X,Y)}fx.closePath();fx.stroke()}
+  // matnlar
+  FX.style.setProperty('--arcCol',`rgb(${C})`);
+  const st=FX.querySelector('.arcSt'),stx=MODE_TXT[S.mode]||'';if(st.textContent!==stx)st.textContent=stx;
+  let sub=S.mode==='listening'?(($('inp').value||'').trim()||(W.await?'Labbay, ser…':'')):S.mode==='thinking'?'':S.mode==='speaking'?ARC.sub:'';
+  const sb=FX.querySelector('.arcSub');if(sb.textContent!==sub)sb.textContent=sub.length>220?sub.slice(0,217)+'…':sub;
+  const ag=FX.querySelector('.arcAg'),agt=ARC.agent||'';if(ag.textContent!==agt)ag.textContent=agt;
+  // bo'sh qolsa yopiladi
+  const idle=S.mode==='idle'&&!S.busy&&!W.await;if(!idle)ARC.idleAt=0;else{if(!ARC.idleAt)ARC.idleAt=now;else if(now-ARC.idleAt>2600)arcClose()}}
+function arcOpen(force){if(!force&&!arcEnabled())return;if($('modal').classList.contains('on'))return;
+  if(!ARC.on){ARC.on=true;ARC.t0=performance.now();ARC.idleAt=0;fit();FX.classList.add('on');ARC.raf=requestAnimationFrame(arcFrame)}else ARC.idleAt=0}
+function arcClose(){if(!ARC.on)return;ARC.on=false;cancelAnimationFrame(ARC.raf);FX.classList.remove('on')}
+window.jarvisArc={open:()=>arcOpen(true),close:arcClose,get on(){return ARC.on}};
+addEventListener('resize',()=>{if(ARC.on)fit()});
+FX.addEventListener('click',arcClose);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&ARC.on)arcClose()});
+// holat o'zgarishiga ulanish
+const _setMode=setMode;setMode=function(m){_setMode(m);try{if(m==='listening'&&W.on)arcOpen()}catch(e){}};
+const _wg=window.wakeGreet;if(_wg)window.wakeGreet=async function(){arcOpen();return _wg.apply(this,arguments)};
+const _speak=speak;speak=function(text,o){try{ARC.sub=String(text||'').replace(/[*_#`>]/g,'').replace(/\s+/g,' ').trim()}catch(e){}return _speak.apply(this,arguments)};
+// modal chiqsa — animatsiya uni to'smasin
+new MutationObserver(()=>{if($('modal').classList.contains('on'))arcClose()}).observe($('modal'),{attributes:true,attributeFilter:['class']});
+
+/* ---------------- 2) AGENTLAR JAMOASI ---------------- */
+const AGC={rejachi:'#ffd23f',hujjatchi:'#3fd2ff',hisobchi:'#46f0a6',huquqchi:'#b67cff',kotib:'#ff9f43',tekshiruvchi:'#e8f4ff',himoyachi:'#ff5a6a'};
+const AGLINE={rejachi:'Rejalashtiruvchi tayyor. Har qanday vazifani aniq qadamlarga bo\'laman.',
+  hujjatchi:'Hujjatchi tayyor. Dalolatnoma, xat va xulosalarni rasmiy uslubda yozaman.',
+  hisobchi:'Hisobchi-auditor tayyor. Hajm, smeta va ortiqcha to\'lovlarni hisoblayman.',
+  huquqchi:'Huquqshunos tayyor. Qarorlar va normativ asoslarni ko\'rsataman.',
+  kotib:'Kotib tayyor. Pochta, Drive va kalendaringizni kuzatib boraman.',
+  tekshiruvchi:'Tekshiruvchi tayyor. Har bir raqam va xulosani qayta tekshiraman.',
+  himoyachi:'Xavfsizlik tayyor. Google hisobingizni qo\'riqlayman.'};
+const AGALIAS={rejachi:/rejachi|rejalashtiruvchi/,hujjatchi:/hujjatchi/,hisobchi:/hisobchi|auditor/,huquqchi:/huquqchi|huquqshunos|yurist/,kotib:/kotib/,tekshiruvchi:/tekshiruvchi/,himoyachi:/xavfsizlik|himoyachi/};
+const AGS={};Object.keys(AGENTS).forEach(k=>AGS[k]={busy:0,task:''});
+let agSel='hujjatchi',agRoll=false;
+function agRedraw(){const w=WINS.agents;if(w&&w.redraw)w.redraw()}
+const _runAgent=runAgent;runAgent=function(w,key,task){const a=AGS[key];if(a){a.busy++;a.task=String(task||'').split('\n')[0].slice(0,80)}agRedraw();
+  ARC.agent=AGENTS[key]?AGENTS[key].icon+' '+AGENTS[key].name+' ishlayapti':'';
+  return _runAgent.apply(this,arguments).finally(()=>{if(a){a.busy=Math.max(0,a.busy-1);if(!a.busy)a.task=''}
+    const any=Object.keys(AGS).find(k=>AGS[k].busy);ARC.agent=any?AGENTS[any].icon+' '+AGENTS[any].name+' ishlayapti':'';agRedraw()})};
+function openAgents(roll){
+  const w=openWin('agents','👥 JARVIS JAMOASI',w=>{
+    w.body.innerHTML=`<div class="agStage"><div class="agOrb"></div><div class="nm"></div><div class="ln"></div></div>
+      <div class="wact"><button data-roll>📣 Hisobot bering</button></div><div class="agGrid"></div>
+      <div class="wmsg"><div class="h">VAZIFA BERISH</div><textarea data-task rows="2" style="width:100%;box-sizing:border-box" placeholder="Masalan: Paxtakon MTT bo'yicha ortiqcha to'lov xulosasini tayyorla"></textarea>
+      <div class="wact"><button data-team>👥 Butun jamoaga</button><button data-solo>🎯 Tanlangan agentga</button></div></div>`;
+    const stage=w.body.querySelector('.agStage'),grid=w.body.querySelector('.agGrid');
+    const feat=(k,line)=>{const a=AGENTS[k];stage.style.setProperty('--c',AGC[k]);stage.querySelector('.agOrb').style.setProperty('--c',AGC[k]);
+      stage.querySelector('.agOrb').classList.toggle('busy',!!AGS[k].busy||agRoll);stage.querySelector('.nm').textContent=a.icon+' '+a.name.toUpperCase();
+      stage.querySelector('.ln').textContent=line||(AGS[k].busy?'Ishlayapti: '+AGS[k].task:a.role.split('. ')[0]+'.')};
+    w.feat=feat;
+    w.redraw=()=>{grid.innerHTML=Object.keys(AGENTS).map(k=>{const a=AGENTS[k],b=AGS[k];return `<div class="agCell${k===agSel?' sel':''}" data-k="${k}" style="--c:${AGC[k]}">
+        <div class="agOrb${b.busy?' busy':''}" style="--c:${AGC[k]}"></div><b>${a.icon} ${esc(a.name)}</b><small class="${b.busy?'busy':''}">${b.busy?'ishlayapti…':'tayyor'}</small></div>`}).join('');
+      if(!agRoll){const busy=Object.keys(AGS).find(k=>AGS[k].busy);feat(busy||agSel)}};
+    grid.onclick=e=>{const c=e.target.closest('[data-k]');if(!c)return;agSel=c.dataset.k;w.redraw()};
+    w.body.querySelector('[data-roll]').onclick=()=>rollCall(w);
+    const task=()=>w.body.querySelector('[data-task]').value.trim();
+    w.body.querySelector('[data-team]').onclick=()=>{const t=task();if(!t)return showToast('Avval vazifani yozing','JAMOA');teamRun(t);w.body.querySelector('[data-task]').value=''};
+    w.body.querySelector('[data-solo]').onclick=()=>{const t=task();if(!t)return showToast('Avval vazifani yozing','JAMOA');soloAgent(agSel,t);w.body.querySelector('[data-task]').value=''};
+    w.redraw()});
+  if(roll)setTimeout(()=>rollCall(w),300);return w}
+async function rollCall(w){if(agRoll)return;agRoll=true;const say=async s=>{try{await speak(s)}catch(e){}};
+  try{w.feat('rejachi','Barcha agentlar hisobot bermoqda…');await say('Barcha agentlar hisobot bermoqda, ser.');
+    for(const k of Object.keys(AGENTS)){if(!WINS.agents)break;agSel=k;w.redraw();w.feat(k,AGLINE[k]);await say(AGLINE[k]);await new Promise(r=>setTimeout(r,250))}
+    if(WINS.agents){w.feat(agSel,'Jamoa to\'liq tayyor. Buyruqlaringizni kutamiz.');await say('Jamoa to\'liq tayyor. Buyruqlaringizni kutamiz, ser.')}}
+  finally{agRoll=false;if(WINS.agents)w.redraw()}}
+window.openAgents=openAgents;
+
+/* ---------------- 3) OB-HAVO (jonli) ---------------- */
+const WCODE={0:'ochiq osmon',1:'asosan ochiq',2:'qisman bulutli',3:'bulutli',45:'tuman',48:'qirovli tuman',51:'mayda yomg\'ir',53:'mayda yomg\'ir',55:'kuchli mayda yomg\'ir',61:'yengil yomg\'ir',63:'yomg\'ir',65:'kuchli yomg\'ir',66:'muzli yomg\'ir',67:'muzli yomg\'ir',71:'yengil qor',73:'qor',75:'kuchli qor',77:'qor donalari',80:'jala',81:'jala',82:'kuchli jala',85:'qor yog\'ishi',86:'kuchli qor',95:'momaqaldiroq',96:'do\'lli momaqaldiroq',99:'do\'lli momaqaldiroq'};
+const WICON=c=>c===0?'☀️':c<=2?'🌤':c===3?'☁️':c<50?'🌫':c<70?'🌧':c<80?'🌨':c<90?'🌦':'⛈';
+const myCity=()=>LSg('jarvis_city','Guliston');
+async function weatherNow(city){city=(city||myCity()).trim();
+  const cacheK='jarvis_wx_'+city.toLowerCase();try{const c=JSON.parse(LSg(cacheK,'null'));if(c&&Date.now()-c.at<15*60000)return c.d}catch(e){}
+  const geo=await (await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=ru&name='+encodeURIComponent(city))).json();
+  const g=geo&&geo.results&&geo.results[0];if(!g)throw new Error('Shahar topilmadi: '+city);
+  const u=`https://api.open-meteo.com/v1/forecast?latitude=${g.latitude}&longitude=${g.longitude}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code&timezone=auto&forecast_days=2`;
+  const r=await (await fetch(u)).json();const c=r.current,d=r.daily;
+  const out={city,temp:Math.round(c.temperature_2m),feels:Math.round(c.apparent_temperature),code:c.weather_code,desc:WCODE[c.weather_code]||'',wind:Math.round(c.wind_speed_10m),hum:c.relative_humidity_2m,
+    max:Math.round(d.temperature_2m_max[0]),min:Math.round(d.temperature_2m_min[0]),rain:d.precipitation_probability_max[0],tmax:Math.round(d.temperature_2m_max[1]),tmin:Math.round(d.temperature_2m_min[1]),tdesc:WCODE[d.weather_code[1]]||''};
+  LSs(cacheK,JSON.stringify({at:Date.now(),d:out}));return out}
+window.weatherNow=weatherNow;
+const WX_TOOL={name:'weather_now',description:'Jonli ob-havo: hozirgi harorat, holat, shamol, bugungi min/max, yog\'in ehtimoli va ertangi prognoz. city — shahar nomi (bo\'sh bo\'lsa foydalanuvchining shahri).',
+  inputSchema:{type:'object',properties:{city:{type:'string'}}},execute:async({city})=>weatherNow(city)};
+TOOLS.push(WX_TOOL);
+const _lt=localTools;localTools=function(){const t=_lt.apply(this,arguments);return t.some(x=>x&&x.name==='weather_now')?t:[WX_TOOL].concat(t)};
+const _sp=sysPrompt;sysPrompt=function(){return _sp.apply(this,arguments)+`\n- Ob-havo so'ralsa weather_now vositasi bilan JONLI ma'lumot ol (foydalanuvchi shahri: ${myCity()}). weather_link faqat havola kerak bo'lsa.`};
+
+/* ---------------- 4) ERTALABKI HISOBOT ---------------- */
+const dayKey=d=>d.toDateString();
+function sameDay(ms,d){return ms&&new Date(ms).toDateString()===d.toDateString()}
+function plural(n,s){return n+' ta '+s}
+async function morningBrief(){
+  const now=new Date(),yest=new Date(now-864e5);LSs('jarvis_brief_day',dayKey(now));
+  const h=now.getHours(),gr=h<5?'Xayrli tun':h<12?'Xayrli tong':h<18?'Xayrli kun':'Xayrli kech';
+  const todayRem=S.reminders.filter(r=>!r.done&&(sameDay(r.at,now)||r.at<now)).sort((a,b)=>a.at-b.at);
+  const tomorrowRem=S.reminders.filter(r=>!r.done&&sameDay(r.at,new Date(+now+864e5)));
+  const rts=(typeof routines==='function'?routines():[]).filter(r=>r.on!==false&&(!r.days||!r.days.length||r.days.includes(now.getDay())));
+  const notesY=(S.notes||[]).filter(n=>sameDay(n.at,yest)).length;
+  const br=typeof brain==='function'?brain():[];const capY=br.filter(i=>sameDay(i.at||i.u,yest)).length;
+  const remY=S.reminders.filter(r=>sameDay(r.at,yest)).length;
+  const ranY=rts.concat((typeof routines==='function'?routines():[])).filter((r,i,a)=>a.indexOf(r)===i&&sameDay(r.last,yest)).length;
+  const projects=br.filter(i=>i.para==='projects').slice(-3).reverse();
+  const w=openWin('tong','☀️ '+gr.toUpperCase(),()=>{});
+  w.body.innerHTML=`<div class="tongHead"><div class="g">${gr}, ser.</div><div class="d">${esc(fmtDate(now))} · ${pad(now.getHours())}:${pad(now.getMinutes())}</div></div>
+    <div class="tongGrid">
+      <div class="tongCard" data-wx><div class="h">🌤 OB-HAVO · ${esc(myCity().toUpperCase())}</div><div class="kbm">Yuklanmoqda…</div></div>
+      <div class="tongCard"><div class="h">📌 BUGUN</div>${todayRem.length?todayRem.slice(0,6).map(r=>`<div class="row"><span>${esc(r.text)}</span><span>${r.at<now?'⚠ o\'tib ketgan':pad(new Date(r.at).getHours())+':'+pad(new Date(r.at).getMinutes())}</span></div>`).join(''):'<div class="kbm">Bugunga eslatma yo\'q.</div>'}
+        ${rts.length?`<div class="row"><span>⏰ Odatlar</span><span>${rts.map(r=>r.time).join(', ')}</span></div>`:''}${tomorrowRem.length?`<div class="row"><span>Ertaga</span><span>${tomorrowRem.length} ta eslatma</span></div>`:''}</div>
+      <div class="tongCard"><div class="h">📊 KECHA</div>
+        <div class="row"><span>Qaydlar</span><span class="num">${notesY}</span></div><div class="row"><span>Ikkinchi miyaga yozilgan</span><span class="num">${capY}</span></div>
+        <div class="row"><span>Eslatmalar</span><span class="num">${remY}</span></div><div class="row"><span>Bajarilgan odatlar</span><span class="num">${ranY}</span></div></div>
+      ${projects.length?`<div class="tongCard"><div class="h">🎯 FAOL LOYIHALAR</div>${projects.map(p=>`<div class="row"><span>${esc(p.title||String(p.text).slice(0,60))}</span></div>`).join('')}</div>`:''}
+      <div class="tongCard" data-ai style="grid-column:1/-1"><div class="h">📬 POCHTA VA KALENDAR</div><div class="msg j" style="max-width:100%;border:none;padding:0;background:none"><div class="body">${sample?'Kotib tekshiryapti…':'AI ulanmagan — pochta va kalendarni ko\'rib bo\'lmadi.'}</div></div></div>
+    </div>`;
+  // ovozli qisqa xulosa (darhol)
+  let wx=null;try{wx=await weatherNow()}catch(e){}
+  const wc=w.body.querySelector('[data-wx]');
+  if(wc)wc.innerHTML=wx?`<div class="h">🌤 OB-HAVO · ${esc(wx.city.toUpperCase())}</div><div style="display:flex;align-items:center;gap:12px"><div style="font-size:38px">${WICON(wx.code)}</div><div><div class="big">${wx.temp}°</div><div class="kbm">${esc(wx.desc)}, his qilinadi ${wx.feels}°</div></div></div>
+      <div class="row"><span>Bugun</span><span>${wx.min}° … ${wx.max}°</span></div><div class="row"><span>Yog'in ehtimoli</span><span>${wx.rain??'—'}%</span></div><div class="row"><span>Shamol</span><span>${wx.wind} km/soat</span></div><div class="row"><span>Ertaga</span><span>${wx.tmin}° … ${wx.tmax}°, ${esc(wx.tdesc)}</span></div>`
+    :`<div class="h">🌤 OB-HAVO</div><div class="kbm">Internetga ulanib bo'lmadi. Shaharni o'zgartirish: "shahrim Toshkent" deng.</div>`;
+  const parts=[`${gr}, ser. Bugun ${fmtDate(now)}.`];
+  if(wx)parts.push(`${wx.city}da hozir ${wx.temp} daraja, ${wx.desc}. Kunduzi ${wx.max} darajagacha${wx.rain>=40?', yomg\'ir ehtimoli '+wx.rain+' foiz':''}.`);
+  parts.push(todayRem.length?`Bugun ${plural(todayRem.length,'eslatma')} bor${todayRem[0]?': birinchisi — '+todayRem[0].text:''}.`:'Bugunga eslatma yo\'q.');
+  const yN=notesY+capY;if(yN||ranY)parts.push(`Kecha ${yN?plural(yN,'yozuv')+' saqlandi':''}${yN&&ranY?', ':''}${ranY?plural(ranY,'odat')+' bajarildi':''}.`);
+  const intro=parts.join(' ');
+  addMsg('j','☀️ '+intro);const spoken=speak(intro);
+  // pochta va kalendar — AI orqali
+  if(sample){const out=w.body.querySelector('[data-ai] .msg');w.ctl=new AbortController();w.running=true;
+    try{const r=await sample(sysPrompt()+`\n\n[Hozir: ${fmtDate(now)}, ${pad(now.getHours())}:${pad(now.getMinutes())}]\n\n---\nERTALABKI HISOBOT (Kotib sifatida): 1) bugungi va ertangi kalendar tadbirlari (vaqti bilan); 2) oxirgi 24 soatdagi muhim yangi xatlar (reklama va xabarnomalarsiz, kimdan + mavzu, 5 tadan ko'p emas); 3) agar bo'lsa — javob kutayotgan xatlar. Google ulanmagan bo'lsa shuni bir jumlada ayt. Juda qisqa yoz, 4-8 qator, kirish so'zlarisiz.`,
+      {tools:allTools(),cache:false,signal:w.ctl.signal,modelTier:'quick',onText:({text})=>setBody(out,text)});
+      const txt=(r.text||'').trim();setBody(out,txt||'Yangi narsa yo\'q.');
+      if(txt){await spoken.catch(()=>{});speak(txt.replace(/[*_#`>|]/g,'').slice(0,450))}}
+    catch(e){setBody(out,e?.name==='AbortError'?'_(to\'xtatildi)_':'Ko\'rib bo\'lmadi: '+(e?.message||e))}finally{w.running=false}}
+  return w}
+window.morningBrief=morningBrief;
+
+/* ---------------- 5) OVOZLI BOSHQARUV ---------------- */
+async function switchModel(name){const N=NAT2();if(!N||!N.getCfg)return 'Bu yerda modelni almashtirib bo\'lmaydi, ser.';
+  const cfg=await N.getCfg();const n=name.toLowerCase().replace(/[^a-z0-9а-я]/g,'');
+  const p=cfg.providers.find(p=>{const nm=(p.name+' '+p.id).toLowerCase().replace(/[^a-z0-9а-я ]/g,'');return nm.split(' ').some(x=>x&&(x.startsWith(n)||n.startsWith(x)))||nm.replace(/ /g,'').includes(n)});
+  if(!p)return `"${name}" degan model topilmadi, ser. Bor modellar: ${cfg.providers.map(p=>p.name).join(', ')}.`;
+  if(!p.hasKey&&!p.local)return `${p.name} uchun kalit kiritilmagan, ser. ⚙ Modellar bo'limida kalitni qo'shing.`;
+  const order=[p.id].concat(cfg.providers.map(x=>x.id).filter(x=>x!==p.id));
+  await N.setCfg({order,providers:[{id:p.id,enabled:true}]});return `${p.name} modeliga o'tdim, ser.`}
+async function currentModel(){const N=NAT2();if(!N||!N.getCfg)return 'Hozir Claude ishlayapti, ser.';const c=await N.getCfg();const p=c.providers.find(p=>p.enabled&&(p.hasKey||p.local));return p?`Hozir ${p.name} ishlayapti, ser${p.models&&p.models[0]?' — '+p.models[0]:''}.`:'Faol model yo\'q, ser.'}
+function setVoice(v){LSs('jarvis_edgeVoice',v);['vEdge'].forEach(id=>{const e=$(id);if(e)e.value=v});document.querySelectorAll('[data-ev]').forEach(e=>e.value=v)}
+const _vc=voiceControl;voiceControl=function(t){
+  const l=String(t).toLowerCase().replace(/[ʻ’`]/g,'\'').replace(/[.,!?]/g,' ').replace(/\s+/g,' ').trim().replace(/^(?:hey |эй |salom )?(?:jarvis|джарвис|жарвис)\s*/,'').replace(/\s*(?:jarvis|джарвис|жарвис)$/,'');
+  const done=(m,sp)=>{addMsg('u',t);$('inp').value='';if(m){addMsg('j',m);if(sp!==false)speak(m)}return true};
+  let m;
+  if(/^(xayrli tong|assalomu alaykum|tong bilan|ertalabki (hisobot|brifing)|brifing|kun(lik)? reja(si)?|bugun nima(lar)? bor|hisobot ber)$/.test(l)){addMsg('u',t);$('inp').value='';morningBrief();return true}
+  if(/^(agentlar|jamoa|qasoskorlar|avengers)( ?(ni|ga))?( ?(ko'rsat|och|chaqir|hisobot( ber(ing)?)?|yig'))?$/.test(l)){addMsg('u',t);$('inp').value='';openAgents(/hisobot|chaqir|yig'/.test(l)||/^(agentlar|jamoa)$/.test(l));return true}
+  for(const k in AGALIAS){const re=new RegExp('^(?:'+AGALIAS[k].source+')(?:ga|ning)?[,:\\s]+(?:ayt|topshir|vazifa)?[,:\\s]*(.{4,})$');if((m=l.match(re))){addMsg('u',t);$('inp').value='';soloAgent(k,m[1]);return true}}
+  if((m=l.match(/^(?:model(?:ni)?|miya(?:ni)?)\s+(.+?)(?:ga|ge)?\s+(?:o'tkaz|almashtir|o'zgartir|qo'y)$/))||(m=l.match(/^(.+?)\s+model(?:i)?(?:ga)?\s+o't$/))||(m=l.match(/^switch model to (.+)$/))){addMsg('u',t);$('inp').value='';
+    switchModel(m[1].replace(/(ga|ge)$/,'')).then(r=>{addMsg('j','🧠 '+r);speak(r)});return true}
+  if(/^(qaysi model(dasan|da ishlayapsan)?|hozir qaysi model)$/.test(l)){addMsg('u',t);$('inp').value='';currentModel().then(r=>{addMsg('j',r);speak(r)});return true}
+  if(/(sardor|erkak ovoz)/.test(l)&&/(ovoz|o't|qil|almashtir|o'zgartir)/.test(l)&&l.length<45){setVoice('sardor');return done('Sardor ovoziga o\'tdim, ser.')}
+  if(/(madina|ayol ovoz)/.test(l)&&/(ovoz|o't|qil|almashtir|o'zgartir)/.test(l)&&l.length<45){setVoice('madina');return done('Madina ovoziga o\'tdim, ser.')}
+  if(/^(konnektor|ulanish|integratsiya)(lar)?(ni)?( och| ko'rsat)?$/.test(l)){addMsg('u',t);$('inp').value='';openApp('connections');addMsg('j','🔗 Ulanishlar ochildi, ser.');return true}
+  if(/^(sozlama(lar)?(ni)? och|sozlamalar|modellar(ni)? och)$/.test(l)&&window.openModelSettings){addMsg('u',t);$('inp').value='';window.openModelSettings();return true}
+  if(/^animatsiya(ni)? (o'chir|yopish|kerak emas)$/.test(l)){LSs('jarvis_arc','0');arcClose();return done('Chaqiruv animatsiyasi o\'chirildi, ser.')}
+  if(/^animatsiya(ni)? (yoq|ko'rsat|och)$/.test(l)){LSs('jarvis_arc','1');addMsg('u',t);$('inp').value='';arcOpen(true);return true}
+  if((m=l.match(/^shahr?im\s+([a-z'ʻ\- а-яё]+?)(?:\s+(?:shahri|da yashayman))?$/))){const c=t.slice(t.toLowerCase().lastIndexOf(m[1].split(' ')[0])).replace(/\s+(shahri|da yashayman)$/i,'').trim();LSs('jarvis_city',c.charAt(0).toUpperCase()+c.slice(1));return done(`Endi ob-havoni ${c} bo'yicha aytaman, ser.`)}
+  return _vc.apply(this,arguments)};
+
+/* buyruqlar palitrasi: /tong, /agentlar */
+CMDS.push(['/tong','Ertalabki hisobot: ob-havo, bugungi ishlar, kecha natijalari, pochta va kalendar','brief']);
+const _rc=runCommand;runCommand=function(text){const c=(String(text).match(/^\/(\S+)/)||[])[1];
+  if(c&&/^tong$/i.test(c)){addMsg('u',text);$('inp').value='';hidePalette();morningBrief();return true}
+  if(c&&/^(agentlar|jamoa)$/i.test(c)){addMsg('u',text);$('inp').value='';hidePalette();openAgents(false);return true}
+  return _rc.apply(this,arguments)};
+
+/* pastki panelga tugmalar (telefonda ilovalar varag'iga ham chiqadi) */
+const dock=$('dock');if(dock){const mk=(ic,fn)=>{const b=document.createElement('button');b.textContent=ic;b.onclick=fn;dock.insertBefore(b,dock.firstChild);return b};
+  mk('👥 Jamoa',()=>openAgents(false));mk('☀️ Tong',()=>morningBrief());}
+
+/* ertalab birinchi ochilganda — hisobotni taklif qilish */
+setTimeout(()=>{const n=new Date(),h=n.getHours();if(h<5||h>=12||LSg('jarvis_brief_day','')===dayKey(n))return;
+  const d=addMsg('j','☀️ Xayrli tong, ser. Ertalabki hisobot tayyor — ob-havo, bugungi ishlar, pochta va kalendar.');
+  const b=document.createElement('button');b.className='chip';b.textContent='☀️ Hisobotni ko\'rsat';b.style.marginTop='8px';b.onclick=()=>{b.remove();morningBrief()};d.appendChild(b)},2500);
+})();
+</script>
+
 <script src="ui.js"></script></body>
 </html>
