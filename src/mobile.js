@@ -104,11 +104,12 @@
   function unshift() { if (DESK) return; fixedBoxes().forEach(el => { if (el.scrollTop) el.scrollTop = 0; if (el.scrollLeft) el.scrollLeft = 0; }); if (scrollY || scrollX) scrollTo(0, 0); }
   fixedBoxes().forEach(el => el.addEventListener('scroll', () => { if (!DESK && (el.scrollTop || el.scrollLeft)) { el.scrollTop = 0; el.scrollLeft = 0; } }, { passive: true }));
   addEventListener('scroll', unshift, { passive: true });
-  if (window.visualViewport) visualViewport.addEventListener('resize', () => { unshift(); const lg = $('log'); if (lg && document.body.classList.contains('kb')) lg.scrollTop = lg.scrollHeight; });
+  const kbPad = () => { if (!window.visualViewport || DESK) return; const k = Math.max(0, Math.round(innerHeight - visualViewport.height - visualViewport.offsetTop)); document.documentElement.style.setProperty('--kbH', (document.body.classList.contains('kbOpen') && k > 80 ? k : 0) + 'px'); };
+  if (window.visualViewport) visualViewport.addEventListener('resize', () => { kbPad(); unshift(); const lg = $('log'); if (lg && document.body.classList.contains('kbOpen')) lg.scrollTop = lg.scrollHeight; });
   setTimeout(unshift, 300);
   let kbT;
-  document.addEventListener('focusin', e => { if (!DESK && (/TEXTAREA|INPUT/.test(e.target.tagName) && !/checkbox|range|radio|button/.test(e.target.type))) { clearTimeout(kbT); document.body.classList.add('kb'); setTimeout(() => { const w = e.target.closest('.win'); if (w) { e.target.scrollIntoView({ block: 'nearest' }); } unshift(); if (!w) { const lg = $('log'); if (lg) lg.scrollTop = lg.scrollHeight; } }, 250); } });
-  document.addEventListener('focusout', () => { kbT = setTimeout(() => { document.body.classList.remove('kb'); unshift(); }, 150); });
+  document.addEventListener('focusin', e => { if (!DESK && (/TEXTAREA|INPUT/.test(e.target.tagName) && !/checkbox|range|radio|button/.test(e.target.type))) { clearTimeout(kbT); document.body.classList.add('kbOpen'); setTimeout(() => { const w = e.target.closest('.win'); if (w) { e.target.scrollIntoView({ block: 'nearest' }); } unshift(); if (!w) { const lg = $('log'); if (lg) lg.scrollTop = lg.scrollHeight; } }, 250); } });
+  document.addEventListener('focusout', () => { kbT = setTimeout(() => { document.body.classList.remove('kbOpen'); kbPad(); unshift(); }, 150); });
 
   /* ---- suhbat boshlangach markaz kichrayadi; markazni bossa — katta/kichik ---- */
   const log = $('log');

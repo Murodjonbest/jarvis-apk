@@ -29,11 +29,11 @@ body.mob #mNav{position:fixed;left:0;right:0;bottom:0;height:calc(var(--navH) + 
 #mNav button.on{color:var(--cy2)}#mNav button.on .i{filter:none}
 #mNav button.on::before{content:'';position:absolute;top:0;left:32%;right:32%;height:2px;border-radius:2px;background:var(--cy);box-shadow:0 0 8px var(--cy)}
 #mNav .badge{display:none}
-body.mob.kb #mNav{transform:translateY(110%)}
+body.mob.kbOpen #mNav{transform:translateY(110%)}
 
 /* --- asosiy maydon --- */
 body.mob .hud{display:flex!important;flex-direction:column;gap:0;height:100dvh!important;min-height:0!important;padding:calc(var(--topH) + var(--st)) 0 calc(var(--navH) + var(--sb))!important;overflow:hidden}
-body.mob.kb .hud{padding-bottom:0!important}
+body.mob.kbOpen .hud{padding-bottom:0!important}
 body.mob .center{flex:1;min-height:0;display:flex;flex-direction:column}
 body.mob .left.show,body.mob .right.show{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 8px 14px;gap:8px}
 body.mob .wakeHint{position:static;font-size:12px;padding:2px 12px;min-height:0}
@@ -83,7 +83,7 @@ body.mob .addrow button{min-width:42px;min-height:38px;border-radius:9px}
 
 /* --- oynalar: to'liq ekran, ixcham sarlavha --- */
 body.mob .win{left:0!important;top:calc(var(--topH) + var(--st))!important;width:100vw!important;height:calc(100dvh - var(--topH) - var(--st) - var(--navH) - var(--sb))!important;min-width:0!important;resize:none!important;border:0!important;border-radius:0;box-shadow:none!important;background:#030a12!important;animation:mIn .16s ease-out}
-body.mob.kb .win{height:calc(100dvh - var(--topH) - var(--st))!important}
+body.mob.kbOpen .win{height:calc(100dvh - var(--topH) - var(--st))!important}
 @keyframes mIn{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
 body.mob .wh{padding:4px 6px 4px 2px;min-height:44px;cursor:default;gap:4px;background:#06121e!important;border-bottom:1px solid rgba(64,200,255,.12)}
 body.mob .wh .wt{font-size:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.08em}
@@ -107,6 +107,7 @@ body.mob .lockbar{top:calc(var(--topH) + var(--st))!important}
 #mShade{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:56;opacity:0;pointer-events:none;transition:opacity .2s}
 #mShade.open{opacity:1;pointer-events:auto}
 #mSheet{position:fixed;left:0;right:0;bottom:calc(var(--navH) + var(--sb));max-height:70dvh;overflow-y:auto;z-index:57;background:#07131f;border-top:1px solid rgba(64,200,255,.2);border-radius:20px 20px 0 0;padding:8px 12px 14px;transform:translateY(115%);transition:transform .22s cubic-bezier(.2,.8,.2,1);box-shadow:0 -10px 40px rgba(0,0,0,.6)}
+#mSheet:not(.open){visibility:hidden;transition:transform .22s cubic-bezier(.2,.8,.2,1),visibility 0s .22s}
 #mSheet.open{transform:none}
 #mSheet .grab{width:38px;height:4px;border-radius:2px;background:rgba(64,200,255,.3);margin:0 auto 10px}
 #mSheet h4{font:700 10px Orbitron;letter-spacing:.18em;color:var(--mut);margin:10px 2px 8px}

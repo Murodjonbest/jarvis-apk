@@ -3,7 +3,12 @@ package uz.murodjon.jarvis;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -14,7 +19,26 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if (bridge != null && bridge.getWebView() != null) bridge.getWebView().getSettings().setMediaPlaybackRequiresUserGesture(false);
+        fitKeyboard();
         handleWake(getIntent(), 2500);
+    }
+
+    /* Android 15 (targetSdk 35) da oyna klaviatura ochilganda o'zi kichraymaydi —
+       WebView pastini klaviatura balandligicha ko'taramiz, yozish maydoni doim ko'rinsin. */
+    private void fitKeyboard() {
+        if (bridge == null || bridge.getWebView() == null) return;
+        final View wv = bridge.getWebView();
+        ViewCompat.setOnApplyWindowInsetsListener(wv, (v, insets) -> {
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            ViewGroup.LayoutParams lp = v.getLayoutParams();
+            if (lp instanceof ViewGroup.MarginLayoutParams) {
+                ViewGroup.MarginLayoutParams mp = (ViewGroup.MarginLayoutParams) lp;
+                int b = insets.isVisible(WindowInsetsCompat.Type.ime()) ? ime.bottom : 0;
+                if (mp.bottomMargin != b) { mp.bottomMargin = b; v.setLayoutParams(mp); }
+            }
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(wv);
     }
 
     @Override

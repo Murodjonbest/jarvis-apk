@@ -100,8 +100,8 @@
 
   /* ---- klaviatura ochilganda joyni kengaytirish ---- */
   let kbT;
-  document.addEventListener('focusin', e => { if (!DESK && (/TEXTAREA|INPUT/.test(e.target.tagName) && !/checkbox|range|radio|button/.test(e.target.type))) { clearTimeout(kbT); document.body.classList.add('kb'); setTimeout(() => e.target.scrollIntoView({ block: 'nearest' }), 250); } });
-  document.addEventListener('focusout', () => { kbT = setTimeout(() => document.body.classList.remove('kb'), 150); });
+  document.addEventListener('focusin', e => { if (!DESK && (/TEXTAREA|INPUT/.test(e.target.tagName) && !/checkbox|range|radio|button/.test(e.target.type))) { clearTimeout(kbT); document.body.classList.add('kbOpen'); setTimeout(() => e.target.scrollIntoView({ block: 'nearest' }), 250); } });
+  document.addEventListener('focusout', () => { kbT = setTimeout(() => document.body.classList.remove('kbOpen'), 150); });
 
   /* ---- suhbat boshlangach markaz kichrayadi; markazni bossa — katta/kichik ---- */
   const log = $('log');
