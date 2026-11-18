@@ -20,7 +20,7 @@
     if (s.neo && !(s.colors && s.colors._user)) { const u = (arguments[0] && arguments[0].colors) || {}; s.colors = Object.assign({}, DEF.colors, { wall: '#f3efe7', roof: '#2f343b', trim: '#ffffff', base: '#3d3d3f', door: '#26282c' }, u.wall && u.wall !== DEF.colors.wall ? { wall: u.wall } : {}, u.roof && u.roof !== DEF.colors.roof ? { roof: u.roof } : {}); }
     if (!Array.isArray(s.levels) || !s.levels.length) s.levels = [{ rooms: s.rooms || [] }];
     s.levels = s.levels.slice(0, 3).map((lv, i) => ({ rooms: fixRooms((lv && lv.rooms) || [], s.W, s.L, i) }));
-    if (s.porch && typeof s.porch === 'object') { s.porch = { side: /^[NSEW]$/.test(s.porch.side) ? s.porch.side : 'S', depth: clamp(+s.porch.depth || 2.5, 1.2, 5), len: clamp(+s.porch.len || (s.porch.side === 'E' || s.porch.side === 'W' ? s.L : s.W), 2, 60) }; } else s.porch = null;
+    if (s.porch && typeof s.porch === 'object') { s.porch = { side: /^[NSEW]$/.test(s.porch.side) ? s.porch.side : 'S', depth: clamp(+s.porch.depth || 2.5, 1.2, 5), len: clamp(+s.porch.len > 0 && +s.porch.len <= 1 ? +s.porch.len * (s.porch.side === 'E' || s.porch.side === 'W' ? s.L : s.W) : (+s.porch.len || (s.porch.side === 'E' || s.porch.side === 'W' ? s.L : s.W)), 2, 60) }; } else s.porch = null;
     delete s.rooms; return s;
   }
   // xonalar to'g'ri joylashganmi (to'liq qoplash, ustma-ust tushmaslik) — bo'lmasa avtomatik joylash
@@ -125,6 +125,7 @@ items.sort((a, b) => b.a - a.a); { const hi = items.findIndex(i => i.type === 'h
         const F = (a, b, za, zb, d) => { if (horiz) { const y = g.y1 + out * t; box(g.x1 + a, Math.min(y, y + out * d), za, g.x1 + b, Math.max(y, y + out * d), zb, 'trim'); } else { const x = g.x1 + out * t; box(Math.min(x, x + out * d), g.y1 + a, za, Math.max(x, x + out * d), g.y1 + b, zb, 'trim'); } };
         F(o.a - fw, o.a, sill - 0.08, top + 0.1, fd); F(o.a + o.w, o.a + o.w + fw, sill - 0.08, top + 0.1, fd); F(o.a - fw, o.a + o.w + fw, top + 0.1, top + 0.22, fd); F(o.a - fw - 0.1, o.a + o.w + fw + 0.1, top + 0.22, top + 0.34, fd + 0.08); F(o.a - fw - 0.05, o.a + o.w + fw + 0.05, sill - 0.14, sill - 0.04, fd + 0.06); }); }); z0 += H + 0.25; });
     // kirish portigi: ustunlar + frontoni
+    if (s.porch) return;
     const P = plan(s, 0); const g = P.segs.find(x => x.ext && x.ops.some(o => o.kind === 'entry')); if (!g || g.y1 !== g.y2 || g.y1 > 0.1) return;
     const e = g.ops.find(o => o.kind === 'entry'), cx = g.x1 + e.a + e.w / 2, half = 1.9, dep = 2.2, ch = Math.min(H, 3.2), y0 = -t;
     box(cx - half - 0.4, y0 - dep - 0.6, 0, cx + half + 0.4, y0, plinth, 'base');
@@ -190,14 +191,19 @@ items.sort((a, b) => b.a - a.a); { const hi = items.findIndex(i => i.type === 'h
     if (s.porch) {
       const p = s.porch, d = p.depth, ln = Math.min(p.len, p.side === 'E' || p.side === 'W' ? L : W), hh = Math.min(s.h, 3);
       let rect; if (p.side === 'S') rect = [(W - ln) / 2, -d, (W + ln) / 2, 0]; else if (p.side === 'N') rect = [(W - ln) / 2, L, (W + ln) / 2, L + d]; else if (p.side === 'W') rect = [-d, (L - ln) / 2, 0, (L + ln) / 2]; else rect = [W, (L - ln) / 2, W + d, (L + ln) / 2];
-      const [a, b, c, e] = rect; box(a, b, 0, c, e, plinth - 0.05, 'base');
-      const n = Math.max(2, Math.round(Math.max(c - a, e - b) / 3) + 1); const alongx = (c - a) >= (e - b);
-      for (let k = 0; k < n; k++) { const t = k / (n - 1); const cx = alongx ? a + 0.2 + t * (c - a - 0.4) : (p.side === 'W' ? a + 0.2 : c - 0.2), cy = alongx ? (p.side === 'S' ? b + 0.2 : e - 0.2) : b + 0.2 + t * (e - b - 0.4); box(cx - 0.12, cy - 0.12, plinth - 0.05, cx + 0.12, cy + 0.12, plinth + hh, 'column'); }
-      box(a - 0.2, b - 0.2, plinth + hh, c + 0.2, e + 0.2, plinth + hh + 0.15, 'roof');
+      const [a, b, c, e] = rect; const hv = /_hovli/.test(s.style || ''), modern = hv && !s.neo;
+      box(a, b, 0, c, e, plinth - 0.08, 'base'); if (hv) box(a + 0.02, b + 0.02, plinth - 0.08, c - 0.02, e - 0.02, plinth - 0.02, 'step');
+      if (hv && p.side === 'S') { const sw = Math.min(c - a - 0.6, Math.max(3.2, (c - a) * 0.55)), sx = (a + c) / 2; for (let k = 0; k < 3; k++) { box(sx - sw / 2 - 0.15 * k, b - (k + 1) * 0.32, 0, sx + sw / 2 + 0.15 * k, b - k * 0.32, (plinth - 0.02) * (3 - k) / 3, 'step'); } }
+      const n = Math.max(2, Math.round(Math.max(c - a, e - b) / 3) + 1); const alongx = (c - a) >= (e - b); const cw = modern ? 0.24 : 0.12, ins = modern ? 0.35 : 0.2;
+      for (let k = 0; k < n; k++) { const t = k / (n - 1); const cx = alongx ? a + ins + t * (c - a - 2 * ins) : (p.side === 'W' ? a + ins : c - ins), cy = alongx ? (p.side === 'S' ? b + ins : e - ins) : b + ins + t * (e - b - 2 * ins);
+        if (hv && s.neo) { box(cx - 0.3, cy - 0.3, plinth - 0.02, cx + 0.3, cy + 0.3, plinth + 0.75, 'base'); box(cx - 0.36, cy - 0.36, plinth + 0.75, cx + 0.36, cy + 0.36, plinth + 0.85, 'base'); boxes.push({ p: [r2(cx), r2(cy), r2(plinth + 0.85 + (hh - 1.05) / 2)], s: [0.36, 0.36, r2(hh - 1.05)], m: 'column', round: 1 }); box(cx - 0.25, cy - 0.25, plinth + hh - 0.2, cx + 0.25, cy + 0.25, plinth + hh, 'trim'); }
+        else box(cx - cw, cy - cw, plinth - 0.02, cx + cw, cy + cw, plinth + hh, 'column'); }
+      if (modern) { box(a - 0.6, b - 0.6, plinth + hh, c + 0.6, e + 0.6, plinth + hh + 0.38, 'slab'); box(a - 0.6, b - 0.6, plinth + hh + 0.38, c + 0.6, e + 0.6, plinth + hh + 0.42, 'roof'); }
+      else box(a - 0.2, b - 0.2, plinth + hh, c + 0.2, e + 0.2, plinth + hh + (hv ? 0.3 : 0.15), hv ? 'slab' : 'roof');
     }
     // daraxtlar
     if (s.trees) { const S = Math.max(W, L); [[-S * 0.35, L * 0.2], [W + S * 0.3, L * 0.7], [-S * 0.25, L + S * 0.25], [W + S * 0.4, -S * 0.15], [W * 0.5, L + S * 0.45]].forEach(([x, y], i) => trees.push({ x: r2(x), y: r2(y), h: 4 + (i % 3), r: 1.4 + (i % 2) * 0.5 })); }
-    if (s.porch) { const pr = boxes[boxes.length - 1]; if (pr && pr.m === 'roof') pr.cut = true; }
+    if (s.porch) { const pr = boxes[boxes.length - 1]; if (pr && (pr.m === 'roof' || pr.m === 'slab')) pr.cut = true; const pr2 = boxes[boxes.length - 2]; if (pr2 && pr2.m === 'slab' && /_hovli/.test(s.style || '') && !s.neo) pr2.cut = true; }
     return { boxes, meshes, trees, top: zt, size: Math.max(W, L) };
   }
 
@@ -279,8 +285,11 @@ SKY = ${JSON.stringify(o.sky)}
 VIEW = ${JSON.stringify(o.view)}
 STYLE = ${JSON.stringify(st)}
 W, L, CX, S, FY, TOP = ${W}, ${L}, ${cx}, ${S}, ${fy.toFixed(2)}, ${G3.top.toFixed(2)}
+WT, ZTOP, NLV = ${s.wallT}, ${(0.45 + s.levels.length * s.h + (s.levels.length - 1) * 0.25).toFixed(2)}, ${s.levels.length}
 PX1, PX2, EX = ${Math.max(0, px1).toFixed(2)}, ${Math.min(W, px2).toFixed(2)}, ${ex}
 CAMXY = (${o.cam[0].toFixed(2)}, ${o.cam[1].toFixed(2)})
+HV = STYLE.endswith('_hovli'); NEOH = STYLE == 'neoklassik_hovli'
+FX0, FX1, FY0, FY1 = -S * 0.95, W + S * 0.95, FY - S * 1.32, L + S * 0.75
 def nearcam(x, y, r=2.6): return (x - CAMXY[0]) ** 2 + (y - CAMXY[1]) ** 2 < r * r
 ROOMS = ${JSON.stringify(o.rooms0)}
 TREES = ${JSON.stringify(G3.trees.map(t => [t.x, t.y, t.h, t.r]))}
@@ -330,6 +339,8 @@ try:
     ${roofTex}
     ${trimTex}
     pbr('base', 'rectangular_facade_tiles', (0.35, 0.35, 0.36, 1)) or pbr('base', 'plaster_stone_wall_01')
+    pbr('step', 'marble_01')
+    if HV: pbr('base', 'marble_01', (0.035, 0.035, 0.037, 1))
     pbr('path', 'herringbone_pavement_02') or pbr('path', 'brick_pavement')
     pbr('drive', 'concrete_pavers_02') or pbr('drive', 'concrete_pavement')
     pbr('floor', 'laminate_floor_02') or pbr('floor', 'diagonal_parquet')
@@ -504,10 +515,84 @@ def mkhedgemat():
     bu = hn.nodes.new('ShaderNodeBump'); bu.inputs['Strength'].default_value = 1.0; hn.links.new(vo.outputs['Distance'], bu.inputs['Height']); hn.links.new(bu.outputs[0], hb.inputs['Normal'])
     return hm
 HM = mkhedgemat()
+def mkturf():
+    m = bpy.data.materials.new('Gazon'); m.use_nodes = True; nt = m.node_tree; b = nt.nodes.get('Principled BSDF')
+    nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 400.0; nz.inputs['Detail'].default_value = 4.0
+    n2 = nt.nodes.new('ShaderNodeTexNoise'); n2.inputs['Scale'].default_value = 3.0
+    cr = nt.nodes.new('ShaderNodeValToRGB'); cr.color_ramp.elements[0].color = (0.03, 0.09, 0.012, 1); cr.color_ramp.elements[1].color = (0.13, 0.3, 0.04, 1)
+    ad = nt.nodes.new('ShaderNodeMath'); ad.operation = 'MULTIPLY'; nt.links.new(nz.outputs['Fac'], ad.inputs[0]); nt.links.new(n2.outputs['Fac'], ad.inputs[1])
+    ad2 = nt.nodes.new('ShaderNodeMath'); ad2.operation = 'MULTIPLY_ADD'; ad2.inputs[1].default_value = 1.6; ad2.inputs[2].default_value = 0.1; nt.links.new(ad.outputs[0], ad2.inputs[0])
+    nt.links.new(ad2.outputs[0], cr.inputs[0]); nt.links.new(cr.outputs[0], b.inputs['Base Color']); b.inputs['Roughness'].default_value = 0.85
+    bu = nt.nodes.new('ShaderNodeBump'); bu.inputs['Strength'].default_value = 1.0; nt.links.new(nz.outputs['Fac'], bu.inputs['Height']); nt.links.new(bu.outputs[0], b.inputs['Normal'])
+    return m
+PURP = None
+def mkpurple():
+    global PURP
+    if PURP: return PURP
+    PURP = HM.copy(); PURP.name = 'Binafsha_buta'; cr = [n for n in PURP.node_tree.nodes if n.type == 'VALTORGB'][0]
+    cr.color_ramp.elements[0].color = (0.02, 0.005, 0.015, 1); cr.color_ramp.elements[1].color = (0.16, 0.03, 0.09, 1); return PURP
 # ===== joylashtirish =====
 try:
     DX = W * 0.84 if EX < W / 2 else W * 0.16
     BLOCK = [(-0.6, -0.6, W + 0.6, L + 0.6), (PX1 - 0.4, FY - 0.6, PX2 + 0.4, 0), (EX - 1.1, FY - S * 1.25, EX + 1.1, FY), (DX - 2.0, FY - S * 1.25, DX + 2.0, 0)]
+    # ===== VISART HOVLI: rustika chiziqlari, marmar hovli/plitalar, gulzorlar, baland devor, guldon daraxtchalar =====
+    def grooves(key, step_z=0.3, step_xy=0.0, depth=0.7, dark=0.0):
+        try:
+            nt = M[key].node_tree; b = nt.nodes.get('Principled BSDF'); geo = nt.nodes.new('ShaderNodeNewGeometry'); sp_ = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(geo.outputs['Position'], sp_.inputs[0])
+            def line(src, step, w=0.035):
+                d_ = nt.nodes.new('ShaderNodeMath'); d_.operation = 'DIVIDE'; d_.inputs[1].default_value = step; nt.links.new(src, d_.inputs[0])
+                f_ = nt.nodes.new('ShaderNodeMath'); f_.operation = 'FRACT'; nt.links.new(d_.outputs[0], f_.inputs[0])
+                g_ = nt.nodes.new('ShaderNodeMath'); g_.operation = 'GREATER_THAN'; g_.inputs[1].default_value = w; nt.links.new(f_.outputs[0], g_.inputs[0]); return g_.outputs[0]
+            h_ = line(sp_.outputs['Z'] if step_z else sp_.outputs['X'], step_z or step_xy)
+            if step_xy:
+                ad = nt.nodes.new('ShaderNodeMath'); ad.operation = 'ADD'; nt.links.new(sp_.outputs['X'], ad.inputs[0]); nt.links.new(sp_.outputs['Y'], ad.inputs[1])
+                mu = nt.nodes.new('ShaderNodeMath'); mu.operation = 'MULTIPLY'; nt.links.new(h_, mu.inputs[0]); nt.links.new(line(ad.outputs[0], step_xy, 0.02), mu.inputs[1]); h_ = mu.outputs[0]
+            bu = nt.nodes.new('ShaderNodeBump'); bu.inputs['Strength'].default_value = depth; bu.inputs['Distance'].default_value = 0.01
+            old_n = [l_ for l_ in nt.links if l_.to_socket == b.inputs['Normal']]
+            if old_n: nt.links.new(old_n[0].from_socket, bu.inputs['Normal'])
+            nt.links.new(h_, bu.inputs['Height']); nt.links.new(bu.outputs[0], b.inputs['Normal'])
+            if dark:
+                bc = [l_ for l_ in nt.links if l_.to_socket == b.inputs['Base Color']]
+                ia, ib, out = mixmul(nt); mr = nt.nodes.new('ShaderNodeMapRange'); mr.inputs['To Min'].default_value = 1 - dark; nt.links.new(h_, mr.inputs[0])
+                if bc: nt.links.new(bc[0].from_socket, ia)
+                else: ia.default_value = b.inputs['Base Color'].default_value[:]
+                nt.links.new(mr.outputs[0], ib); nt.links.new(out, b.inputs['Base Color'])
+        except Exception as e: log('grooves', e)
+    if HV:
+        if NEOH: grooves('wall', step_z=0.33, depth=0.8, dark=0.25)
+        else: grooves('wall', step_z=0.6, step_xy=1.2, depth=0.5, dark=0.15)
+        for o in list(sc.collection.objects):
+            if o.type == 'MESH' and o.data.materials and o.data.materials[0] in (M['path'], M['drive']): bpy.data.objects.remove(o)
+        hc2 = bpy.data.collections.new('Hovli'); sc.collection.children.link(hc2)
+        CURB = pmat('Hoshiya', (0.02, 0.02, 0.022, 1), 0.3)
+        if NEOH:
+            M['tile'] = pmat('Hovli_plitka', (0.86, 0.86, 0.85, 1), 0.2); pbr('tile', 'marble_01'); grooves('tile', step_z=0, step_xy=0.8, depth=0.4, dark=0.45)
+            prim('cube', ((FX0 + FX1) / 2, (FY0 + 0.3 - 0.4) / 2 + 0.1, 0.03), (FX1 - FX0 - 0.6, abs(FY0 + 0.3) + 0.2, 0.06), M['tile'], hc2)
+            BLOCK.append((FX0, FY0, FX1, 0))
+            beds = []
+            for a_, b_ in ((FX0 + 1.2, min(EX, DX) - 2.4), (max(EX, DX) + 2.4, FX1 - 1.2), (min(EX, DX) + 2.4, max(EX, DX) - 2.4)):
+                if b_ - a_ > 2.5: beds.append((a_, FY0 + 2.0, b_, FY - 1.6))
+            GRN = pmat('Gulzor_yer', (0.05, 0.12, 0.03, 1), 0.95); TURF = mkturf()
+            for x1_, y1_, x2_, y2_ in beds:
+                if y2_ - y1_ < 1.5: continue
+                cx_, cy_, w_, h_ = (x1_ + x2_) / 2, (y1_ + y2_) / 2, x2_ - x1_, y2_ - y1_
+                prim('cube', (cx_, cy_, 0.07), (w_, h_, 0.04), GRN, hc2)
+                for (px_, py_, sx_, sy_) in ((cx_, y1_, w_ + 0.24, 0.12), (cx_, y2_, w_ + 0.24, 0.12), (x1_, cy_, 0.12, h_), (x2_, cy_, 0.12, h_)): prim('cube', (px_, py_, 0.1), (sx_, sy_, 0.2), CURB, hc2, bevel=0.01)
+                prim('cube', (cx_, cy_, 0.095), (w_, h_, 0.01), TURF, hc2)
+                fl_ = pick('periwinkle_plant', 'flower_gazania')
+                if fl_: scatter(fl_, [(random.uniform(x1_ + 0.4, x2_ - 0.4), random.uniform(y1_ + 0.4, y2_ - 0.4), 0.08) for _ in range(int(w_ * h_ * 0.6) + 2)], 0.4, 0.7)
+                for (bx_, by_) in ((x1_ + 0.6, y1_ + 0.6), (x2_ - 0.6, y2_ - 0.6), (cx_, cy_)): prim('sph', (bx_, by_, 0.55), (0.55, 0.55, 0.48), HM, hc2, smooth=True)
+        else:
+            M['plita'] = pmat('Plita', (0.72, 0.72, 0.7, 1), 0.6); pbr('plita', 'concrete_pavement', (0.95, 0.95, 0.93, 1)) or pbr('plita', 'concrete_pavers_02')
+            xa, xb = min(EX, DX) - 2.4, max(EX, DX) + 2.4; ya, yb = FY0 + 0.4, FY - 0.15
+            x_ = xa
+            while x_ < xb - 0.5:
+                y_ = ya
+                while y_ < yb - 0.6:
+                    ln_ = min(3.0, yb - y_); prim('cube', (x_ + 0.7, y_ + ln_ / 2, 0.05), (1.4, ln_ - 0.0, 0.1), M['plita'], hc2, bevel=0.01); y_ += ln_ + 0.14
+                x_ += 1.54
+            BLOCK.append((xa, ya, xb, yb))
+    # ===== /VISART =====
     # daraxtlar
     for x, y, h, r in TREES:
         u = ucol('daraxt'); c = u or pick('island_tree_01', 'island_tree_02', 'tree_small_02', 'island_tree_03')
@@ -537,6 +622,22 @@ try:
         prim('sph', (x, y, r * 0.95), (r, r, r), hm, hc, smooth=True); prim('cyl', (x, y, 0.12), (r * 0.9, r * 0.9, 0.24), M['base'], hc, v=24)
     HY, HH = -0.85, 0.75 if STYLE == 'neoklassik' else 0.6
     segs = [(0.25, PX1 - 0.55), (PX2 + 0.55, W - 0.25)]
+    if HV and VIEW != 'cut':
+        PRP = mkpurple(); ROCK = pmat('Tosh', (0.42, 0.41, 0.39, 1), 0.8); SOIL = pmat('Mulcha', (0.06, 0.045, 0.035, 1), 0.95); CRB = pmat('Hoshiya2', (0.02, 0.02, 0.022, 1), 0.3)
+        for a_, b_ in segs:
+            if b_ - a_ < 1.2: continue
+            if a_ < DX + 2.1 and b_ > DX - 2.1 and not NEOH: continue
+            cx_, w_ = (a_ + b_) / 2, b_ - a_
+            prim('cube', (cx_, -1.15, 0.06), (w_, 1.5, 0.12), SOIL, hc); prim('cube', (cx_, -1.95, 0.09), (w_ + 0.12, 0.1, 0.18), CRB, hc)
+            x = a_ + 0.4
+            while x < b_ - 0.3:
+                r = random.random()
+                if r < 0.3: prim('sph', (x, random.uniform(-1.5, -0.8), 0.45), (0.5, 0.5, 0.5), PRP, hc, smooth=True)
+                elif r < 0.6: prim('sph', (x, random.uniform(-1.5, -0.8), 0.35), (0.42, 0.42, 0.38), HM, hc, smooth=True)
+                elif r < 0.75:
+                    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=0.32, location=(x, random.uniform(-1.6, -0.9), 0.15)); rk = bpy.context.active_object; rk.scale = (1.3, 1, 0.7); rk.rotation_euler = (0, 0, random.uniform(0, 3)); rk.data.materials.append(ROCK)
+                x += random.uniform(0.55, 0.9)
+        segs = []
     for a_, b_ in segs:
         if abs(((a_ + b_) / 2) - DX) < 2.2 or (a_ < DX - 2.1 < b_) or (a_ < DX + 2.1 < b_):
             for c_, d_ in ((a_, min(b_, DX - 2.1)), (max(a_, DX + 2.1), b_)):
@@ -562,12 +663,23 @@ try:
         scatter(gr, pts, 0.7, 1.0)
     # kirish oldida guldonlar
     pp = pick('potted_plant_01', 'potted_plant_02', 'planter_pot_clay')
+    if HV and VIEW != 'cut':
+        TER = pmat('Tuvak', (0.45, 0.22, 0.1, 1), 0.7); STM = pmat('Poya', (0.2, 0.13, 0.07, 1), 0.9); pc_ = bpy.data.collections.new('Guldon'); sc.collection.children.link(pc_)
+        def stdtree(x, y):
+            bpy.ops.mesh.primitive_cone_add(vertices=32, radius1=0.24, radius2=0.33, depth=0.5, location=(x, y, 0.25)); t_ = bpy.context.active_object; t_.data.materials.append(TER); bpy.ops.object.shade_smooth()
+            prim('cyl', (x, y, 1.0), (0.035, 0.035, 1.1), STM, pc_, v=10); prim('sph', (x, y, 1.75), (0.42, 0.42, 0.45), HM, pc_, smooth=True)
+        def spiral(x, y):
+            for i in range(6): r_ = 0.5 * (1 - i / 7.0) + 0.08; bpy.ops.mesh.primitive_torus_add(major_radius=r_, minor_radius=r_ * 0.42, location=(x, y, 0.35 + i * r_ * 0.9 + i * 0.05)); o_ = bpy.context.active_object; o_.data.materials.append(HM); bpy.ops.object.shade_smooth()
+        sxs = [PX1 - 0.4, PX2 + 0.4] if PX2 - PX1 < 8 else [EX - 2.2, EX + 2.2]
+        for x in sxs: stdtree(x, FY - 0.5)
+        for x in (FX0 + 1.0, FX1 - 1.0): spiral(x, FY0 + 1.0)
+        pp = None
     if pp and VIEW != 'cut':
         for x in (EX - 1.35, EX + 1.35): put(pp, x, FY - 0.45, 0, random.uniform(0, 6.28), h=0.9)
     # yo'lak chiroqlari
     LAMPS = []
     lp = pick('street_lamp_02', 'street_lamp_01'); lh = 1.7 if lp and lp.name.endswith('street_lamp_02') else 3.0
-    if lp and VIEW != 'cut':
+    if lp and VIEW != 'cut' and not HV:
         y = FY - 2.6
         while y > FY - S * 1.15:
             for x in (EX - 1.35, EX + 1.35):
@@ -635,13 +747,13 @@ try:
             ld = bpy.data.lights.new('Deraza', 'POINT'); ld.energy = 450; ld.color = (1, 0.72, 0.42); lo = bpy.data.objects.new('Deraza', ld); lo.location = (x + w / 2, y + h / 2, 1.9); sc.collection.objects.link(lo)
         for x, y, z in LAMPS:
             ld = bpy.data.lights.new('Chiroq', 'POINT'); ld.energy = 60; ld.color = (1, 0.75, 0.45); ld.shadow_soft_size = 0.15; lo = bpy.data.objects.new('Chiroq', ld); lo.location = (x, y, z); sc.collection.objects.link(lo)
-        for x in (PX1 - 0.3, PX2 + 0.3, 0.4, W - 0.4):
-            ld = bpy.data.lights.new('Fasad', 'SPOT'); ld.energy = 120; ld.spot_size = math.radians(70); ld.color = (1, 0.78, 0.5); lo = bpy.data.objects.new('Fasad', ld); lo.location = (x, FY - 0.35, 0.3); lo.rotation_euler = (math.radians(-12), 0, 0); sc.collection.objects.link(lo)
+        for x in ([0.3 + i * 2.2 for i in range(int((W - 0.6) / 2.2) + 1)] if HV else (PX1 - 0.3, PX2 + 0.3, 0.4, W - 0.4)):
+            ld = bpy.data.lights.new('Fasad', 'SPOT'); ld.energy = 90 if HV else 120; ld.spot_size = math.radians(45 if HV else 70); ld.spot_blend = 0.6; ld.color = (1, 0.78, 0.5); lo = bpy.data.objects.new('Fasad', ld); lo.location = (x, (-WT / 2 - 0.3) if HV else (FY - 0.35), 0.15); lo.rotation_euler = (math.radians(172), 0, 0); sc.collection.objects.link(lo)
 except Exception as e:
     import traceback; traceback.print_exc(); log('joylash', e)
 # ===== HAYOTIYLIK: deraza romlari va pardalar, qirralar, devor/darvoza, ko'cha, uzoq fon =====
 try:
-    fr_col = (0.92, 0.92, 0.9, 1) if STYLE in ('neoklassik', 'klassik') else (0.06, 0.065, 0.07, 1)
+    fr_col = (0.92, 0.92, 0.9, 1) if STYLE in ('neoklassik', 'klassik') else (0.035, 0.034, 0.033, 1)
     FRM = pmat('Rom', fr_col, 0.35); CUR = pmat('Parda', (0.93, 0.9, 0.84, 1), 0.9)
     try:
         cb = CUR.node_tree.nodes.get('Principled BSDF')
@@ -672,16 +784,52 @@ try:
                 a_ = sgn * (w_ / 2 - pw / 2)
                 if horiz: prim('cube', (x + a_, y + off, z + 0.05), (pw, 0.03, sz + 0.1), CUR, wc)
                 else: prim('cube', (x + off, y + a_, z + 0.05), (0.03, pw, sz + 0.1), CUR, wc)
+    # fasad detallari (Visart): deraza osti qirrali panel, tishli karniz, suv quvurlari, devor chiroqlari
+    if HV:
+        FLT = pmat('Qirrali_panel', (0.95, 0.95, 0.93, 1), 0.5)
+        try:
+            nt = FLT.node_tree; b = nt.nodes.get('Principled BSDF'); geo = nt.nodes.new('ShaderNodeNewGeometry'); sp_ = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(geo.outputs['Position'], sp_.inputs[0])
+            ad = nt.nodes.new('ShaderNodeMath'); ad.operation = 'ADD'; nt.links.new(sp_.outputs['X'], ad.inputs[0]); nt.links.new(sp_.outputs['Y'], ad.inputs[1])
+            wv = nt.nodes.new('ShaderNodeMath'); wv.operation = 'SINE'; mu = nt.nodes.new('ShaderNodeMath'); mu.operation = 'MULTIPLY'; mu.inputs[1].default_value = 6.283 / 0.07
+            nt.links.new(ad.outputs[0], mu.inputs[0]); nt.links.new(mu.outputs[0], wv.inputs[0]); bu = nt.nodes.new('ShaderNodeBump'); bu.inputs['Strength'].default_value = 1.0; bu.inputs['Distance'].default_value = 0.02
+            nt.links.new(wv.outputs[0], bu.inputs['Height']); nt.links.new(bu.outputs[0], b.inputs['Normal'])
+        except Exception as e: log('flut', e)
+        for o in gls:
+            x, y, z = o.location; sx, sy, sz = o.dimensions
+            if sz < 1.0: continue
+            horiz = sx > sy; w_ = sx if horiz else sy; out = (-1 if y < L / 2 else 1) if horiz else (-1 if x < W / 2 else 1); z1 = z - sz / 2
+            ph = min(0.8, z1 - 0.55)
+            if ph < 0.3: continue
+            if horiz: prim('cube', (x, y + out * (WT / 2 + 0.015), z1 - ph / 2 - 0.06), (w_, 0.03, ph), FLT, wc)
+            else: prim('cube', (x + out * (WT / 2 + 0.015), y, z1 - ph / 2 - 0.06), (0.03, w_, ph), FLT, wc)
+        if NEOH:
+            zt = ZTOP - 0.52
+            for ax, c0, c1, cc, sg in (('x', -WT / 2, W + WT / 2, -WT / 2, -1), ('y', -WT / 2, L + WT / 2, -WT / 2, -1), ('y', -WT / 2, L + WT / 2, W + WT / 2, 1)):
+                n_ = int((c1 - c0) / 0.18)
+                loc = (c0 + 0.09, cc + sg * 0.04, zt) if ax == 'x' else (cc + sg * 0.04, c0 + 0.09, zt)
+                d_ = prim('cube', loc, (0.09, 0.08, 0.14) if ax == 'x' else (0.08, 0.09, 0.14), M['trim'], wc)
+                ar = d_.modifiers.new('Tish', 'ARRAY'); ar.count = n_; ar.use_relative_offset = False; ar.use_constant_offset = True; ar.constant_offset_displace = (0.18 / 0.09, 0, 0) if ax == 'x' else (0, 0.18 / 0.09, 0)
+        PIPE = pmat('Quvur', (0.93, 0.93, 0.92, 1) if NEOH else (0.04, 0.04, 0.04, 1), 0.35, 0.3)
+        for x in (-WT / 2 - 0.08, W + WT / 2 + 0.08):
+            prim('cyl', (x, -WT / 2 - 0.12, ZTOP / 2), (0.05, 0.05, ZTOP), PIPE, wc, smooth=True, v=16)
+        try:
+            dr = min([o for o in sc.collection.objects if o.type == 'MESH' and o.data.materials and o.data.materials[0] == M['door']], key=lambda o: o.location.y)
+            LMP = pmat('Bra', (1, 0.8, 0.55, 1), 0.3, 0, 0, 6.0)
+            for k in (-1, 1):
+                lx = dr.location.x + k * (dr.dimensions.x / 2 + 0.35)
+                prim('cube', (lx, -WT / 2 - 0.07, 2.65), (0.1, 0.12, 0.28), pmat('Bra_korpus', (0.05, 0.05, 0.05, 1), 0.4, 0.7), wc)
+                prim('cube', (lx, -WT / 2 - 0.14, 2.65), (0.06, 0.02, 0.2), LMP, wc)
+        except Exception as e: log('bra', e)
     # qirralarni yumshatish (yorug'lik qirrada yaltiraydi)
     for o in list(sc.collection.objects):
         if o.type == 'MESH' and o.data.materials and o.data.materials[0] in (M['wall'], M['trim'], M['base'], M['column'], M['slab']):
             md = o.modifiers.new('Qirra', 'BEVEL'); md.width = 0.012; md.segments = 2; md.limit_method = 'ANGLE'
     if VIEW != 'cut':
         # hovli devori: g'isht/tosh ustunlar, past devor, metall panjara; darvozalar
-        PIL = pmat('Ustuncha', (0.82, 0.78, 0.7, 1), 0.8); IRN = pmat('Panjara', (0.03, 0.03, 0.03, 1), 0.35, 0.8)
+        PIL = pmat('Ustuncha', (0.9, 0.9, 0.88, 1) if HV else (0.82, 0.78, 0.7, 1), 0.8); IRN = pmat('Panjara', (0.03, 0.03, 0.03, 1), 0.35, 0.8)
         pbr_ok = False
         fc = bpy.data.collections.new('Devor'); sc.collection.children.link(fc)
-        X0, X1, Y0, Y1 = -S * 0.95, W + S * 0.95, FY - S * 1.32, L + S * 0.75
+        X0, X1, Y0, Y1 = FX0, FX1, FY0, FY1
         gaps = [(EX - 0.9, EX + 0.9), (DX - 2.1, DX + 2.1)]
         def fence_run(ax, a, b, c):
             n = max(1, int(round((b - a) / 3.0))); st_ = (b - a) / n
@@ -689,7 +837,11 @@ try:
                 t_ = a + i * st_
                 p_ = (t_, c) if ax == 'x' else (c, t_)
                 prim('cube', (p_[0], p_[1], 1.0), (0.45, 0.45, 2.0), PIL, fc, bevel=0.01); prim('cube', (p_[0], p_[1], 2.06), (0.55, 0.55, 0.12), PIL, fc, bevel=0.02)
-                if i < n:
+                if i < n and HV:
+                    m_ = t_ + st_ / 2; ln_ = st_ - 0.45; q_ = (m_, c) if ax == 'x' else (c, m_)
+                    prim('cube', (q_[0], q_[1], 1.15), (ln_, 0.25, 1.9) if ax == 'x' else (0.25, ln_, 1.9), PIL, fc)
+                    prim('cube', (q_[0], q_[1], 0.15), (ln_ + 0.02, 0.29, 0.3) if ax == 'x' else (0.29, ln_ + 0.02, 0.3), M['base'], fc)
+                elif i < n:
                     m_ = t_ + st_ / 2; ln_ = st_ - 0.45; q_ = (m_, c) if ax == 'x' else (c, m_)
                     prim('cube', (q_[0], q_[1], 0.3), (ln_, 0.3, 0.6) if ax == 'x' else (0.3, ln_, 0.6), PIL, fc, bevel=0.01)
                     bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=0.012, depth=1.25, location=((m_ - ln_ / 2 + 0.06, c, 1.22) if ax == 'x' else (c, m_ - ln_ / 2 + 0.06, 1.22)))
@@ -769,7 +921,7 @@ if SUNE > 0:
     const isRed = h => { const c = lin(h); return c[0] > c[1] * 1.6 && c[0] > 0.12; };
     const fd = G3.boxes.filter(b => b.m === 'door' && b.p[2] < 2.5 && b.p[1] < 0.5).sort((a, b) => a.p[1] - b.p[1])[0]; const ex = fd ? fd.p[0] : cx;
     const rooms0 = plan(s, 0).rooms.map(r => [r.x, r.y, r.w, r.h, r.type || 'room']);
-    const cam = view === 'cut' ? [cx - S * 0.75, -S * 0.95, S * 1.25] : view === 'eye' ? [cx - S * 0.42, fy - S * 1.05, 1.65] : view === 'back' ? [cx + S * 1.15, s.L + S * 1.55, S * 0.55] : view === 'top' ? [cx - S * 0.9, cy - S * 1.1, S * 1.9] : view === 'side' ? [s.W + S * 1.7, cy - S * 0.6, S * 0.45] : [cx - S * 1.05, -S * 1.55, S * 0.55];
+    const cam = view === 'cut' ? [cx - S * 0.75, -S * 0.95, S * 1.25] : view === 'eye' ? [(cx + ex) / 2 - S * 0.18, fy - Math.max(9, S * 0.72), 1.6] : view === 'back' ? [cx + S * 1.15, s.L + S * 1.55, S * 0.55] : view === 'top' ? [cx - S * 0.9, cy - S * 1.1, S * 1.9] : view === 'side' ? [s.W + S * 1.7, cy - S * 0.6, S * 0.45] : [cx - S * 1.05, -S * 1.55, S * 0.55];
     return `# JARVIS LOYIHA — avtomatik yaratilgan Blender skripti (${s.name})
 import bpy, math, sys, os, json, random, mathutils
 random.seed(${(s.W * 13 + s.L * 7) | 0})
@@ -795,7 +947,7 @@ M = {
  'base': mat('Sokol', ${hex(C.base)}, 0.9), 'floor': mat('Pol', (0.55, 0.42, 0.3, 1), 0.5), 'glass': mat('Oyna', (0.75, 0.85, 0.95, 1), glass=True),
  'door': mat('Eshik', ${hex(C.door)}, 0.45), 'column': mat('Ustun', ${hex(C.trim)}, 0.5),
  'ground': mat('Maysa', ${hex(C.ground)}, 0.95), 'trunk': mat('Tana', (0.18, 0.11, 0.06, 1), 0.9), 'leaf': mat('Barg', (0.09, 0.28, 0.06, 1), 0.8),
- 'path': mat('Yo\\'lak', (0.55, 0.53, 0.5, 1), 0.85), 'drive': mat('Avtoyo\\'l', (0.42, 0.42, 0.4, 1), 0.85)}
+ 'step': mat('Marmar', (0.92, 0.92, 0.9, 1), 0.25), 'path': mat('Yo\\'lak', (0.55, 0.53, 0.5, 1), 0.85), 'drive': mat('Avtoyo\\'l', (0.42, 0.42, 0.4, 1), 0.85)}
 def box(p, s, m):
     bpy.ops.mesh.primitive_cube_add(size=1, location=p); o = bpy.context.active_object; o.scale = s; o.data.materials.append(M[m]); return o
 def mesh(v, f, m, name='Tom'):
@@ -804,8 +956,12 @@ def mesh(v, f, m, name='Tom'):
         bpy.context.view_layer.objects.active = o; o.select_set(True)
         md = o.modifiers.new('Qalinlik', 'SOLIDIFY'); md.thickness = 0.12
     return o
-B = ${JSON.stringify(G3.boxes.map(b => [b.p, b.s, b.m]))}
-for p, s_, m in B: box(p, s_, m)
+B = ${JSON.stringify(G3.boxes.map(b => [b.p, b.s, b.m, b.round ? 1 : 0]))}
+for p, s_, m, rd in B:
+    if rd:
+        bpy.ops.mesh.primitive_cylinder_add(vertices=40, radius=s_[0] / 2, depth=s_[2], location=p); o_ = bpy.context.active_object; o_.data.materials.append(M[m]); bpy.ops.object.shade_smooth()
+        for ring_ in (0.12, 0.88): pass
+    else: box(p, s_, m)
 for ms in ${JSON.stringify(G3.meshes.map(x => [x.v, x.f, x.m]))}: mesh(ms[0], ms[1], ms[2])
 # yer va yo'lak
 bpy.ops.mesh.primitive_plane_add(size=${(S * 300).toFixed(1)}, location=(${cx}, ${cy}, 0)); g = bpy.context.active_object; g.data.materials.append(M['ground'])
@@ -816,6 +972,10 @@ ${assetPy(s, G3, { view, fy, ex, cam, tint, isRed, rooms0, assets: opt.assets ||
 tgt = bpy.data.objects.new('Nishon', None); sc.collection.objects.link(tgt); tgt.location = (${cx}, ${view === 'eye' ? (s.L * 0.25).toFixed(2) : cy}, ${(view === 'eye' ? G3.top * 0.5 : view === 'cut' ? 0.6 : G3.top * 0.45).toFixed(2)})
 cd = bpy.data.cameras.new('Kamera'); cd.lens = ${view === 'top' ? 30 : view === 'eye' ? 24 : 35}; co = bpy.data.objects.new('Kamera', cd); sc.collection.objects.link(co); co.location = (${cam.map(v => v.toFixed(2)).join(', ')})
 tc = co.constraints.new('TRACK_TO'); tc.target = tgt; tc.track_axis = 'TRACK_NEGATIVE_Z'; tc.up_axis = 'UP_Y'; sc.camera = co
+if VIEW == 'eye':
+    co.constraints.remove(tc); dx_, dy_ = tgt.location.x - co.location.x, tgt.location.y - co.location.y; dist_ = math.hypot(dx_, dy_)
+    co.rotation_euler = (math.radians(90), 0, math.atan2(dy_, dx_) - math.radians(90))
+    cd.shift_y = max(0.0, min(0.42, (ZTOP * 0.62 - co.location.z) / dist_ * cd.lens / 36.0))
 if VIEW in ('eye', 'front', 'side', 'back'):
     try: cd.dof.use_dof = True; cd.dof.focus_object = tgt; cd.dof.aperture_fstop = 4.0 if VIEW == 'eye' else 8.0
     except Exception: pass
@@ -911,6 +1071,10 @@ print('JARVIS_DONE', OUT)
       ai: 'Zamonaviy minimalistik villa: tekis tom, katta panoram derazalar, oq va antrasit kulrang fasad, issiq yog\'och (lamel) panellar bilan bezak, yashirin LED yoritish, kanopi, beton yo\'laklar, zamonaviy landshaft dizayni, oltin soat yorug\'ligi' },
     milliy: { label: 'Milliy ayvonli', patch: { style: 'milliy', roof: 'gable', pitch: 26, porch: { side: 'S', depth: 2.6 }, colors: { wall: '#efe4d2', roof: '#9b3b2b', trim: '#ffffff', base: '#8c8378', door: '#6b4423' } },
       ai: 'O\'zbek milliy uslubidagi uy: keng ayvon, o\'ymakor yog\'och ustunlar va shiftlar, ganch naqshlar, iliq qum rangli g\'isht/suvoq fasad, qizil-jigarrang cherepitsa tom, hovlida so\'ri, uzumzor (tok), gulzor va mevali daraxtlar, quyoshli kun' },
+    zamonaviy_hovli: { label: 'Zamonaviy hovli (Visart)', patch: { style: 'zamonaviy_hovli', roof: 'flat', overhang: 0.9, porch: { side: 'S', depth: 3.4, len: 0.62 }, colors: { wall: '#eeede8', roof: '#3a3d42', trim: '#f4f3ef', base: '#161616', door: '#121212', ground: '#5f8f3c' } },
+      ai: 'Toshkentdagi zamonaviy bir qavatli hovli uyi (Visart Design uslubi, Lumion render): keng tekis kanopi-soyabon, qalin oq kvadrat ustunlar, oq marmar zinapoyalar qora marmar sokol ustida, katta format beton/granit plitalar orasida maysa chiziqlari, fasad oq plitka panellar va issiq yog\'och lamel qoplama bilan, qora alyumin romli baland derazalar, guldonlarda tanali shar daraxtchalar va spiral topiari, sariq gullar, qora chiroq ustunlari, baland oq hovli devori, soyabon ostida oq premium sedan, ko\'k osmon, yorqin quyosh' },
+    neoklassik_hovli: { label: 'Neoklassik hovli (Visart)', patch: { style: 'neoklassik_hovli', roof: 'hip', pitch: 22, porch: { side: 'S', depth: 2.6, len: 0.45 }, colors: { wall: '#f7f6f2', roof: '#5b6c80', trim: '#ffffff', base: '#141414', door: '#26282c', ground: '#4f8a34' } },
+      ai: 'O\'zbekistondagi oq neoklassik hovli uyi (Visart Design uslubi, Lumion render): oppoq fasad gorizontal rustika chiziqlari bilan, qora granit sokol, ko\'k-kulrang metall tom bir nechta frontonli, frontonda yarim aylana derazalar, oq dumaloq ustunlar qora kvadrat poydevorlarda, keng ayvon, oq romli baland derazalar, hovli to\'liq oq-kulrang marmar plitka bilan qoplangan, qora hoshiyali to\'rtburchak maysa gulzorlari, binafsha va oq gullar, dumaloq butalar, orqada yashil daraxtlar, ochiq ko\'k osmon' },
     klassik: { label: 'Klassik qizil g\'isht', patch: { style: 'klassik', roof: 'gable', pitch: 32, porch: null, colors: { wall: '#9a4a36', roof: '#2e3a46', trim: '#f2efe9', base: '#4a4a4a', door: '#2c2c2c' } },
       ai: 'Klassik Yevropa uslubidagi uy: qizil pishiq g\'isht fasad, oq deraza ramkalari va karniz, to\'q ko\'k-kulrang cherepitsa tom, mo\'ri, kichik kirish soyaboni, toza maysazor va butalar, bulutli yumshoq yorug\'lik' }
   };
