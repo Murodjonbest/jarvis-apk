@@ -1,0 +1,25 @@
+name: Loyiha assets
+on:
+  workflow_dispatch:
+  push:
+    paths: ['assets/**', '.github/workflows/assets.yml']
+permissions:
+  contents: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Poly Haven ro'yxati
+        run: |
+          python3 - <<'PY'
+          import json,urllib.request
+          def get(u): return json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'User-Agent':'jarvis-loyiha'})))
+          for t in ['hdris','textures','models']:
+              a=get('https://api.polyhaven.com/assets?t='+t)
+              print('=====',t,len(a))
+              cats={}
+              for k,v in a.items():
+                  for c in v.get('categories',[]): cats.setdefault(c,[]).append(k)
+              for c,l in sorted(cats.items()): print(c,len(l),' '.join(l[:60]))
+          PY
