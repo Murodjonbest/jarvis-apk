@@ -328,7 +328,7 @@ try:
     pbr('path', 'herringbone_pavement_02') or pbr('path', 'brick_pavement')
     pbr('drive', 'concrete_pavers_02') or pbr('drive', 'concrete_pavement')
     pbr('floor', 'laminate_floor_02') or pbr('floor', 'diagonal_parquet')
-    pbr('ground', 'aerial_grass_rock', (0.55, 0.75, 0.4, 1)) or pbr('ground', 'forest_floor')
+    pbr('ground', 'aerial_grass_rock', (0.42, 0.72, 0.28, 1)) or pbr('ground', 'forest_floor')
 except Exception as e: log('tex', e)
 # --- Jarvis kutubxonasi (.blend ichida kolleksiyalar) ---
 LIBC = {}
@@ -350,10 +350,11 @@ def inst(col, x, y, z=0.0, rot=0.0, sc_=1.0):
     e = bpy.data.objects.new('i_' + col.name, None); e.instance_type = 'COLLECTION'; e.instance_collection = col
     e.location = (x, y, z); e.rotation_euler = (0, 0, rot); e.scale = (sc_, sc_, sc_); sc.collection.objects.link(e); return e
 def put(col, x, y, z=0.0, rot=0.0, h=None, l=None, jit=0.0):
-    hh, ll = dims(col); k = 1.0
-    if h: k = h / hh
-    if l: k = l / ll
-    return inst(col, x, y, z, rot, k * (1 + random.uniform(-jit, jit)))
+    hh, ll = dims(col); j = 1 + random.uniform(-jit, jit)
+    if h and l:
+        e = inst(col, x, y, z, rot, 1.0); e.scale = (l / ll * j, l / ll * j, h / hh * j); return e
+    k = h / hh if h else l / ll if l else 1.0
+    return inst(col, x, y, z, rot, k * j)
 # --- foydalanuvchi kutubxonasi: Hujjatlar/Jarvis/Kutubxona/{mashina,odam,daraxt,mebel} ---
 def uimport(path):
     ext = os.path.splitext(path)[1].lower(); before = set(bpy.data.objects)
@@ -488,7 +489,7 @@ try:
     BLOCK = [(-0.6, FY - 0.6, W + 0.6, L + 0.6), (CX - 1.1, FY - S * 1.25, CX + 1.1, FY), (DX - 2.0, FY - S * 1.25, DX + 2.0, FY)]
     # daraxtlar
     for x, y, h, r in TREES:
-        u = ucol('daraxt'); c = u or pick('island_tree_01', 'island_tree_02', 'tree_small_02')
+        u = ucol('daraxt'); c = u or pick('island_tree_01', 'island_tree_02', 'tree_small_02', 'island_tree_03')
         if c: put(c, x, y, 0, random.uniform(0, 6.28), h=h * 1.3, jit=0.12)
         else:
             bpy.ops.mesh.primitive_cylinder_add(radius=0.15, depth=h * 0.45, location=(x, y, h * 0.22)); bpy.context.active_object.data.materials.append(M['trunk'])
@@ -502,15 +503,15 @@ try:
         prim('cyl', (0, 0, 0.3), (0.08, 0.08, 0.6), M['trunk'], cyp, v=8); cyp['h'] = 4.3; cyp['l'] = 1.3
         for x in (-1.3, W + 1.3): put(cyp, x, FY - 0.8, 0, random.uniform(0, 6.28), h=min(TOP * 0.85, 6.5), jit=0.04)
     # butalar fasad bo'ylab
-    sh = [n for n in ('shrub_02', 'shrub_03', 'shrub_01') if n in LIBC]
+    sh = [n for n in ('shrub_02', 'shrub_03') if n in LIBC]
     if sh:
         x = 0.5
         while x < W - 0.3:
-            if abs(x - CX) > 1.7 and abs(x - DX) > 2.1: put(LIBC[random.choice(sh)], x, FY - 0.75, 0, random.uniform(0, 6.28), l=random.uniform(1.0, 1.4))
+            if abs(x - CX) > 1.7 and abs(x - DX) > 2.1: put(LIBC[random.choice(sh)], x, FY - 0.75, 0, random.uniform(0, 6.28), h=random.uniform(0.75, 1.0), l=random.uniform(1.2, 1.6))
             x += random.uniform(1.0, 1.5)
         y = 0.8
         while y < L - 0.5:
-            for x in (-0.9, W + 0.9): put(LIBC[random.choice(sh)], x, y, 0, random.uniform(0, 6.28), l=random.uniform(1.1, 1.6))
+            for x in (-0.9, W + 0.9): put(LIBC[random.choice(sh)], x, y, 0, random.uniform(0, 6.28), h=random.uniform(0.9, 1.3), l=random.uniform(1.4, 1.9))
             y += random.uniform(1.4, 2.0)
     # gullar (fasad oldida tasma)
     fl = pick('flower_gazania', 'periwinkle_plant', 'flower_ursinia')
@@ -518,15 +519,15 @@ try:
         fl_l = dims(fl)[1]; pts = [(random.uniform(0.3, W - 0.3), random.uniform(FY - 1.55, FY - 1.15), 0) for _ in range(int(W * 0.5 * 3 / max(0.15, fl_l * fl_l)) + 4)]
         scatter(fl, [p_ for p_ in pts if abs(p_[0] - CX) > 1.3 and abs(p_[0] - DX) > 2.0], 0.5, 0.8)
     # maysa
-    gr = pick('grass_medium_02', 'grass_medium_01')
+    gr = LIBC.get('grass_medium_01') or LIBC.get('grass_medium_02')
     if gr:
         pts = []
         x0, x1, y0, y1 = -S * 0.9, W + S * 0.9, FY - S * 1.2, L + S * 0.6
-        gl_ = max(0.3, dims(gr)[1]); n = min(7000, int((x1 - x0) * (y1 - y0) * 1.3 / (gl_ * gl_)))
+        gl_ = max(0.3, dims(gr)[1] * 0.7); n = min(7000, int((x1 - x0) * (y1 - y0) * 1.6 / (gl_ * gl_)))
         for _ in range(n):
             x, y = random.uniform(x0, x1), random.uniform(y0, y1)
             if not inside(x, y, BLOCK) and not (FY - 1.6 < y < FY - 0.4 and 0 < x < W): pts.append((x, y, 0))
-        scatter(gr, pts, 0.8, 1.3)
+        scatter(gr, pts, 0.7, 1.0)
     # kirish oldida guldonlar
     pp = pick('potted_plant_01', 'potted_plant_02', 'planter_pot_clay')
     if pp and VIEW != 'cut':
@@ -538,7 +539,7 @@ try:
         y = FY - 2.6
         while y > FY - S * 1.15:
             for x in (CX - 1.35, CX + 1.35): put(lp, x, y, 0, 0, h=lh); LAMPS.append((x, y, lh * 0.92))
-            y -= 5.0
+            y -= 6.5
     # bog' mebeli
     bn = pick('outdoor_table_chair_set_01', 'painted_wooden_bench', 'wooden_picnic_table')
     if bn and VIEW != 'cut': put(bn, -S * 0.35, FY - S * 0.35, 0, math.radians(20))
@@ -590,7 +591,7 @@ try:
     # kechki yoritish
     if SKY == 'kech' and VIEW != 'cut':
         for x, y, w, h, t in ROOMS:
-            ld = bpy.data.lights.new('Deraza', 'POINT'); ld.energy = 180; ld.color = (1, 0.72, 0.42); lo = bpy.data.objects.new('Deraza', ld); lo.location = (x + w / 2, y + h / 2, 1.9); sc.collection.objects.link(lo)
+            ld = bpy.data.lights.new('Deraza', 'POINT'); ld.energy = 450; ld.color = (1, 0.72, 0.42); lo = bpy.data.objects.new('Deraza', ld); lo.location = (x + w / 2, y + h / 2, 1.9); sc.collection.objects.link(lo)
         for x, y, z in LAMPS:
             ld = bpy.data.lights.new('Chiroq', 'POINT'); ld.energy = 60; ld.color = (1, 0.75, 0.45); ld.shadow_soft_size = 0.15; lo = bpy.data.objects.new('Chiroq', ld); lo.location = (x, y, z); sc.collection.objects.link(lo)
         for x in (CX - 1.1, CX + 1.1, 0.4, W - 0.4):
@@ -606,7 +607,7 @@ if HDR:
         env = nt.nodes.new('ShaderNodeTexEnvironment'); env.image = bpy.data.images.load(HDR); tc_ = nt.nodes.new('ShaderNodeTexCoord'); mp_ = nt.nodes.new('ShaderNodeMapping')
         mp_.inputs['Rotation'].default_value = (0, 0, math.radians(${(+o.hdriRot || 0)}))
         nt.links.new(tc_.outputs['Generated'], mp_.inputs['Vector']); nt.links.new(mp_.outputs[0], env.inputs[0]); nt.links.new(env.outputs[0], bg.inputs[0])
-        bg.inputs[1].default_value = 0.55 if SKY == 'kech' else 1.0; EXPO = 0.2 if SKY == 'kech' else -0.15; SUNE = 0.0 if SKY == 'kech' else 1.2
+        bg.inputs[1].default_value = 0.7 if SKY == 'kech' else 1.0; EXPO = 0.45 if SKY == 'kech' else -0.15; SUNE = 1.6 if SKY == 'kech' else 1.2
         log('hdri', os.path.basename(HDR))
     except Exception as e: log('hdri', e); HDR = None
 if not HDR:
@@ -624,7 +625,7 @@ if not HDR:
 if SUNE > 0:
     sd = bpy.data.lights.new('Quyosh', 'SUN'); sd.energy = SUNE; sd.angle = math.radians(1.5)
     if SKY == 'kech': sd.color = (1, 0.6, 0.35)
-    so = bpy.data.objects.new('Quyosh', sd); sc.collection.objects.link(so); so.rotation_euler = (math.radians(80 if SKY == 'kech' else 55), 0, math.radians(215))`;
+    so = bpy.data.objects.new('Quyosh', sd); sc.collection.objects.link(so); so.rotation_euler = (math.radians(78 if SKY == 'kech' else 55), 0, math.radians(235 if SKY == 'kech' else 215))`;
   }
 
   function blenderScript(s, opt = {}) {
