@@ -33,7 +33,7 @@ body.mob.kbOpen #mNav{transform:translateY(110%)}
 
 /* --- asosiy maydon --- */
 body.mob .hud{display:flex!important;flex-direction:column;gap:0;height:100dvh!important;min-height:0!important;padding:calc(var(--topH) + var(--st)) 0 calc(var(--navH) + var(--sb))!important;overflow:hidden}
-body.mob.kbOpen .hud{padding-bottom:0!important}
+body.mob.kbOpen .hud{padding-bottom:var(--kbH,0px)!important}
 body.mob .center{flex:1;min-height:0;display:flex;flex-direction:column}
 body.mob .left.show,body.mob .right.show{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 8px 14px;gap:8px}
 body.mob .wakeHint{position:static;font-size:12px;padding:2px 12px;min-height:0}

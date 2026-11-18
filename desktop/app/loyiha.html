@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jarvis — Loyiha</title>
+<style>
+:root{--bg:#070d16;--pan:rgba(16,28,46,.82);--edge:rgba(120,190,255,.16);--txt:#e3f1fb;--mut:#8aa4b8;--g1:#17b6e6;--g2:#5b6cff;--ok:#3ddc97;--bad:#ff6b7a;--amb:#ffc35a}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{background:radial-gradient(1000px 600px at 90% -10%,rgba(91,108,255,.16),transparent 60%),radial-gradient(800px 500px at -10% 110%,rgba(23,182,230,.12),transparent 60%),var(--bg);color:var(--txt);font:14.5px/1.5 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column;overflow:hidden}
+button,input,textarea,select{font:inherit;color:inherit}
+header{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--edge);background:rgba(8,16,28,.7);backdrop-filter:blur(14px)}
+.logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--g1),var(--g2));display:grid;place-items:center;font-size:18px}
+header h1{margin:0;font-size:16px;letter-spacing:.08em}
+.in{background:rgba(0,0,0,.3);border:1px solid var(--edge);border-radius:10px;padding:7px 10px;outline:none}.in:focus{border-color:rgba(23,182,230,.6)}
+.b{border:1px solid var(--edge);background:rgba(255,255,255,.05);border-radius:10px;padding:7px 12px;cursor:pointer;white-space:nowrap;transition:.15s}
+.b:hover{background:rgba(23,182,230,.16)}.b.pri{background:linear-gradient(135deg,var(--g1),var(--g2));border:0;color:#fff;font-weight:600}.b:disabled{opacity:.5;cursor:default}
+.sp{flex:1}
+#wrap{flex:1;min-height:0;display:grid;grid-template-columns:350px 1fr}
+aside{border-right:1px solid var(--edge);overflow:auto;padding:14px;display:flex;flex-direction:column;gap:12px;background:rgba(8,16,28,.4)}
+.card{background:var(--pan);border:1px solid var(--edge);border-radius:14px;padding:12px}
+.card h3{margin:0 0 6px;font-size:12px;letter-spacing:.1em;color:#9fe9ff;text-transform:uppercase}
+.card textarea{width:100%;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}.grid2 label{font-size:12px;color:var(--mut);display:flex;flex-direction:column;gap:2px}
+.grid2 .in{padding:5px 8px;width:100%}
+.rooms{font-size:13px;display:flex;flex-direction:column;gap:3px;max-height:210px;overflow:auto}.rooms div{display:flex;justify-content:space-between;padding:3px 6px;border-radius:6px;background:rgba(255,255,255,.03)}
+.hint{font-size:12px;color:var(--mut)}
+main{display:flex;flex-direction:column;min-width:0;min-height:0}
+.tabs{display:flex;gap:4px;padding:10px 14px 0}
+.tab{padding:8px 14px;border-radius:10px 10px 0 0;cursor:pointer;color:var(--mut);border:1px solid transparent;border-bottom:0}
+.tab.on{background:var(--pan);color:var(--txt);border-color:var(--edge)}
+.pane{flex:1;min-height:0;margin:0 14px 14px;background:var(--pan);border:1px solid var(--edge);border-radius:0 14px 14px 14px;overflow:auto;padding:12px;display:none;position:relative}
+.pane.on{display:flex;flex-direction:column;gap:10px}
+.bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+#planBox{flex:1;overflow:auto;background:#fff;border-radius:10px;display:flex;align-items:flex-start;justify-content:center;padding:10px}
+#planBox svg{max-width:100%;height:auto}
+#c3{flex:1;min-height:300px;border-radius:10px;overflow:hidden;background:#cfe3f5}
+#c3 canvas{display:block;width:100%;height:100%}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.gal figure{margin:0;border-radius:12px;overflow:hidden;border:1px solid var(--edge);background:#000;position:relative}
+.gal img{width:100%;display:block;cursor:zoom-in}.gal figcaption{display:flex;gap:4px;padding:6px;background:rgba(0,0,0,.6);font-size:12px;align-items:center}
+.gal figcaption span{flex:1;color:var(--mut)}
+.rcards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}td,th{border-bottom:1px solid var(--edge);padding:6px 8px;text-align:left}th{color:#9fe9ff;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+td.n{text-align:right;font-variant-numeric:tabular-nums}td input{width:110px;text-align:right;padding:3px 6px}
+.kpi{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.kpi div{background:rgba(255,255,255,.04);border:1px solid var(--edge);border-radius:12px;padding:8px 10px}.kpi b{display:block;font-size:18px}.kpi span{font-size:12px;color:var(--mut)}
+#posterBox{flex:1;overflow:auto;background:#1b2433;border-radius:10px;display:flex;justify-content:center;padding:12px}#posterBox svg{max-width:100%;height:auto;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+#st{font-size:13px;color:var(--mut)}
+.prog{height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--g1),var(--g2));transition:width .4s}
+#zoom{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;place-items:center;z-index:9;cursor:zoom-out}#zoom img{max-width:96vw;max-height:94vh}
+.empty{color:var(--mut);text-align:center;padding:40px}
+@media print{body *{visibility:hidden}#printArea,#printArea *{visibility:visible}#printArea{position:fixed;inset:0}}
+</style>
+</head>
+<body>
+<header><div class="logo">🏠</div><h1>LOYIHA</h1><input class="in" id="pname" style="width:260px" placeholder="Loyiha nomi"><select class="in" id="plist"><option value="">📂 Saqlangan loyihalar…</option></select>
+  <button class="b" id="bNew">＋ Yangi</button><button class="b" id="bSave">💾 Saqlash</button><span id="st" class="sp"></span><button class="b" id="bClose" title="Yopish">✕</button></header>
+<div id="wrap">
+<aside>
+  <div class="card"><h3>1. Tavsif</h3><textarea class="in" id="desc" rows="5" placeholder="Masalan: 14×11 m bir qavatli uy, 3 yotoqxona, katta mehmonxona, oshxona, hammom, dahliz, oldida ayvon, qizil cherepitsa tom, milliy uslub"></textarea>
+    <div class="bar" style="margin-top:8px"><button class="b pri" id="bGen">✨ Loyihalash</button><span class="hint">AI reja tuzadi (20–40 s)</span></div></div>
+  <div class="card"><h3>2. O'zgartirish</h3><textarea class="in" id="edit" rows="2" placeholder="Masalan: mehmonxonani 1 m kengaytir, 2-qavat qo'sh, tomni to'rt qiyali qil"></textarea>
+    <div class="bar" style="margin-top:8px"><button class="b" id="bEdit">✏️ Qo'llash</button><button class="b" id="bUndo" title="Oldingi holat">↶</button></div></div>
+  <div class="card"><h3>Parametrlar</h3><div class="grid2">
+    <label>Uzunligi (m)<input class="in" id="fW" type="number" step="0.1"></label><label>Kengligi (m)<input class="in" id="fL" type="number" step="0.1"></label>
+    <label>Qavat balandligi<input class="in" id="fH" type="number" step="0.1"></label><label>Tom<select class="in" id="fRoof"><option value="gable">Ikki qiyali</option><option value="hip">To'rt qiyali</option><option value="flat">Tekis</option></select></label>
+    <label>Tom qiyaligi (°)<input class="in" id="fPitch" type="number" step="1"></label><label>Devor qalinligi<input class="in" id="fT" type="number" step="0.01"></label>
+    <label>Devor rangi<input class="in" id="fCw" type="color" style="height:34px;padding:2px"></label><label>Tom rangi<input class="in" id="fCr" type="color" style="height:34px;padding:2px"></label>
+    <label style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" id="fPorch"> Ayvon</label><label style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" id="fTrees"> Daraxtlar</label></div></div>
+  <div class="card"><h3>Xonalar</h3><div class="rooms" id="rooms"><div class="hint">Hali loyiha yo'q</div></div></div>
+</aside>
+<main>
+  <div class="tabs"><div class="tab on" data-t="plan">📐 Reja</div><div class="tab" data-t="d3">🧊 3D</div><div class="tab" data-t="var">💡 Variantlar</div><div class="tab" data-t="ren">🖼 Render</div><div class="tab" data-t="sm">📊 Smeta</div><div class="tab" data-t="pos">🗂 Taqdimot</div></div>
+  <section class="pane on" id="p-plan"><div class="bar"><select class="in" id="lvl"></select><span class="sp"></span><button class="b" id="bSvg">⬇ SVG (CorelDRAW)</button><button class="b" id="bDxf">⬇ DXF (AutoCAD)</button><button class="b" id="bPng">⬇ PNG</button></div><div id="planBox"><div class="empty">Chapda uyni tavsiflang va ✨ Loyihalash ni bosing — yoki tayyor namuna: <button class="b" id="bDemo">🏡 Namuna uy</button></div></div></section>
+  <section class="pane" id="p-d3"><div class="bar"><button class="b" data-v="front">Old</button><button class="b" data-v="back">Orqa</button><button class="b" data-v="side">Yon</button><button class="b" data-v="top">Yuqoridan</button><span class="sp"></span><span class="hint">Sichqoncha: aylantirish · g'ildirak: yaqinlashtirish</span><button class="b" id="bShot">📸 Rasm</button></div><div id="c3"></div></section>
+  <section class="pane" id="p-var">
+    <div class="bar"><b style="font-size:15px">💡 Dizayn variantlari</b><span class="hint sp">Bir xil reja va qavatlar asosida turli uslublar — estetika, shaharsozlik va qurilish me'yorlari hisobga olinadi.</span><button class="b pri" id="bVar">✨ Variantlar yaratish</button></div>
+    <div class="gal" id="vars"></div>
+    <div class="card"><h3>📋 Me'yoriy tekshiruv (taxminiy) <span id="nScore" style="float:right"></span></h3><div id="norms" style="display:flex;flex-direction:column;gap:5px;font-size:13.5px"></div>
+      <p class="hint" style="margin:8px 0 0">ShNQ (shaharsozlik normalari va qoidalari) — turar joy binolari, shaharsozlik va seysmik hududlarda qurilish talablari asosida taxminiy tekshiruv. Rasmiy ekspertiza va litsenziyali loyihachi xulosasi o'rnini bosmaydi.</p></div>
+  </section>
+  <section class="pane" id="p-ren">
+    <div class="rcards">
+      <div class="card"><h3>⚡ Tez render — sun'iy intellekt</h3><p class="hint" style="margin:0 0 8px">3D ko'rinishdan 20–40 soniyada Lumion uslubidagi fotoreal tasvir (Gemini kaliti kerak). O'lchamlar taxminiy.</p>
+        <div class="bar" style="margin-bottom:6px"><select class="in" id="aiKind"><option value="ext">🏠 Tashqi ko'rinish</option><option value="cut">🔪 Kesma (izometrik, tomsiz)</option><option value="int">🛋 Interyer (xona)</option></select><select class="in" id="aiRoom" style="display:none"></select>
+          <select class="in" id="aiInt" style="display:none"><option value="zamonaviy klassik, oq va kulrang, yumshoq teri divanlar, qandil, gipsokarton shift va yashirin LED yoritish, marmar pol">Zamonaviy klassik</option><option value="neoklassik, oltin bezaklar, lepnina, qimmat parda, katta qandil, marmar">Neoklassik hashamatli</option><option value="minimalizm, ochiq rang, yog'och, katta deraza, kam mebel">Minimalizm</option><option value="o'zbek milliy, ganch o'ymakorlik, atlas, gilam, yog'och shift">Milliy</option><option value="loft, g'isht devor, qora metall, issiq yog'och">Loft</option></select></div>
+        <div class="bar" style="margin-bottom:6px"><label class="b" style="display:inline-flex;gap:6px;align-items:center">🖼 Uslub namunasi<input type="file" id="aiRef" accept="image/*" multiple style="display:none"></label><span class="hint" id="aiRefN">ixtiyoriy: yoqqan dizayn rasmi — uslubini olamiz</span></div>
+        <div class="bar"><select class="in" id="aiStyle"><option value="quyoshli yozgi kun, tushlik payti">☀️ Kunduzi</option><option value="oltin soat, quyosh botishi, iliq yorug'lik, derazalarda chiroq">🌇 Kechqurun</option><option value="tun, chiroqlar yoqilgan, yulduzli osmon">🌙 Tunda</option><option value="qishki kun, qor yog'gan">❄️ Qishda</option></select><button class="b pri" id="bAi">⚡ Render</button></div></div>
+      <div class="card"><h3>🎬 Aniq render — Blender (Cycles)</h3><p class="hint" style="margin:0 0 8px">Haqiqiy 3D model, aniq o'lchamlar, .blend fayl bilan. Vaqt kompyuterga bog'liq (1–15 daqiqa).</p>
+        <div class="bar"><select class="in" id="bq"><option value="draft">Qoralama (tez)</option><option value="normal" selected>Oddiy</option><option value="high">Yuqori sifat</option></select><select class="in" id="bv"><option value="front">Old</option><option value="side">Yon</option><option value="back">Orqa</option><option value="top">Yuqoridan</option></select><button class="b pri" id="bBl">🎬 Render</button><button class="b" id="bBlStop" style="display:none">⏹</button></div>
+        <div class="prog" id="blProg" style="margin-top:8px;display:none"><i></i></div><div class="hint" id="blSt" style="margin-top:6px"></div></div>
+    </div>
+    <div class="gal" id="gal"></div>
+  </section>
+  <section class="pane" id="p-sm"><div class="kpi" id="kpi"></div><div class="bar"><span class="hint sp">⚠ Narxlar taxminiy — o'zingiz o'zgartiring (so'm). Ish haqi alohida, odatda materiallarning 35–45%.</span><button class="b" id="bCsv">⬇ Excel (CSV)</button></div><div style="overflow:auto"><table id="smTab"></table></div></section>
+  <section class="pane" id="p-pos"><div class="bar"><span class="hint sp">A3 taqdimot varag'i: render, reja, ko'rsatkichlar. SVG — CorelDRAW'da ochiladi va tahrirlanadi.</span><button class="b" id="bPosSvg">⬇ SVG</button><button class="b" id="bPosPng">⬇ PNG</button><button class="b" id="bPosPdf">🖨 PDF</button></div><div id="posterBox"></div></section>
+</main>
+</div>
+<div id="zoom"><img></div>
+<div id="printArea" style="display:none"></div>
+<script src="loyiha-core.js"></script>
+<script type="module">
+import * as THREE from './vendor/three/three.module.min.js';
+import { OrbitControls } from './vendor/three/OrbitControls.js';
+const L = window.LOYIHA, $ = id => document.getElementById(id);
+const N = (() => { try { return window.jarvisNative || parent.jarvisNative || null; } catch (e) { return window.jarvisNative || null; } })();
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fmt = n => Math.round(n).toLocaleString('ru-RU').replace(/,/g, ' ');
+let P = null; // {id, name, spec, renders:[], prices:{}, at}
+const HIST = [];
+function st(t) { $('st').textContent = t || ''; }
+
+/* ---------- saqlash (IndexedDB) ---------- */
+const DB = { db: null, async open() { if (this.db) return this.db; this.db = await new Promise((ok, no) => { const r = indexedDB.open('jarvis_loyiha', 1); r.onupgradeneeded = () => r.result.createObjectStore('p', { keyPath: 'id' }); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); }); return this.db; },
+  async tx(m, f) { const db = await this.open(); return new Promise((ok, no) => { const t = db.transaction('p', m); const s = t.objectStore('p'); const r = f(s); t.oncomplete = () => ok(r && r.result); t.onerror = () => no(t.error); }); },
+  put(p) { return this.tx('readwrite', s => s.put(p)); }, all() { return this.tx('readonly', s => s.getAll()); }, get(id) { return this.tx('readonly', s => s.get(id)); } };
+async function refreshList() { const a = (await DB.all()).sort((x, y) => y.at - x.at); $('plist').innerHTML = '<option value="">📂 Saqlangan loyihalar (' + a.length + ')…</option>' + a.map(p => `<option value="${p.id}">${esc(p.name)} — ${new Date(p.at).toLocaleDateString('ru-RU')}</option>`).join(''); }
+async function save(quiet) { if (!P) return; P.name = $('pname').value.trim() || P.spec.name; P.spec.name = P.name; P.at = Date.now(); await DB.put(P); if (!quiet) st('✓ Saqlandi'); refreshList(); }
+$('plist').onchange = async () => { const id = $('plist').value; if (!id) return; P = await DB.get(id); HIST.length = 0; render(); $('plist').value = ''; };
+$('bSave').onclick = () => save(); $('bNew').onclick = () => { P = null; HIST.length = 0; $('desc').value = ''; $('pname').value = ''; render(); };
+
+/* ---------- AI ---------- */
+async function ai(prompt) {
+  if (!N || !N.chat) throw new Error('Sun\'iy intellekt faqat Jarvis kompyuter dasturida ishlaydi');
+  const r = await N.chat({ id: 'loy' + Date.now(), messages: [{ role: 'user', content: prompt }], tools: [], tier: 'complex' });
+  if (r.error) throw new Error(r.error.message || r.error.code);
+  const c = r.message && r.message.content; const t = typeof c === 'string' ? c : Array.isArray(c) ? c.map(x => x.text || '').join('') : '';
+  const m = t.match(/\{[\s\S]*\}/); if (!m) throw new Error('AI javobi tushunarsiz — qayta urinib ko\'ring'); return JSON.parse(m[0]);
+}
+function setSpec(spec, push) { if (P && push !== false) HIST.push(JSON.stringify(P.spec)); if (!P) P = { id: 'p' + Date.now().toString(36), renders: [], prices: {}, at: Date.now() }; P.spec = L.normalize(spec); if (!$('pname').value.trim() || push === 'new') $('pname').value = P.spec.name; P.name = $('pname').value; render(); save(true); }
+$('bGen').onclick = async () => { const d = $('desc').value.trim(); if (!d) return; $('bGen').disabled = true; st('⏳ Loyihalanmoqda…');
+  try { const spec = await ai(L.AI_RULES + '\n\nTAVSIF: ' + d); P = null; HIST.length = 0; setSpec(spec, 'new'); st('✓ Tayyor — rejani ko\'ring, keyin 3D va Render'); } catch (e) { st('✕ ' + e.message); } finally { $('bGen').disabled = false; } };
+$('bEdit').onclick = async () => { const d = $('edit').value.trim(); if (!d || !P) return; $('bEdit').disabled = true; st('⏳ O\'zgartirilmoqda…');
+  try { const spec = await ai(L.AI_RULES + '\n\nJORIY LOYIHA:\n' + JSON.stringify(P.spec) + '\n\nO\'ZGARTIRISH: ' + d + '\nTo\'liq yangilangan JSON\'ni qaytar.'); setSpec(spec); $('edit').value = ''; st('✓ O\'zgartirildi'); } catch (e) { st('✕ ' + e.message); } finally { $('bEdit').disabled = false; } };
+$('bUndo').onclick = () => { if (!HIST.length) return; P.spec = JSON.parse(HIST.pop()); render(); save(true); };
+$('bDemo').onclick = () => { $('desc').value = '14×11 m bir qavatli uy, milliy uslub, ayvon'; P = null; setSpec({ name: 'Namuna uy', W: 14, L: 11, roof: 'gable', pitch: 26, porch: { side: 'S', depth: 2.6 }, colors: { wall: '#efe4d2', roof: '#9b3b2b' },
+  levels: [{ rooms: [{ name: 'Mehmonxona', x: 0, y: 0, w: 5.8, h: 6 }, { name: 'Dahliz', x: 5.8, y: 0, w: 2.6, h: 6 }, { name: 'Oshxona', x: 8.4, y: 0, w: 5.6, h: 4.6 }, { name: 'Hammom', x: 8.4, y: 4.6, w: 2.8, h: 2.6 }, { name: 'Ombor', x: 11.2, y: 4.6, w: 2.8, h: 2.6 }, { name: 'Yotoqxona', x: 0, y: 6, w: 4.6, h: 5 }, { name: 'Yo\'lak', x: 4.6, y: 6, w: 3.8, h: 1.2 }, { name: 'Bolalar xonasi', x: 4.6, y: 7.2, w: 3.8, h: 3.8 }, { name: 'Yotoqxona', x: 8.4, y: 7.2, w: 5.6, h: 3.8 }] }] }, 'new'); };
+
+/* ---------- parametrlar ---------- */
+function fillForm() { const s = P && P.spec; if (!s) return; $('fW').value = s.W; $('fL').value = s.L; $('fH').value = s.h; $('fRoof').value = s.roof; $('fPitch').value = s.pitch; $('fT').value = s.wallT; $('fCw').value = s.colors.wall; $('fCr').value = s.colors.roof; $('fPorch').checked = !!s.porch; $('fTrees').checked = s.trees !== false; }
+['fW', 'fL', 'fH', 'fRoof', 'fPitch', 'fT', 'fCw', 'fCr', 'fPorch', 'fTrees'].forEach(id => $(id).addEventListener('change', () => { if (!P) return; const s = JSON.parse(JSON.stringify(P.spec));
+  const W2 = +$('fW').value || s.W, L2 = +$('fL').value || s.L; if (W2 !== s.W || L2 !== s.L) { const kx = W2 / s.W, ky = L2 / s.L; s.levels.forEach(lv => lv.rooms.forEach(r => { r.x *= kx; r.w *= kx; r.y *= ky; r.h *= ky; })); s.W = W2; s.L = L2; }
+  s.h = +$('fH').value || s.h; s.roof = $('fRoof').value; s.pitch = +$('fPitch').value || s.pitch; s.wallT = +$('fT').value || s.wallT; s.colors.wall = $('fCw').value; s.colors.roof = $('fCr').value;
+  s.porch = $('fPorch').checked ? (s.porch || { side: 'S', depth: 2.5 }) : null; s.trees = $('fTrees').checked; setSpec(s); }));
+
+/* ---------- ko'rsatish ---------- */
+let TAB = 'plan';
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => { TAB = t.dataset.t; document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === t)); document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === 'p-' + TAB)); render(); });
+function render() {
+  fillForm(); const s = P && P.spec;
+  $('rooms').innerHTML = s ? s.levels.map((lv, i) => (s.levels.length > 1 ? `<div class="hint" style="background:none">${i + 1}-qavat</div>` : '') + lv.rooms.map(r => `<div><span>${esc(r.name)}</span><span>${r.w.toFixed(1)}×${r.h.toFixed(1)} · <b>${(r.w * r.h).toFixed(1)} m²</b></span></div>`).join('')).join('') : '<div class="hint">Hali loyiha yo\'q</div>';
+  if (!s) { $('pname').value = ''; return; }
+  $('lvl').innerHTML = s.levels.map((l, i) => `<option value="${i}">${i + 1}-qavat</option>`).join(''); $('lvl').value = Math.min(+$('lvl').value || 0, s.levels.length - 1);
+  if (TAB === 'plan') $('planBox').innerHTML = L.planSVG(s, +$('lvl').value || 0);
+  if (TAB === 'd3') build3d();
+  if (TAB === 'ren') { gallery(); $('aiRoom').innerHTML = s.levels.map((lv, li) => lv.rooms.map((r, i) => `<option value="${li}:${i}">${s.levels.length > 1 ? (li + 1) + '-q. ' : ''}${esc(r.name)} (${(r.w * r.h).toFixed(0)} m²)</option>`).join('')).join(''); }
+  if (TAB === 'var') { normsView(); varsView(); }
+  if (TAB === 'sm') smeta();
+  if (TAB === 'pos') poster();
+}
+$('lvl').onchange = () => render();
+
+/* ---------- eksport ---------- */
+async function saveFile(name, data, mime) { const blob = data instanceof Blob ? data : new Blob([data], { type: mime });
+  if (N && N.saveFile) { const b64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(String(fr.result).split(',')[1]); fr.readAsDataURL(blob); }); const r = await N.saveFile({ b64, name, mime }); st(r && r.path ? '✓ Saqlandi: ' + r.path : (r && r.error) || ''); return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); }
+const fname = ext => ((P && P.name) || 'loyiha').replace(/[\\/:*?"<>|]+/g, ' ').trim() + ext;
+function svgToPng(svg, w) { return new Promise((ok, no) => { const im = new Image(); im.onload = () => { const k = w / im.width; const c = document.createElement('canvas'); c.width = w; c.height = Math.round(im.height * k); const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height); c.toBlob(ok, 'image/png'); }; im.onerror = no; im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); }); }
+$('bSvg').onclick = () => P && saveFile(fname(' - reja.svg'), L.planSVG(P.spec, +$('lvl').value || 0), 'image/svg+xml');
+$('bDxf').onclick = () => P && saveFile(fname('.dxf'), L.dxf(P.spec), 'application/dxf');
+$('bPng').onclick = async () => P && saveFile(fname(' - reja.png'), await svgToPng(L.planSVG(P.spec, +$('lvl').value || 0), 2400));
+
+/* ---------- 3D ---------- */
+let R3 = null;
+function init3d() {
+  const host = $('c3'); const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); r.setPixelRatio(Math.min(2, devicePixelRatio)); r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap; r.toneMapping = THREE.ACESFilmicToneMapping; r.outputColorSpace = THREE.SRGBColorSpace;
+  host.appendChild(r.domElement); const scene = new THREE.Scene(); scene.background = new THREE.Color('#bcd8f0'); scene.fog = new THREE.Fog('#bcd8f0', 80, 260);
+  const cam = new THREE.PerspectiveCamera(40, 1, 0.1, 1000); const ctl = new OrbitControls(cam, r.domElement); ctl.enableDamping = true; ctl.maxPolarAngle = Math.PI * 0.495;
+  scene.add(new THREE.HemisphereLight('#ffffff', '#6f8a5a', 1.1)); const sun = new THREE.DirectionalLight('#fff4e0', 2.4); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); scene.add(sun); scene.add(sun.target);
+  const grp = new THREE.Group(); scene.add(grp);
+  const resize = () => { const w = host.clientWidth, h = host.clientHeight; if (!w || !h) return; r.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); };
+  new ResizeObserver(resize).observe(host);
+  (function loop() { requestAnimationFrame(loop); if (!host.offsetParent) return; ctl.update(); r.render(scene, cam); })();
+  R3 = { r, scene, cam, ctl, sun, grp, resize };
+}
+function build3d() {
+  if (!R3) init3d(); const s = P.spec, g = L.geometry(s), C = s.colors; const { grp, cam, ctl, sun } = R3;
+  while (grp.children.length) { const o = grp.children.pop(); o.geometry && o.geometry.dispose(); }
+  const mats = { wall: C.wall, inwall: '#f2f0ec', roof: C.roof, slab: C.trim, trim: C.trim, base: C.base, floor: '#8b6a4c', door: C.door, column: C.trim };
+  const M = {}; const mat = k => M[k] || (M[k] = k === 'glass' ? new THREE.MeshPhysicalMaterial({ color: '#9fc4e0', roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.55 }) : new THREE.MeshStandardMaterial({ color: mats[k] || '#ccc', roughness: k === 'roof' ? 0.6 : 0.85, side: k === 'roof' || k === 'wall' ? THREE.DoubleSide : THREE.FrontSide }));
+  const P3 = (x, y, z) => new THREE.Vector3(x, z, -y);
+  g.boxes.forEach(b => { const m = new THREE.Mesh(new THREE.BoxGeometry(b.s[0], b.s[2], b.s[1]), mat(b.m)); m.position.copy(P3(b.p[0], b.p[1], b.p[2])); m.castShadow = m.receiveShadow = b.m !== 'glass'; m.userData.cut = !!b.cut; grp.add(m); });
+  g.meshes.forEach(ms => { const pos = []; ms.f.forEach(f => { for (let i = 1; i < f.length - 1; i++) [f[0], f[i], f[i + 1]].forEach(k => { const v = P3(...ms.v[k]); pos.push(v.x, v.y, v.z); }); });
+    const ge = new THREE.BufferGeometry(); ge.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); ge.computeVertexNormals(); const m = new THREE.Mesh(ge, mat(ms.m)); m.castShadow = m.receiveShadow = true; m.userData.cut = !!ms.cut; grp.add(m); });
+  const S = g.size, cx = s.W / 2, cy = s.L / 2;
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(S * 12, 64), new THREE.MeshStandardMaterial({ color: C.ground || '#6f9a4c', roughness: 1 })); ground.rotation.x = -Math.PI / 2; ground.position.set(cx, 0, -cy); ground.receiveShadow = true; grp.add(ground);
+  const path = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.04, S * 1.2), new THREE.MeshStandardMaterial({ color: '#b9b4ab', roughness: 0.9 })); path.position.set(cx, 0.02, S * 0.6); path.receiveShadow = true; grp.add(path);
+  g.trees.forEach(t => { const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, t.h * 0.45, 8), new THREE.MeshStandardMaterial({ color: '#4b3020' })); tr.position.copy(P3(t.x, t.y, t.h * 0.22)); tr.castShadow = true; grp.add(tr);
+    [[0, 0, 0.62, 1], [0.45, 0.2, 0.5, 0.7], [-0.4, -0.25, 0.52, 0.72], [0.1, -0.4, 0.78, 0.65]].forEach(([dx, dy, dz, k]) => { const l = new THREE.Mesh(new THREE.IcosahedronGeometry(t.r * k, 2), new THREE.MeshStandardMaterial({ color: '#3f7a2c', roughness: 0.9, flatShading: false })); l.position.copy(P3(t.x + dx * t.r, t.y + dy * t.r, t.h * dz)); l.castShadow = true; grp.add(l); }); });
+  sun.position.set(cx - S * 1.2, S * 1.6, -cy + S * 1.4); sun.target.position.set(cx, 0, -cy); const sc = sun.shadow.camera; sc.left = sc.bottom = -S * 1.6; sc.right = sc.top = S * 1.6; sc.far = S * 6; sc.updateProjectionMatrix();
+  if (!R3.placed) { view3('front'); R3.placed = true; }
+  R3.resize();
+}
+function view3(v) { const s = P.spec, S = Math.max(s.W, s.L), cx = s.W / 2, cy = s.L / 2; const pos = { front: [cx - S * 1.0, S * 0.6, S * 1.45], back: [cx + S * 1.1, S * 0.6, -s.L - S * 1.4], side: [s.W + S * 1.6, S * 0.45, -cy + S * 0.6], top: [cx - S * 0.6, S * 1.9, S * 0.9] }[v];
+  R3.cam.position.set(...pos); R3.ctl.target.set(cx, 1.6, -cy); R3.ctl.update(); }
+document.querySelectorAll('[data-v]').forEach(b => b.onclick = () => P && view3(b.dataset.v));
+function shot() { R3.r.render(R3.scene, R3.cam); return R3.r.domElement.toDataURL('image/jpeg', 0.92); }
+$('bShot').onclick = () => { if (!P || !R3) return; addRender(shot(), '3D ko\'rinish'); st('✓ Rasm Render bo\'limiga qo\'shildi'); };
+
+/* ---------- render ---------- */
+function addRender(url, kind, extra) { P.renders.unshift({ url, kind, at: Date.now(), ...(extra || {}) }); P.renders = P.renders.slice(0, 24); save(true); if (TAB === 'ren') gallery(); }
+function gallery() { const g = $('gal'); if (!P.renders.length) { g.innerHTML = '<div class="empty">Hali render yo\'q. ⚡ Tez yoki 🎬 Aniq render ni bosing.</div>'; return; }
+  g.innerHTML = P.renders.map((r, i) => `<figure><img src="${r.url}" data-z="${i}"><figcaption><span>${esc(r.kind)} · ${new Date(r.at).toLocaleTimeString('ru-RU').slice(0, 5)}</span><button class="b" data-cover="${i}" title="Taqdimotga">⭐</button><button class="b" data-sv="${i}">⬇</button>${r.blend ? `<button class="b" data-dir="${i}" title="Papkani ochish">📂</button>` : ''}<button class="b" data-rm="${i}">✕</button></figcaption></figure>`).join('');
+  g.querySelectorAll('[data-z]').forEach(im => im.onclick = () => { $('zoom').querySelector('img').src = im.src; $('zoom').style.display = 'grid'; });
+  g.querySelectorAll('[data-sv]').forEach(b => b.onclick = async () => { const r = P.renders[+b.dataset.sv]; saveFile(fname(' - ' + r.kind.replace(/[^\p{L}\p{N} ]/gu, '') + '.' + (r.url.startsWith('data:image/png') ? 'png' : 'jpg')), await (await fetch(r.url)).blob()); });
+  g.querySelectorAll('[data-dir]').forEach(b => b.onclick = () => N && N.blenderShow && N.blenderShow({ p: P.renders[+b.dataset.dir].blend }));
+  g.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { P.renders.splice(+b.dataset.rm, 1); save(true); gallery(); });
+  g.querySelectorAll('[data-cover]').forEach(b => b.onclick = () => { const r = P.renders.splice(+b.dataset.cover, 1)[0]; P.renders.unshift(r); save(true); gallery(); st('⭐ Taqdimot uchun asosiy rasm tanlandi'); }); }
+$('zoom').onclick = () => $('zoom').style.display = 'none';
+let REFS = [];
+$('aiRef').onchange = async () => { REFS = []; for (const f of [...$('aiRef').files].slice(0, 2)) { const u = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(f); }); REFS.push({ b64: String(u).split(',')[1], mime: f.type || 'image/jpeg' }); } $('aiRefN').textContent = REFS.length ? '✓ ' + REFS.length + ' ta namuna — uslubi qo\'llanadi' : ''; };
+$('aiKind').onchange = () => { const k = $('aiKind').value; $('aiRoom').style.display = $('aiInt').style.display = k === 'int' ? '' : 'none'; };
+function setCut(on) { R3.grp.children.forEach(o => { if (o.userData.cut) o.visible = !on; }); }
+function viewRoom(li, ri) { const s = P.spec, r = s.levels[li].rooms[ri]; const z = 0.45 + li * (s.h + 0.25); const cx = r.x + r.w / 2, cy = r.y + r.h / 2, D = Math.max(r.w, r.h);
+  R3.cam.position.set(cx - D * 0.9, z + D * 1.25, -cy + D * 0.9); R3.ctl.target.set(cx, z + 0.5, -cy); R3.ctl.update(); }
+$('bAi').onclick = async () => {
+  if (!P) return; if (!N || !N.imgEdit) return st('✕ Faqat Jarvis kompyuter dasturida'); if (!R3) init3d();
+  if (TAB !== 'ren') document.querySelector('[data-t="ren"]').click();
+  const kind = $('aiKind').value; $('c3').style.cssText = 'position:fixed;left:-3000px;top:0;width:1280px;height:800px'; R3.resize(); build3d();
+  const s = P.spec; const sty = L.STYLES[(s.style || '').toLowerCase()] || (s.neo ? L.STYLES.neoklassik : null);
+  let prompt;
+  if (kind === 'ext') { view3('front'); setCut(false);
+    prompt = `Bu 3D eskizni professional fotoreal arxitektura vizualizatsiyasiga aylantir (Lumion / 3ds Max + Corona sifati, 4K, juda batafsil). Bino: ${s.levels.length} qavatli, ${s.W}×${s.L} m. ${sty ? 'Uslub: ' + sty.ai + '.' : 'Uslub: ' + (s.style || 'zamonaviy') + '.'} Muhit: ${$('aiStyle').value}. MUHIM: bino hajmi, qavatlar, derazalar soni va joyi, tom shakli va kamera burchagini saqla; qo'shimcha qavat qo'shma. Haqiqiy materiallar va teksturalar, yumshoq soyalar, chuqurlik, professional kompozitsiya.`; }
+  else if (kind === 'cut') { view3('top'); R3.cam.position.set(s.W / 2 - Math.max(s.W, s.L) * 0.75, Math.max(s.W, s.L) * 1.25, -s.L / 2 + Math.max(s.W, s.L) * 0.9); R3.ctl.update(); setCut(true);
+    prompt = `Bu tomi olib tashlangan uy rejasidan professional izometrik "kesma" arxitektura vizualizatsiyasi yarat (cutaway 3D model, architectural visualization). Har bir xonani vazifasiga mos mebel bilan to'ldir: ${s.levels[0].rooms.map(r => r.name).join(', ')}. Yog'och pol, oq devorlar, yumshoq studiya yorug'ligi, och fon, maket kabi toza ko'rinish, juda batafsil. Devorlar joylashuvi va xonalar o'lchamini o'zgartirma.`; }
+  else { const [li, ri] = $('aiRoom').value.split(':').map(Number); const r = s.levels[li].rooms[ri]; setCut(true); viewRoom(li, ri);
+    prompt = `Bu tomsiz 3D xona eskizidan fotoreal interyer dizayni yarat (3ds Max + Corona sifatida, 4K). Xona: ${r.name}, ${r.w.toFixed(1)}×${r.h.toFixed(1)} m, shift ${s.h} m. Uslub: ${$('aiInt').value}. Xona vazifasiga mos to'liq mebel, yoritish, dekor, gilam, o'simliklar. Ko'rinish: xona ichidan, ko'z balandligidan keng burchakli kadr (agar kerak bo'lsa izometrik o'rniga ichki perspektivaga o'tkaz). Real materiallar, yumshoq kunduzgi yorug'lik va iliq sun'iy yoritish.`; }
+  if (REFS.length) prompt += ' Qo\'shimcha rasm(lar) — uslub namunasi: undagi arxitektura uslubi, bezaklar, materiallar, ranglar, yoritish va landshaftni shu loyihaga qo\'lla (lekin birinchi rasmdagi bino shakli va o\'lchamlarini saqla).';
+  await new Promise(r => setTimeout(r, 200)); const img = shot(); setCut(false); $('c3').style.cssText = ''; R3.resize();
+  $('bAi').disabled = true; st('⏳ AI render (20–60 s)…');
+  try { const r = await N.imgEdit({ b64: img.split(',')[1], mime: 'image/jpeg', prompt, images: REFS }); if (r.error) throw new Error(r.error); addRender('data:' + (r.mime || 'image/png') + ';base64,' + r.b64, { ext: '⚡ Tashqi', cut: '⚡ Kesma', int: '⚡ Interyer' }[kind]); st('✓ AI render tayyor'); } catch (e) { st('✕ ' + e.message); } finally { $('bAi').disabled = false; } };
+if (N && N.onBlender) N.onBlender(d => { $('blProg').style.display = ''; $('blProg').firstChild.style.width = Math.round(d.p * 100) + '%'; $('blSt').textContent = '⏳ Render: ' + Math.round(d.p * 100) + '%'; });
+$('bBl').onclick = async () => {
+  if (!P) return; if (!N || !N.blenderRender) return st('✕ Faqat Jarvis kompyuter dasturida');
+  const stt = await N.blenderStatus(); if (!stt.path) { $('blSt').innerHTML = 'Blender topilmadi. <button class="b" id="bBlI">⬇ Blender\'ni o\'rnatish (bepul, ~350 MB)</button>';
+    $('bBlI').onclick = async () => { $('blSt').textContent = '⏳ Blender o\'rnatilmoqda (3–10 daqiqa)… Windows ruxsat so\'rasa — "Да"'; const r = await N.blenderInstall(); $('blSt').textContent = r.ok ? '✓ Blender o\'rnatildi — 🎬 Render ni bosing' : '✕ ' + r.error; }; return; }
+  const pth = await N.blenderPaths({ name: P.name, view: $('bv').value }); const script = L.blenderScript(P.spec, { quality: $('bq').value, view: $('bv').value, out: pth.out, blend: pth.blend });
+  $('bBl').disabled = true; $('bBlStop').style.display = ''; $('blProg').style.display = ''; $('blProg').firstChild.style.width = '2%'; $('blSt').textContent = '⏳ Blender model qurmoqda…';
+  const t0 = Date.now(); const r = await N.blenderRender({ script, out: pth.out });
+  $('bBl').disabled = false; $('bBlStop').style.display = 'none'; $('blProg').style.display = 'none';
+  if (r.error) { $('blSt').textContent = '✕ ' + (r.error === 'no_blender' ? 'Blender topilmadi' : r.error); return; }
+  addRender('data:image/png;base64,' + r.b64, '🎬 Blender (' + ($('bv').selectedOptions[0].text) + ')', { blend: pth.blend, file: r.out });
+  $('blSt').innerHTML = `✓ Tayyor: ${r.secs} s, ${r.device === 'GPU' ? 'videokarta' : 'protsessor'}. Fayllar: <a href="#" id="blDir" style="color:#8fdcff">${esc(pth.dir)}</a> (model.blend — Blender'da ochib davom ettiring)`; $('blDir').onclick = e => { e.preventDefault(); N.blenderShow({ p: pth.blend }); }; };
+$('bBlStop').onclick = () => N && N.blenderStop && N.blenderStop();
+
+/* ---------- variantlar va me'yorlar ---------- */
+function normsView() { const n = L.norms(P.spec); $('nScore').innerHTML = `<span style="color:${n.score >= 85 ? 'var(--ok)' : n.score >= 65 ? 'var(--amb)' : 'var(--bad)'}">${n.score}/100</span>`;
+  $('norms').innerHTML = n.items.map(i => `<div style="display:flex;gap:8px"><span>${{ ok: '✅', warn: '⚠️', bad: '⛔', info: 'ℹ️' }[i.lv]}</span><span style="flex:1">${esc(i.t)}${i.fix ? ` <i style="color:var(--mut)">→ ${esc(i.fix)}</i>` : ''}</span></div>`).join(''); }
+const VARIANTS = [];
+async function thumb(spec) { if (!R3) init3d(); const keep = P.spec; P.spec = L.normalize(spec); $('c3').style.cssText = 'position:fixed;left:-3000px;top:0;width:800px;height:500px'; R3.resize(); R3.placed = false; build3d(); view3('front'); await new Promise(r => setTimeout(r, 120)); const u = shot(); P.spec = keep; $('c3').style.cssText = ''; R3.placed = false; R3.resize(); return u; }
+async function makeVariants() {
+  if (!P) return; $('bVar').disabled = true; st('⏳ Variantlar tayyorlanmoqda…'); const base = JSON.parse(JSON.stringify(P.spec)); let list = [];
+  try { const r = await ai(L.AI_RULES + `\n\nJORIY LOYIHA (reja va qavatlar):\n${JSON.stringify(base)}\n\nVAZIFA: shu reja va qavatlar soni asosida 4 xil dizayn varianti taklif qil (uslub, tom, rang, ayvon/portik, kerak bo'lsa xonalar o'lchamini me'yorlarga moslab biroz o'zgartir). Har biri estetik jihatdan uyg'un, O'zbekiston shaharsozlik va qurilish me'yorlariga (xona maydonlari, tabiiy yorug'lik, seysmik talablar, balandlik) mos bo'lsin. FAQAT JSON: {"variants":[{"title":"qisqa nom","why":"1-2 gap: nima uchun yaxshi, qaysi me'yorlar hisobga olingan","spec":{...to'liq loyiha JSON...}}]}`);
+    list = (r.variants || []).filter(v => v && v.spec).slice(0, 4).map(v => ({ title: v.title, why: v.why, spec: L.normalize(Object.assign({}, base, v.spec)) })); } catch (e) { st('AI ishlamadi — tayyor uslublardan variantlar: ' + e.message); }
+  if (list.length < 2) list = Object.entries(L.STYLES).map(([k, v]) => ({ title: v.label, why: 'Tayyor uslub: ' + v.label + '. Reja o\'zgarmagan, me\'yoriy tekshiruv pastda.', spec: L.normalize(Object.assign({}, base, v.patch, { colors: v.patch.colors, name: base.name })) }));
+  VARIANTS.length = 0; for (const v of list) { v.img = await thumb(v.spec); v.score = L.norms(v.spec).score; VARIANTS.push(v); varsView(); }
+  $('bVar').disabled = false; st('✓ ' + VARIANTS.length + ' ta variant'); }
+function varsView() { $('vars').innerHTML = VARIANTS.map((v, i) => `<figure><img src="${v.img}" data-vz="${i}"><figcaption style="flex-direction:column;align-items:stretch;gap:4px"><div style="display:flex;gap:6px;align-items:center"><b style="flex:1;font-size:13.5px;color:#fff">${esc(v.title || 'Variant ' + (i + 1))}</b><span style="color:${v.score >= 85 ? 'var(--ok)' : 'var(--amb)'}">${v.score}/100</span></div><span style="color:var(--mut)">${esc(v.why || '')}</span>
+  <div style="display:flex;gap:4px"><button class="b pri" data-pick="${i}">✓ Tanlash</button><button class="b" data-vai="${i}">⚡ Render</button></div></figcaption></figure>`).join('');
+  $('vars').querySelectorAll('[data-vz]').forEach(im => im.onclick = () => { $('zoom').querySelector('img').src = im.src; $('zoom').style.display = 'grid'; });
+  $('vars').querySelectorAll('[data-pick]').forEach(b => b.onclick = () => { setSpec(VARIANTS[+b.dataset.pick].spec); st('✓ Variant tanlandi'); normsView(); });
+  $('vars').querySelectorAll('[data-vai]').forEach(b => b.onclick = () => { setSpec(VARIANTS[+b.dataset.vai].spec); document.querySelector('[data-t="ren"]').click(); $('aiKind').value = 'ext'; $('bAi').click(); }); }
+$('bVar').onclick = makeVariants;
+
+/* ---------- smeta ---------- */
+function smeta() { const q = L.quantities(P.spec), I = q.info; P.prices = P.prices || {};
+  $('kpi').innerHTML = [['Umumiy maydon', I.floorA + ' m²'], ['Qurilish maydoni', I.buildA + ' m²'], ['Qavatlar', I.levels], ['Devor hajmi', I.masonryV + ' m³'], ['Tom maydoni', I.roofA + ' m²'], ['Deraza / eshik', I.nWin + ' / ' + (I.nDoor + I.nEntry)]].map(([a, b]) => `<div><b>${b}</b><span>${a}</span></div>`).join('');
+  let tot = 0; const rows = q.rows.map((r, i) => { const pr = P.prices[r[0]] ?? r[3]; const sum = r[2] * pr; tot += sum; return `<tr><td>${i + 1}</td><td>${esc(r[0])}</td><td>${r[1]}</td><td class="n">${String(r[2]).replace('.', ',')}</td><td class="n"><input class="in" data-pr="${esc(r[0])}" value="${pr}"></td><td class="n">${fmt(sum)}</td></tr>`; }).join('');
+  const work = tot * 0.4; $('smTab').innerHTML = `<tr><th>№</th><th>Nomi</th><th>Birlik</th><th>Miqdor</th><th>Narx (so'm)</th><th>Summa (so'm)</th></tr>${rows}<tr><td></td><td colspan="4"><b>Materiallar jami</b></td><td class="n"><b>${fmt(tot)}</b></td></tr><tr><td></td><td colspan="4">Ish haqi (taxminan 40%)</td><td class="n">${fmt(work)}</td></tr><tr><td></td><td colspan="4"><b>JAMI (taxminiy)</b></td><td class="n"><b>${fmt(tot + work)}</b></td></tr><tr><td></td><td colspan="4">1 m² narxi</td><td class="n">${fmt((tot + work) / Math.max(1, I.floorA))}</td></tr>`;
+  $('smTab').querySelectorAll('[data-pr]').forEach(inp => inp.onchange = () => { P.prices[inp.dataset.pr] = +inp.value || 0; save(true); smeta(); }); P._tot = tot + work; }
+$('bCsv').onclick = () => { if (!P) return; const q = L.quantities(P.spec); let tot = 0; const lines = [['№', 'Nomi', 'Birlik', 'Miqdor', 'Narx', 'Summa']];
+  q.rows.forEach((r, i) => { const pr = (P.prices || {})[r[0]] ?? r[3]; tot += r[2] * pr; lines.push([i + 1, r[0], r[1], String(r[2]).replace('.', ','), pr, Math.round(r[2] * pr)]); });
+  lines.push(['', 'Materiallar jami', '', '', '', Math.round(tot)], ['', 'Ish haqi (40%)', '', '', '', Math.round(tot * 0.4)], ['', 'JAMI', '', '', '', Math.round(tot * 1.4)]);
+  saveFile(fname(' - smeta.csv'), '﻿' + lines.map(l => l.map(v => /[;"\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : v).join(';')).join('\r\n'), 'text/csv'); };
+
+/* ---------- taqdimot (A3 poster) ---------- */
+function posterSVG() {
+  const s = P.spec, q = L.quantities(s), I = q.info, Wp = 1684, Hp = 1191; const cover = P.renders[0];
+  const plan = L.planSVG(s, 0, { scale: 34 }); const pw = s.W * 34 + 140, ph = s.L * 34 + 140; const k = Math.min(620 / pw, 520 / ph);
+  let tot = 0; q.rows.forEach(r => tot += r[2] * ((P.prices || {})[r[0]] ?? r[3])); tot *= 1.4;
+  const kp = [['Umumiy maydon', I.floorA + ' m²'], ['Qurilish maydoni', I.buildA + ' m²'], ['O\'lchamlar', s.W + ' × ' + s.L + ' m'], ['Qavatlar', I.levels], ['Xonalar', s.levels.reduce((a, l) => a + l.rooms.length, 0)], ['Taxminiy narx', fmt(tot / 1e6) + ' mln so\'m']];
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${Wp} ${Hp}" width="${Wp}" height="${Hp}" font-family="Segoe UI,Arial,sans-serif">
+<defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#17b6e6"/><stop offset="1" stop-color="#5b6cff"/></linearGradient><clipPath id="cv"><rect x="40" y="130" width="960" height="620" rx="18"/></clipPath></defs>
+<rect width="100%" height="100%" fill="#f6f7fb"/><rect width="100%" height="96" fill="#0b1626"/><rect y="96" width="100%" height="6" fill="url(#g)"/>
+<text x="40" y="62" font-size="38" font-weight="700" fill="#fff">${esc(s.name)}</text><text x="${Wp - 40}" y="58" font-size="18" fill="#9fc3d9" text-anchor="end">Arxitektura konsepsiyasi · ${new Date().toLocaleDateString('ru-RU')}</text>
+${cover ? `<image href="${cover.url}" x="40" y="130" width="960" height="620" preserveAspectRatio="xMidYMid slice" clip-path="url(#cv)"/>` : `<rect x="40" y="130" width="960" height="620" rx="18" fill="#dde6f0"/><text x="520" y="445" text-anchor="middle" fill="#7a8a9a" font-size="22">Render qo'shing (Render bo'limi)</text>`}
+<rect x="1030" y="130" width="614" height="620" rx="18" fill="#fff" stroke="#e1e6ee"/><text x="1054" y="168" font-size="20" font-weight="700" fill="#0b1626">1-qavat rejasi</text>
+<g transform="translate(${1030 + (614 - pw * k) / 2},${185 + (560 - ph * k) / 2}) scale(${k})">${plan.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '').replace('<rect width="100%" height="100%" fill="#fff"/>', `<rect width="${pw}" height="${ph}" fill="#fff"/>`)}</g>
+<rect x="40" y="780" width="1604" height="370" rx="18" fill="#fff" stroke="#e1e6ee"/>
+${kp.map(([a, b], i) => `<g transform="translate(${70 + (i % 3) * 300},${830 + Math.floor(i / 3) * 120})"><text font-size="34" font-weight="700" fill="#0b1626">${esc(b)}</text><text y="34" font-size="17" fill="#6a7a8a">${esc(a)}</text></g>`).join('')}
+<line x1="980" y1="810" x2="980" y2="1120" stroke="#e1e6ee"/>
+<text x="1010" y="830" font-size="20" font-weight="700" fill="#0b1626">Xonalar</text>
+${s.levels[0].rooms.slice(0, 10).map((r, i) => `<text x="${1010 + (i >= 5 ? 320 : 0)}" y="${870 + (i % 5) * 46}" font-size="18" fill="#334">${esc(r.name)} — <tspan font-weight="700">${(r.w * r.h).toFixed(1)} m²</tspan></text>`).join('')}
+<text x="${Wp - 40}" y="${Hp - 18}" font-size="14" fill="#9aa8b8" text-anchor="end">JARVIS · Loyiha</text></svg>`;
+}
+function poster() { $('posterBox').innerHTML = posterSVG(); }
+$('bPosSvg').onclick = () => P && saveFile(fname(' - taqdimot.svg'), posterSVG(), 'image/svg+xml');
+$('bPosPng').onclick = async () => P && saveFile(fname(' - taqdimot.png'), await svgToPng(posterSVG(), 3368));
+$('bPosPdf').onclick = () => { if (!P) return; const a = $('printArea'); a.innerHTML = posterSVG(); a.style.display = 'block'; const st2 = document.createElement('style'); st2.textContent = '@page{size:A3 landscape;margin:0}#printArea svg{width:100%;height:100%}'; document.head.appendChild(st2); setTimeout(() => { window.print(); a.style.display = 'none'; st2.remove(); }, 200); };
+
+/* ---------- boshlash ---------- */
+$('bClose').onclick = () => { try { parent.postMessage({ loyiha: 'close' }, '*'); } catch (e) {} };
+if (window === parent) $('bClose').style.display = 'none';
+window.addEventListener('message', e => { const d = e.data && e.data.loyihaGen; if (!d) return; $('desc').value = d; $('bGen').click(); });
+refreshList(); const hq = decodeURIComponent((location.hash.match(/q=([^&]+)/) || [])[1] || ''); if (hq) { $('desc').value = hq; setTimeout(() => $('bGen').click(), 300); }
+window.__LOY = { get P() { return P; }, setSpec, build3d, posterSVG };
+</script>
+</body>
+</html>

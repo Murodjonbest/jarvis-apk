@@ -15,7 +15,7 @@
   $('mLive').onclick = () => { const b = $('liveBtn'); if (b) b.click(); else toast('Jonli suhbat uchun Gemini kaliti kerak (⚙ Sozlash)'); };
 
   /* ---- pastki menyu ---- */
-  const NAV = [['center', '💬', 'Suhbat'], ['read', '📖', "O'qish"], ['build', '🏗', 'Yaratish'], ['right', '📋', 'Eslatma'], ['apps', '🧩', 'Ilovalar'], ['left', '📊', 'Holat'], ['mods', '🛠', DESK ? 'Ustaxona' : "O'zgartirish"], ['set', '⚙', 'Sozlash']].filter(([v]) => DESK || !['read', 'build', 'mods'].includes(v));
+  const NAV = [['center', '💬', 'Suhbat'], ['read', '📖', "O'qish"], ['build', '🏗', 'Yaratish'], ['loyiha', '🏠', 'Loyiha'], ['right', '📋', 'Eslatma'], ['apps', '🧩', 'Ilovalar'], ['left', '📊', 'Holat'], ['mods', '🛠', DESK ? 'Ustaxona' : "O'zgartirish"], ['set', '⚙', 'Sozlash']].filter(([v]) => DESK || !['read', 'build', 'mods', 'loyiha'].includes(v));
   const nav = document.createElement('nav'); nav.id = 'mNav';
   nav.innerHTML = NAV.map(([v, i, t]) => `<button data-v="${v}"><span class="i">${i}</span>${t}<span class="badge"></span></button>`).join('');
   document.body.appendChild(nav);
@@ -39,6 +39,7 @@
     if (v === 'read') { closeSheet(); try { openReader(null); } catch (er) {} return; }
     if (v === 'mods') { closeSheet(); try { const NV = window.jarvisNative; NV && NV.ustaOpen ? NV.ustaOpen() : openCustomize(); } catch (er) {} return; }
     if (v === 'build') { closeSheet(); try { openBuilder(); } catch (er) {} return; }
+    if (v === 'loyiha') { closeSheet(); try { openLoyiha(); } catch (er) {} return; }
     show(v);
   });
 
@@ -99,9 +100,17 @@
   document.querySelectorAll('.win').forEach(decorate);
 
   /* ---- klaviatura ochilganda joyni kengaytirish ---- */
+  /* scrollIntoView yashirin (overflow:hidden) bloklarni ham surib yuboradi — natijada suhbat yuqoriga ketib, yozuv ko'rinmay qolardi. Ularni doim joyiga qaytaramiz. */
+  const fixedBoxes = () => [document.documentElement, document.body, document.querySelector('.hud'), $('centerCol'), document.querySelector('.panel.chat')].filter(Boolean);
+  function unshift() { if (DESK) return; fixedBoxes().forEach(el => { if (el.scrollTop) el.scrollTop = 0; if (el.scrollLeft) el.scrollLeft = 0; }); if (scrollY || scrollX) scrollTo(0, 0); }
+  fixedBoxes().forEach(el => el.addEventListener('scroll', () => { if (!DESK && (el.scrollTop || el.scrollLeft)) { el.scrollTop = 0; el.scrollLeft = 0; } }, { passive: true }));
+  addEventListener('scroll', unshift, { passive: true });
+  const kbPad = () => { if (!window.visualViewport || DESK) return; const k = Math.max(0, Math.round(innerHeight - visualViewport.height - visualViewport.offsetTop)); document.documentElement.style.setProperty('--kbH', (document.body.classList.contains('kbOpen') && k > 80 ? k : 0) + 'px'); };
+  if (window.visualViewport) visualViewport.addEventListener('resize', () => { kbPad(); unshift(); const lg = $('log'); if (lg && document.body.classList.contains('kbOpen')) lg.scrollTop = lg.scrollHeight; });
+  setTimeout(unshift, 300);
   let kbT;
-  document.addEventListener('focusin', e => { if (!DESK && (/TEXTAREA|INPUT/.test(e.target.tagName) && !/checkbox|range|radio|button/.test(e.target.type))) { clearTimeout(kbT); document.body.classList.add('kbOpen'); setTimeout(() => e.target.scrollIntoView({ block: 'nearest' }), 250); } });
-  document.addEventListener('focusout', () => { kbT = setTimeout(() => document.body.classList.remove('kbOpen'), 150); });
+  document.addEventListener('focusin', e => { if (!DESK && (/TEXTAREA|INPUT/.test(e.target.tagName) && !/checkbox|range|radio|button/.test(e.target.type))) { clearTimeout(kbT); document.body.classList.add('kbOpen'); setTimeout(() => { const w = e.target.closest('.win'); if (w) { e.target.scrollIntoView({ block: 'nearest' }); } unshift(); if (!w) { const lg = $('log'); if (lg) lg.scrollTop = lg.scrollHeight; } }, 250); } });
+  document.addEventListener('focusout', () => { kbT = setTimeout(() => { document.body.classList.remove('kbOpen'); kbPad(); unshift(); }, 150); });
 
   /* ---- suhbat boshlangach markaz kichrayadi; markazni bossa — katta/kichik ---- */
   const log = $('log');

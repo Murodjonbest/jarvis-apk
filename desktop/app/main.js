@@ -483,12 +483,12 @@ async function httpReq(a) {
 
   /* ---------- RASM: Lens qidiruv, AI tahrir; HUJJAT: PDF o'qish ---------- */
 async function geminiKey() { const g = loadCfg().providers.find(p => p.id === 'gemini'); return g && g.key ? g : null; }
-async function imgEdit({ b64, mime, prompt }) {
+async function imgEdit({ b64, mime, prompt, images }) {
   const g = await geminiKey(); if (!g) return { error: 'Buning uchun Google Gemini kaliti kerak' };
   const model = (rawCfg().imgModel) || 'gemini-2.5-flash-image';
   try {
     const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': g.key },
-      body: JSON.stringify({ contents: [{ parts: [{ inlineData: { mimeType: mime || 'image/jpeg', data: b64 } }, { text: prompt }] }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'] } }) }, 120000);
+      body: JSON.stringify({ contents: [{ parts: [...(b64 ? [{ inlineData: { mimeType: mime || 'image/jpeg', data: b64 } }] : []), ...((images || []).filter(x => x && x.b64).slice(0, 3).map(x => ({ inlineData: { mimeType: x.mime || 'image/jpeg', data: x.b64 } }))), { text: prompt }] }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'] } }) }, 150000);
     const t = await r.text(); if (!r.ok) return { error: r.status === 429 ? 'Bepul limit tugadi — birozdan keyin urinib ko\'ring' : r.status + ' ' + t.slice(0, 160) };
     const parts = (((JSON.parse(t).candidates || [])[0] || {}).content || {}).parts || []; const im = parts.find(x => x.inlineData);
     if (!im) return { error: parts.map(x => x.text || '').join(' ').slice(0, 200) || 'Rasm qaytmadi' };
@@ -798,6 +798,54 @@ ipcMain.handle('diag', async () => {
   const tg = tgCfg(); if (tg.token) add('Telegram', !!tg.owner && TG.on, TG.conflict ? 'bu bot boshqa qurilmada ishlayapti — bu yerda to\'xtatildi' : tg.owner ? (TG.on ? 'ishlayapti' : 'o\'chiq') : 'ulanmagan (kodni botga yuboring)', TG.conflict ? 'Telegram faqat bitta qurilmada yoqilsin (kompyuter tavsiya). Shu qurilmada kerak bo\'lsa — Telegram sozlamasida qayta yoqing' : '');
   return { items };
 });
+
+/* ===== LOYIHA: Blender orqali fotoreal render ===== */
+let BLENDER_CACHE = null;
+function blenderExe() {
+  if (BLENDER_CACHE && fs.existsSync(BLENDER_CACHE)) return BLENDER_CACHE;
+  const cands = [];
+  for (const base of [process.env.ProgramFiles, process.env['ProgramFiles(x86)'], 'C:\\Program Files', path.join(process.env.LOCALAPPDATA || '', 'Programs')]) {
+    try { const d = path.join(base || '', 'Blender Foundation'); for (const v of fs.readdirSync(d)) { const f = path.join(d, v, 'blender.exe'); if (fs.existsSync(f)) cands.push(f); } } catch (e) {}
+  }
+  try { const d = path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Steam', 'steamapps', 'common', 'Blender', 'blender.exe'); if (fs.existsSync(d)) cands.push(d); } catch (e) {}
+  cands.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+  if (!cands.length && process.platform === 'win32') { try { const o = require('child_process').execFileSync('where', ['blender'], { windowsHide: true, encoding: 'utf8', timeout: 5000 }).split(/\r?\n/)[0].trim(); if (o && fs.existsSync(o)) cands.push(o); } catch (e) {} }
+  BLENDER_CACHE = cands[0] || process.env.JARVIS_BLENDER || ''; return BLENDER_CACHE;
+}
+ipcMain.handle('blender:status', () => ({ path: blenderExe() }));
+ipcMain.handle('blender:install', async () => {
+  if (process.platform !== 'win32') return { error: 'Faqat Windows' };
+  BLENDER_CACHE = null; if (blenderExe()) return { ok: true, already: true };
+  const r = await new Promise(res => execFile('winget', ['install', '-e', '--id', 'BlenderFoundation.Blender', '--accept-package-agreements', '--accept-source-agreements', '--silent', '--disable-interactivity'], { windowsHide: true, timeout: 30 * 60000, maxBuffer: 1 << 24 }, (err, out, se) => res({ err, out: String(out || '') + String(se || '') })));
+  logw('BLENDER winget: ' + (r.err ? r.err.message : 'ok') + ' ' + r.out.slice(-300));
+  BLENDER_CACHE = null; if (blenderExe()) return { ok: true };
+  shell.openExternal('https://www.blender.org/download/');
+  return { error: 'Avtomatik o\'rnatilmadi — blender.org sahifasi ochildi, u yerdan o\'rnating' };
+});
+ipcMain.handle('blender:paths', (e, { name, view }) => {
+  const dir = path.join(app.getPath('documents'), 'Jarvis', 'Loyihalar', String(name || 'Loyiha').replace(/[\\/:*?"<>|]+/g, ' ').trim().slice(0, 60) || 'Loyiha');
+  fs.mkdirSync(dir, { recursive: true }); const ts = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+  return { dir, out: path.join(dir, `render-${view || 'old'}-${ts}.png`), blend: path.join(dir, 'model.blend') };
+});
+let BLENDER_PROC = null;
+ipcMain.handle('blender:render', async (e, { script, out }) => {
+  const exe = blenderExe(); if (!exe) return { error: 'no_blender' };
+  const f = path.join(app.getPath('temp'), 'jarvis-loyiha-' + Date.now() + '.py'); fs.writeFileSync(f, script);
+  const t0 = Date.now(); let dev = '', lastErr = '';
+  const code = await new Promise(res => {
+    try { BLENDER_PROC = require('child_process').spawn(exe, ['-b', '--factory-startup', '-P', f], { windowsHide: true }); } catch (err) { lastErr = err.message; return res(-1); }
+    const onData = d => { const t = String(d); const m = t.match(/Sample (\d+)\/(\d+)/g); if (m) { const [a, b] = m[m.length - 1].replace('Sample ', '').split('/').map(Number); try { e.sender.send('blender:progress', { p: a / b }); } catch (er) {} }
+      const dv = t.match(/JARVIS_DEVICE (\w+)/); if (dv) dev = dv[1]; if (/Error|Traceback/.test(t)) lastErr = (lastErr + t).slice(-600); };
+    BLENDER_PROC.stdout.on('data', onData); BLENDER_PROC.stderr.on('data', onData);
+    const to = setTimeout(() => { try { BLENDER_PROC.kill(); } catch (er) {} }, 40 * 60000);
+    BLENDER_PROC.on('close', c => { clearTimeout(to); res(c); }); BLENDER_PROC.on('error', err => { lastErr = err.message; res(-1); });
+  });
+  BLENDER_PROC = null; try { fs.unlinkSync(f); } catch (er) {}
+  if (!fs.existsSync(out)) return { error: 'Render chiqmadi (kod ' + code + ')' + (lastErr ? ': ' + lastErr.slice(-300) : '') };
+  return { ok: true, b64: fs.readFileSync(out).toString('base64'), out, device: dev, secs: Math.round((Date.now() - t0) / 1000) };
+});
+ipcMain.handle('blender:stop', () => { try { BLENDER_PROC && BLENDER_PROC.kill(); } catch (e) {} return true; });
+ipcMain.handle('blender:show', (e, { p }) => { try { shell.showItemInFolder(p); } catch (er) {} return true; });
 
 /* ===== USTAXONA: Jarvisni tuzatish/tahrirlash/kuchaytirish — o'zgarishlar alohida qatlamda (override), zaxira va avtomatik qaytarish bilan ===== */
 const OVR = () => path.join(app.getPath('userData'), 'usta', 'override');
