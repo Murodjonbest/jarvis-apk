@@ -87,7 +87,8 @@ td.n{text-align:right;font-variant-numeric:tabular-nums}td input{width:110px;tex
         <div class="bar" style="margin-bottom:6px"><label class="b" style="display:inline-flex;gap:6px;align-items:center">🖼 Uslub namunasi<input type="file" id="aiRef" accept="image/*" multiple style="display:none"></label><span class="hint" id="aiRefN">ixtiyoriy: yoqqan dizayn rasmi — uslubini olamiz</span></div>
         <div class="bar"><select class="in" id="aiStyle"><option value="quyoshli yozgi kun, tushlik payti">☀️ Kunduzi</option><option value="oltin soat, quyosh botishi, iliq yorug'lik, derazalarda chiroq">🌇 Kechqurun</option><option value="tun, chiroqlar yoqilgan, yulduzli osmon">🌙 Tunda</option><option value="qishki kun, qor yog'gan">❄️ Qishda</option></select><button class="b pri" id="bAi">⚡ Render</button></div></div>
       <div class="card"><h3>🎬 Aniq render — Blender (Cycles)</h3><p class="hint" style="margin:0 0 8px">Haqiqiy 3D model, aniq o'lchamlar, .blend fayl bilan. Vaqt kompyuterga bog'liq (1–15 daqiqa).</p>
-        <div class="bar"><select class="in" id="bq"><option value="draft">Qoralama (tez)</option><option value="normal" selected>Oddiy</option><option value="high">Yuqori sifat</option></select><select class="in" id="bv"><option value="front">Old</option><option value="side">Yon</option><option value="back">Orqa</option><option value="top">Yuqoridan</option></select><button class="b pri" id="bBl">🎬 Render</button><button class="b" id="bBlStop" style="display:none">⏹</button></div>
+        <div class="bar"><select class="in" id="bq"><option value="draft">Qoralama (tez)</option><option value="normal" selected>Oddiy</option><option value="high">Yuqori sifat</option></select><select class="in" id="bv"><option value="front">Old</option><option value="eye">Ko'z darajasida (Lumion)</option><option value="cut">Kesma — ichki xonalar</option><option value="side">Yon</option><option value="back">Orqa</option><option value="top">Yuqoridan</option></select><select class="in" id="bsky"><option value="kun">☀️ Kunduzi</option><option value="kech">🌇 Kechqurun</option></select><button class="b pri" id="bBl">🎬 Render</button><button class="b" id="bBlStop" style="display:none">⏹</button></div>
+        <div class="bar" style="margin-top:8px"><span class="hint sp" id="libSt">📚 Kutubxona: tekshirilmoqda…</span><button class="b" id="bLibGet">⬇ Kutubxonani yuklash</button><button class="b" id="bLibMy">📁 Mening modellarim</button></div>
         <div class="prog" id="blProg" style="margin-top:8px;display:none"><i></i></div><div class="hint" id="blSt" style="margin-top:6px"></div></div>
     </div>
     <div class="gal" id="gal"></div>
@@ -244,7 +245,8 @@ $('bBl').onclick = async () => {
   if (!P) return; if (!N || !N.blenderRender) return st('✕ Faqat Jarvis kompyuter dasturida');
   const stt = await N.blenderStatus(); if (!stt.path) { $('blSt').innerHTML = 'Blender topilmadi. <button class="b" id="bBlI">⬇ Blender\'ni o\'rnatish (bepul, ~350 MB)</button>';
     $('bBlI').onclick = async () => { $('blSt').textContent = '⏳ Blender o\'rnatilmoqda (3–10 daqiqa)… Windows ruxsat so\'rasa — "Да"'; const r = await N.blenderInstall(); $('blSt').textContent = r.ok ? '✓ Blender o\'rnatildi — 🎬 Render ni bosing' : '✕ ' + r.error; }; return; }
-  const pth = await N.blenderPaths({ name: P.name, view: $('bv').value }); const script = L.blenderScript(P.spec, { quality: $('bq').value, view: $('bv').value, out: pth.out, blend: pth.blend });
+  let lib = await libStatus(); if (lib && !lib.have && !LIB_TRIED) { LIB_TRIED = true; const r = await libGet(); lib = r && r.ok ? r : lib; }
+  const pth = await N.blenderPaths({ name: P.name, view: $('bv').value }); const script = L.blenderScript(P.spec, { quality: $('bq').value, view: $('bv').value, sky: $('bsky').value, out: pth.out, blend: pth.blend, assets: lib && lib.have ? lib.dir : '', lib: lib ? lib.lib : '' });
   $('bBl').disabled = true; $('bBlStop').style.display = ''; $('blProg').style.display = ''; $('blProg').firstChild.style.width = '2%'; $('blSt').textContent = '⏳ Blender model qurmoqda…';
   const t0 = Date.now(); const r = await N.blenderRender({ script, out: pth.out });
   $('bBl').disabled = false; $('bBlStop').style.display = 'none'; $('blProg').style.display = 'none';
@@ -252,6 +254,24 @@ $('bBl').onclick = async () => {
   addRender('data:image/png;base64,' + r.b64, '🎬 Blender (' + ($('bv').selectedOptions[0].text) + ')', { blend: pth.blend, file: r.out });
   $('blSt').innerHTML = `✓ Tayyor: ${r.secs} s, ${r.device === 'GPU' ? 'videokarta' : 'protsessor'}. Fayllar: <a href="#" id="blDir" style="color:#8fdcff">${esc(pth.dir)}</a> (model.blend — Blender'da ochib davom ettiring)`; $('blDir').onclick = e => { e.preventDefault(); N.blenderShow({ p: pth.blend }); }; };
 $('bBlStop').onclick = () => N && N.blenderStop && N.blenderStop();
+// --- kutubxona: Poly Haven CC0 (daraxt, buta, gul, maysa, chiroq, mebel, HDRI osmon, teksturalar) + foydalanuvchi papkasi (mashina, odam…) ---
+let LIB_TRIED = false;
+async function libStatus() {
+  if (!N || !N.assetsStatus) { $('libSt').textContent = '📚 Kutubxona faqat Jarvis kompyuter dasturida'; return null; }
+  const st = await N.assetsStatus(); const u = st.user || {}; const un = Object.entries(u).filter(([, v]) => v).map(([k, v]) => k + ' ' + v).join(', ');
+  $('libSt').innerHTML = (st.have ? `📚 Kutubxona ulangan: ${st.models} model, ${st.tex} tekstura, ${st.hdri} osmon (HDRI)` : '📚 Kutubxona hali yuklanmagan (~150 MB, bir marta) — birinchi renderda o\'zi yuklanadi')
+    + `<br>📁 Mening modellarim: ${un || 'bo\'sh — mashina/odam/daraxt/mebel papkalariga .blend/.glb/.fbx/.obj tashlang'}${[!u.mashina && 'mashina', !u.odam && 'odam'].filter(Boolean).map(k => ' · ' + k + ': Jarvis\'ning stilize modeli').join('')}`;
+  $('bLibGet').style.display = st.have ? 'none' : ''; return st;
+}
+async function libGet() {
+  $('blProg').style.display = ''; $('blSt').textContent = '⏳ Kutubxona yuklanmoqda…';
+  const r = await N.assetsGet(); $('blProg').style.display = 'none';
+  $('blSt').textContent = r.ok ? '✓ Kutubxona ulandi' : '✕ Kutubxona yuklanmadi: ' + r.error + ' — render oddiy materiallar bilan davom etadi'; await libStatus(); return r;
+}
+if (N && N.onAssets) N.onAssets(d => { $('blProg').style.display = ''; $('blProg').firstChild.style.width = Math.round(d.p * 100) + '%'; $('blSt').textContent = d.unpack ? '⏳ Kutubxona ochilmoqda…' : `⏳ Kutubxona: ${d.mb} / ${d.tot} MB`; });
+$('bLibGet').onclick = () => N && N.assetsGet && libGet();
+$('bLibMy').onclick = async () => { if (N && N.assetsOpenLib) { await N.assetsOpenLib(); setTimeout(libStatus, 1500); } };
+setTimeout(libStatus, 600);
 
 /* ---------- variantlar va me'yorlar ---------- */
 function normsView() { const n = L.norms(P.spec); $('nScore').innerHTML = `<span style="color:${n.score >= 85 ? 'var(--ok)' : n.score >= 65 ? 'var(--amb)' : 'var(--bad)'}">${n.score}/100</span>`;

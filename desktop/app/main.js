@@ -844,6 +844,54 @@ ipcMain.handle('blender:render', async (e, { script, out }) => {
   if (!fs.existsSync(out)) return { error: 'Render chiqmadi (kod ' + code + ')' + (lastErr ? ': ' + lastErr.slice(-300) : '') };
   return { ok: true, b64: fs.readFileSync(out).toString('base64'), out, device: dev, secs: Math.round((Date.now() - t0) / 1000) };
 });
+// ===== Loyiha kutubxonasi (Poly Haven CC0 + foydalanuvchi papkasi) =====
+const ASSET_URL = 'https://github.com/Murodjonbest/jarvis-apk/releases/download/loyiha-assets/loyiha-assets.zip';
+const ASSET_DIR = () => path.join(app.getPath('userData'), 'assets', 'loyiha');
+const ULIB_DIR = () => path.join(app.getPath('documents'), 'Jarvis', 'Kutubxona');
+function ulibEnsure() {
+  const d = ULIB_DIR(); const info = { mashina: 'Avtomobil modellari', odam: 'Odam figuralari', daraxt: 'Daraxtlar', mebel: 'Mebel (kesma ko\'rinishda mehmonxonaga qo\'yiladi)' };
+  try { for (const k of Object.keys(info)) fs.mkdirSync(path.join(d, k), { recursive: true });
+    const rd = path.join(d, 'O\'QING.txt'); if (!fs.existsSync(rd)) fs.writeFileSync(rd, 'Jarvis Loyiha kutubxonasi\r\n\r\nBu papkalarga .blend, .glb, .gltf, .fbx yoki .obj modellarni tashlang — Blender render ularni avtomatik joylaydi:\r\n' + Object.entries(info).map(([k, v]) => '  ' + k + '\\  — ' + v).join('\r\n') + '\r\n\r\nO\'lcham o\'zi moslanadi (mashina 4,7 m, odam 1,75 m, daraxt loyihaga qarab).\r\nBepul modellar: BlenderKit (Blender ichida), Sketchfab (CC litsenziya), Quaternius, Kenney (CC0).\r\n');
+  } catch (e) {}
+  return d;
+}
+function assetStatus() {
+  const d = ASSET_DIR(); let man = null; try { man = JSON.parse(fs.readFileSync(path.join(d, 'manifest.json'), 'utf8')); } catch (e) {}
+  const lib = ulibEnsure(); const user = {};
+  for (const k of ['mashina', 'odam', 'daraxt', 'mebel']) { try { user[k] = fs.readdirSync(path.join(lib, k)).filter(f => /\.(blend|glb|gltf|fbx|obj)$/i.test(f)).length; } catch (e) { user[k] = 0; } }
+  return { have: !!(man && fs.existsSync(path.join(d, 'kutubxona.blend'))), dir: d, lib, user, models: man ? man.models.length : 0, tex: man ? man.tex.length : 0, hdri: man ? Object.keys(man.hdri).length : 0 };
+}
+function dlFollow(url, dest, onProg, depth = 0) {
+  return new Promise((res, rej) => {
+    const mod = url.startsWith('https') ? require('https') : require('http');
+    mod.get(url, { headers: { 'User-Agent': 'Jarvis' } }, r => {
+      if ([301, 302, 303, 307, 308].includes(r.statusCode) && r.headers.location && depth < 6) { r.resume(); return dlFollow(new URL(r.headers.location, url).href, dest, onProg, depth + 1).then(res, rej); }
+      if (r.statusCode !== 200) { r.resume(); return rej(new Error('HTTP ' + r.statusCode)); }
+      const tot = +r.headers['content-length'] || 0; let got = 0; const f = fs.createWriteStream(dest);
+      r.on('data', c => { got += c.length; if (tot) onProg(got / tot, got, tot); }); r.pipe(f); f.on('finish', () => f.close(() => res(got))); r.on('error', rej); f.on('error', rej);
+    }).on('error', rej);
+  });
+}
+let ASSET_BUSY = null;
+ipcMain.handle('assets:status', () => assetStatus());
+ipcMain.handle('assets:get', async (e) => {
+  if (ASSET_BUSY) return ASSET_BUSY;
+  ASSET_BUSY = (async () => {
+    const d = ASSET_DIR(), tmp = path.join(app.getPath('temp'), 'jarvis-loyiha-assets.zip');
+    try {
+      fs.mkdirSync(d, { recursive: true });
+      await dlFollow(ASSET_URL, tmp, (p, a, b) => { try { e.sender.send('assets:progress', { p, mb: Math.round(a / 1048576), tot: Math.round(b / 1048576) }); } catch (er) {} });
+      try { e.sender.send('assets:progress', { p: 1, unpack: true }); } catch (er) {}
+      const run = (cmd, args) => new Promise(r => { const pr = require('child_process').spawn(cmd, args, { windowsHide: true }); pr.on('close', c => r(c)); pr.on('error', () => r(-1)); });
+      let c = await run('tar', ['-xf', tmp, '-C', d]);
+      if (c !== 0) c = await run('powershell', ['-NoProfile', '-Command', `Expand-Archive -LiteralPath '${tmp.replace(/'/g, "''")}' -DestinationPath '${d.replace(/'/g, "''")}' -Force`]);
+      try { fs.unlinkSync(tmp); } catch (er) {}
+      const st = assetStatus(); return st.have ? { ok: true, ...st } : { error: 'Arxiv ochilmadi (kod ' + c + ')' };
+    } catch (err) { return { error: err.message }; } finally { ASSET_BUSY = null; }
+  })();
+  return ASSET_BUSY;
+});
+ipcMain.handle('assets:openlib', () => { const d = ulibEnsure(); shell.openPath(d); return d; });
 ipcMain.handle('blender:stop', () => { try { BLENDER_PROC && BLENDER_PROC.kill(); } catch (e) {} return true; });
 ipcMain.handle('blender:show', (e, { p }) => { try { shell.showItemInFolder(p); } catch (er) {} return true; });
 
