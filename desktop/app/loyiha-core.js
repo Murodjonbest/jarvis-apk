@@ -265,14 +265,380 @@ items.sort((a, b) => b.a - a.a); { const hi = items.findIndex(i => i.type === 'h
   }
 
   /* ---------- Blender skripti (Cycles bilan fotoreal render) ---------- */
+  /* ---------- Blender: tayyor kutubxona (HDRI, PBR teksturalar, daraxt/buta/gul/chiroq/mebel modellari), mashina va odamlar ---------- */
+  function assetPy(s, G3, o) {
+    const C = s.colors, W = s.W, L = s.L, cx = W / 2, S = G3.size, fy = o.fy, st = s.style || '';
+    const wallTex = o.isRed(C.wall) ? `pbr('wall', 'red_brick_03') or pbr('wall', 'brick_wall_02')` : `pbr('wall', 'white_stucco', ${o.tint(C.wall)}) or pbr('wall', 'plastered_wall', ${o.tint(C.wall)})`;
+    const roofTex = o.isRed(C.roof) ? `pbr('roof', 'clay_roof_tiles') or pbr('roof', 'roof_tiles_14', ${o.tint(C.roof, 1.6)})` : `pbr('roof', 'grey_roof_tiles_02', ${o.tint(C.roof, 2.2)}) or pbr('roof', 'grey_roof_tiles', ${o.tint(C.roof, 2.2)})`;
+    const trimTex = st === 'neoklassik' ? `pbr('trim', 'marble_01'); pbr('column', 'marble_01'); pbr('slab', 'marble_01')` : `pbr('trim', 'plastered_wall', ${o.tint(C.trim)})`;
+    return `# ===== KUTUBXONA (Jarvis resurslari + foydalanuvchi papkasi) =====
+ASSETS = ${JSON.stringify(o.assets)}
+ULIB = ${JSON.stringify(o.lib)}
+SKY = ${JSON.stringify(o.sky)}
+VIEW = ${JSON.stringify(o.view)}
+STYLE = ${JSON.stringify(st)}
+W, L, CX, S, FY, TOP = ${W}, ${L}, ${cx}, ${S}, ${fy.toFixed(2)}, ${G3.top.toFixed(2)}
+ROOMS = ${JSON.stringify(o.rooms0)}
+TREES = ${JSON.stringify(G3.trees.map(t => [t.x, t.y, t.h, t.r]))}
+EXPO = -0.35
+def log(*a): print('JARVIS_ASSET', *a)
+def AP(*a):
+    if not ASSETS: return None
+    p = os.path.join(ASSETS, *a); return p if os.path.exists(p) else None
+def mixmul(nt):
+    try:
+        n = nt.nodes.new('ShaderNodeMix'); n.data_type = 'RGBA'; n.blend_type = 'MULTIPLY'; n.inputs[0].default_value = 1.0; return n.inputs[6], n.inputs[7], n.outputs[2]
+    except Exception:
+        n = nt.nodes.new('ShaderNodeMixRGB'); n.blend_type = 'MULTIPLY'; n.inputs[0].default_value = 1.0; return n.inputs[1], n.inputs[2], n.outputs[0]
+def pbr(key, tex, tint=None):
+    d = AP('tex', tex)
+    if not d or key not in M: return False
+    try:
+        tile = 2.0
+        try: tile = float(json.load(open(os.path.join(d, 'info.json'))).get('tile', 2.0))
+        except Exception: pass
+        m = M[key]; nt = m.node_tree; b = nt.nodes.get('Principled BSDF')
+        geo = nt.nodes.new('ShaderNodeNewGeometry'); mp = nt.nodes.new('ShaderNodeMapping')
+        mp.inputs['Scale'].default_value = (1 / tile, 1 / tile, 1 / tile); nt.links.new(geo.outputs['Position'], mp.inputs['Vector'])
+        def img(fn, data=False):
+            p = os.path.join(d, fn)
+            if not os.path.exists(p): return None
+            n = nt.nodes.new('ShaderNodeTexImage'); n.image = bpy.data.images.load(p, check_existing=True); n.projection = 'BOX'; n.projection_blend = 0.3
+            if data: n.image.colorspace_settings.name = 'Non-Color'
+            nt.links.new(mp.outputs[0], n.inputs[0]); return n
+        dn = img('diff.jpg')
+        if not dn: return False
+        if tint:
+            ia, ib, out = mixmul(nt); nt.links.new(dn.outputs[0], ia); ib.default_value = tint; nt.links.new(out, b.inputs['Base Color'])
+        else: nt.links.new(dn.outputs[0], b.inputs['Base Color'])
+        rn = img('rough.jpg', True)
+        if rn: nt.links.new(rn.outputs[0], b.inputs['Roughness'])
+        nn = img('nor.jpg', True)
+        if nn:
+            nm = nt.nodes.new('ShaderNodeNormalMap'); nm.inputs['Strength'].default_value = 0.7; nt.links.new(nn.outputs[0], nm.inputs['Color']); nt.links.new(nm.outputs[0], b.inputs['Normal'])
+        return True
+    except Exception as e:
+        log('pbr', tex, e); return False
+# --- teksturalar ---
+try:
+    ${wallTex}
+    ${roofTex}
+    ${trimTex}
+    pbr('base', 'rectangular_facade_tiles', (0.35, 0.35, 0.36, 1)) or pbr('base', 'plaster_stone_wall_01')
+    pbr('path', 'herringbone_pavement_02') or pbr('path', 'brick_pavement')
+    pbr('drive', 'concrete_pavers_02') or pbr('drive', 'concrete_pavement')
+    pbr('floor', 'laminate_floor_02') or pbr('floor', 'diagonal_parquet')
+    pbr('ground', 'aerial_grass_rock', (0.55, 0.75, 0.4, 1)) or pbr('ground', 'forest_floor')
+except Exception as e: log('tex', e)
+# --- Jarvis kutubxonasi (.blend ichida kolleksiyalar) ---
+LIBC = {}
+try:
+    p = AP('kutubxona.blend')
+    if p:
+        with bpy.data.libraries.load(p, link=False) as (src, dst): dst.collections = [c for c in src.collections if c.startswith('PH_')]
+        for c in dst.collections:
+            if c: LIBC[c.name[3:]] = c
+        log('kutubxona', len(LIBC))
+except Exception as e: log('kutubxona', e)
+def pick(*names):
+    ok = [LIBC[n] for n in names if n in LIBC]
+    return random.choice(ok) if ok else None
+def dims(col):
+    try: return float(col.get('h', 1.0)) or 1.0, float(col.get('l', 1.0)) or 1.0
+    except Exception: return 1.0, 1.0
+def inst(col, x, y, z=0.0, rot=0.0, sc_=1.0):
+    e = bpy.data.objects.new('i_' + col.name, None); e.instance_type = 'COLLECTION'; e.instance_collection = col
+    e.location = (x, y, z); e.rotation_euler = (0, 0, rot); e.scale = (sc_, sc_, sc_); sc.collection.objects.link(e); return e
+def put(col, x, y, z=0.0, rot=0.0, h=None, l=None, jit=0.0):
+    hh, ll = dims(col); k = 1.0
+    if h: k = h / hh
+    if l: k = l / ll
+    return inst(col, x, y, z, rot, k * (1 + random.uniform(-jit, jit)))
+# --- foydalanuvchi kutubxonasi: Hujjatlar/Jarvis/Kutubxona/{mashina,odam,daraxt,mebel} ---
+def uimport(path):
+    ext = os.path.splitext(path)[1].lower(); before = set(bpy.data.objects)
+    try:
+        if ext == '.blend':
+            with bpy.data.libraries.load(path, link=False) as (src, dst): dst.objects = list(src.objects)
+            for ob in dst.objects:
+                if ob: sc.collection.objects.link(ob)
+        elif ext in ('.glb', '.gltf'): bpy.ops.import_scene.gltf(filepath=path)
+        elif ext == '.fbx': bpy.ops.import_scene.fbx(filepath=path)
+        elif ext == '.obj':
+            try: bpy.ops.wm.obj_import(filepath=path)
+            except Exception: bpy.ops.import_scene.obj(filepath=path)
+        else: return None
+    except Exception as e:
+        log('import', os.path.basename(path), e); return None
+    new = [ob for ob in bpy.data.objects if ob not in before]
+    for ob in list(new):
+        if ob.type in ('CAMERA', 'LIGHT'): new.remove(ob); bpy.data.objects.remove(ob)
+    bpy.context.view_layer.update()
+    pts = [ob.matrix_world @ mathutils.Vector(c) for ob in new if ob.type == 'MESH' for c in ob.bound_box]
+    if not pts: return None
+    col = bpy.data.collections.new('U_' + os.path.basename(path)[:40])
+    for ob in new:
+        for c in list(ob.users_collection): c.objects.unlink(ob)
+        col.objects.link(ob)
+    mn = [min(p_[i] for p_ in pts) for i in range(3)]; mx = [max(p_[i] for p_ in pts) for i in range(3)]
+    col.instance_offset = ((mn[0] + mx[0]) / 2, (mn[1] + mx[1]) / 2, mn[2])
+    col['h'] = max(0.01, mx[2] - mn[2]); col['l'] = max(0.01, mx[0] - mn[0], mx[1] - mn[1])
+    log('user', os.path.basename(path), round(col['h'], 2), round(col['l'], 2)); return col
+USER = {}
+if ULIB and os.path.isdir(ULIB):
+    for k in ('mashina', 'odam', 'daraxt', 'mebel'):
+        d = os.path.join(ULIB, k); USER[k] = []
+        if not os.path.isdir(d): continue
+        for f in sorted(os.listdir(d))[:6]:
+            if os.path.splitext(f)[1].lower() in ('.blend', '.glb', '.gltf', '.fbx', '.obj'):
+                c = uimport(os.path.join(d, f))
+                if c: USER[k].append(c)
+def ucol(k): return random.choice(USER[k]) if USER.get(k) else None
+# --- yordamchi: oddiy shakllar ---
+def pmat(name, col, rough=0.5, metal=0.0, coat=0.0, emit=0.0):
+    m = bpy.data.materials.new(name); m.use_nodes = True; b = m.node_tree.nodes.get('Principled BSDF')
+    b.inputs['Base Color'].default_value = col; b.inputs['Roughness'].default_value = rough; b.inputs['Metallic'].default_value = metal
+    for k in ('Coat Weight', 'Clearcoat'):
+        if k in b.inputs: b.inputs[k].default_value = coat; break
+    if emit:
+        for k in ('Emission Color', 'Emission'):
+            if k in b.inputs: b.inputs[k].default_value = col; break
+        if 'Emission Strength' in b.inputs: b.inputs['Emission Strength'].default_value = emit
+    return m
+def prim(kind, loc, scl, m, coll, rot=(0, 0, 0), bevel=0.0, smooth=False, **kw):
+    if kind == 'cube': bpy.ops.mesh.primitive_cube_add(size=1, location=loc, rotation=rot)
+    elif kind == 'cyl': bpy.ops.mesh.primitive_cylinder_add(vertices=kw.get('v', 24), radius=1, depth=1, location=loc, rotation=rot)
+    else: bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=12, radius=1, location=loc, rotation=rot)
+    ob = bpy.context.active_object; ob.scale = scl; ob.data.materials.append(m)
+    if bevel:
+        md = ob.modifiers.new('Fask', 'BEVEL'); md.width = bevel; md.segments = 3
+        try: md.affect = 'EDGES'
+        except Exception: pass
+    if smooth or bevel:
+        try: bpy.ops.object.shade_smooth()
+        except Exception: pass
+    for c in list(ob.users_collection): c.objects.unlink(ob)
+    coll.objects.link(ob); return ob
+# --- mashina (kutubxonada bo'lmasa — stilize model) ---
+CARS = []
+def mkcar(i, paint):
+    coll = bpy.data.collections.new('Mashina_%d' % i)
+    pm = pmat('Kuzov', paint, 0.18, 0.55, 1.0); gl = pmat('Oyna_m', (0.02, 0.025, 0.03, 1), 0.04, 0.0, 1.0); rb = pmat('Rezina', (0.02, 0.02, 0.02, 1), 0.85)
+    ch = pmat('Xrom', (0.8, 0.8, 0.82, 1), 0.15, 1.0); hl = pmat('Fara', (1, 0.95, 0.85, 1), 0.1, 0, 0, 2.0 if SKY == 'kech' else 0.3); tl = pmat('Stop', (0.8, 0.02, 0.02, 1), 0.3, 0, 0, 1.0)
+    prim('cube', (0, 0, 0.62), (4.7, 1.86, 0.62), pm, coll, bevel=0.16)
+    cab = prim('cube', (-0.25, 0, 1.17), (2.55, 1.62, 0.56), gl, coll, bevel=0.14)
+    for v in cab.data.vertices:
+        if v.co.z > 0: v.co.x *= 0.72; v.co.y *= 0.86
+    prim('cube', (-0.25, 0, 1.46), (1.75, 1.36, 0.04), pm, coll, bevel=0.02)
+    for x in (1.48, -1.5):
+        for y in (0.83, -0.83):
+            prim('cyl', (x, y, 0.36), (0.36, 0.36, 0.24), rb, coll, rot=(math.radians(90), 0, 0), smooth=True, v=32)
+            prim('cyl', (x, y + (0.125 if y > 0 else -0.125), 0.36), (0.24, 0.24, 0.02), ch, coll, rot=(math.radians(90), 0, 0), smooth=True)
+    for y in (0.62, -0.62):
+        prim('cube', (2.34, y, 0.74), (0.04, 0.38, 0.1), hl, coll, bevel=0.02); prim('cube', (-2.34, y, 0.78), (0.04, 0.36, 0.08), tl, coll, bevel=0.02)
+    coll['h'] = 1.5; coll['l'] = 4.7; return coll
+def car_col():
+    u = ucol('mashina')
+    if u: return u, 4.7
+    if not CARS:
+        for i, c in enumerate(((0.01, 0.012, 0.015, 1), (0.85, 0.86, 0.87, 1), (0.25, 0.27, 0.3, 1))): CARS.append(mkcar(i, c))
+    return random.choice(CARS), None
+# --- odamlar (kutubxonada bo'lmasa — arxitektura maketidagi kabi stilize figuralar) ---
+PEOPLE = []
+def mkperson(i, cloth, pants):
+    coll = bpy.data.collections.new('Odam_%d' % i); sk = pmat('Teri', (0.62, 0.45, 0.35, 1), 0.6); cm = pmat('Kiyim', cloth, 0.8); pm_ = pmat('Shim', pants, 0.85); sh = pmat('Poyabzal', (0.05, 0.04, 0.04, 1), 0.5)
+    for y in (0.1, -0.1):
+        prim('cyl', (0, y, 0.47), (0.075, 0.075, 0.86), pm_, coll, smooth=True, v=16); prim('cube', (0.05, y, 0.04), (0.26, 0.1, 0.08), sh, coll, bevel=0.03)
+    prim('cyl', (0, 0, 1.18), (0.13, 0.2, 0.62), cm, coll, smooth=True, v=20)
+    prim('sph', (0, 0, 1.5), (0.16, 0.22, 0.09), cm, coll, smooth=True)
+    for y, a in ((0.26, 8), (-0.26, -8)): prim('cyl', (0, y, 1.13), (0.05, 0.05, 0.62), cm, coll, rot=(math.radians(a), 0, 0), smooth=True, v=12)
+    prim('cyl', (0, 0, 1.6), (0.05, 0.05, 0.1), sk, coll, smooth=True, v=12); prim('sph', (0.01, 0, 1.73), (0.1, 0.085, 0.12), sk, coll, smooth=True)
+    coll['h'] = 1.84; coll['l'] = 0.55; return coll
+def person_col():
+    u = ucol('odam')
+    if u: return u, 1.75
+    if not PEOPLE:
+        pal = (((0.75, 0.75, 0.72, 1), (0.08, 0.1, 0.16, 1)), ((0.12, 0.2, 0.32, 1), (0.25, 0.22, 0.2, 1)), ((0.55, 0.12, 0.1, 1), (0.05, 0.05, 0.06, 1)), ((0.9, 0.88, 0.82, 1), (0.6, 0.55, 0.45, 1)))
+        for i, (a, b_) in enumerate(pal): PEOPLE.append(mkperson(i, a, b_))
+    return random.choice(PEOPLE), None
+# --- sochish (geometry nodes): maysa va gullar ---
+def scatter(col, pts, smin=0.8, smax=1.2):
+    if not col or not pts: return
+    try:
+        me = bpy.data.meshes.new('nuqtalar'); me.from_pydata(pts, [], []); me.update(); ob = bpy.data.objects.new('Sochish_' + col.name, me); sc.collection.objects.link(ob)
+        ng = bpy.data.node_groups.new('Sochish', 'GeometryNodeTree')
+        try: ng.interface.new_socket('Geometry', in_out='INPUT', socket_type='NodeSocketGeometry'); ng.interface.new_socket('Geometry', in_out='OUTPUT', socket_type='NodeSocketGeometry')
+        except Exception: ng.inputs.new('NodeSocketGeometry', 'Geometry'); ng.outputs.new('NodeSocketGeometry', 'Geometry')
+        n = ng.nodes; gi = n.new('NodeGroupInput'); go = n.new('NodeGroupOutput'); io = n.new('GeometryNodeInstanceOnPoints'); ci = n.new('GeometryNodeCollectionInfo')
+        ci.inputs['Collection'].default_value = col; ci.transform_space = 'ORIGINAL'
+        rr = n.new('FunctionNodeRandomValue'); rr.data_type = 'FLOAT_VECTOR'; rr.inputs['Max'].default_value = (0, 0, 6.283); rr.inputs['Min'].default_value = (0, 0, 0)
+        rs = n.new('FunctionNodeRandomValue'); rs.data_type = 'FLOAT'; fv = [i_ for i_ in rs.inputs if i_.type == 'VALUE' and i_.name in ('Min', 'Max')]; fv[0].default_value = smin; fv[1].default_value = smax
+        ng.links.new(gi.outputs[0], io.inputs['Points']); ng.links.new(ci.outputs[0], io.inputs['Instance'])
+        ng.links.new(rr.outputs[0], io.inputs['Rotation']); ng.links.new([o_ for o_ in rs.outputs if o_.type == 'VALUE'][0], io.inputs['Scale'])
+        ng.links.new(io.outputs[0], go.inputs[0])
+        md = ob.modifiers.new('Sochish', 'NODES'); md.node_group = ng
+    except Exception as e: log('scatter', e)
+def inside(x, y, rects):
+    for a, b_, c, d in rects:
+        if a <= x <= c and b_ <= y <= d: return True
+    return False
+# ===== joylashtirish =====
+try:
+    DX = W * 0.84
+    BLOCK = [(-0.6, FY - 0.6, W + 0.6, L + 0.6), (CX - 1.1, FY - S * 1.25, CX + 1.1, FY), (DX - 2.0, FY - S * 1.25, DX + 2.0, FY)]
+    # daraxtlar
+    for x, y, h, r in TREES:
+        u = ucol('daraxt'); c = u or (pick('fir_tree_01', 'pine_tree_01', 'island_tree_01') if STYLE == 'neoklassik' else pick('island_tree_01', 'island_tree_02', 'island_tree_03', 'jacaranda_tree', 'tree_small_02'))
+        if c: put(c, x, y, 0, random.uniform(0, 6.28), h=h * 1.35, jit=0.12)
+        else:
+            bpy.ops.mesh.primitive_cylinder_add(radius=0.15, depth=h * 0.45, location=(x, y, h * 0.22)); bpy.context.active_object.data.materials.append(M['trunk'])
+            for dx, dy, dz, k in ((0, 0, 0.62, 1.0), (0.45, 0.2, 0.5, 0.7), (-0.4, -0.25, 0.52, 0.72), (0.1, -0.4, 0.78, 0.65), (-0.2, 0.35, 0.8, 0.6)):
+                bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=r * k, location=(x + dx * r, y + dy * r, h * dz)); o_ = bpy.context.active_object; o_.data.materials.append(M['leaf']); bpy.ops.object.shade_smooth()
+    if VIEW != 'cut' and STYLE == 'neoklassik':
+        c = pick('fir_tree_01', 'pine_sapling_medium')
+        if c:
+            for x in (-1.4, W + 1.4): put(c, x, FY - 0.9, 0, random.uniform(0, 6.28), h=TOP * 0.9, jit=0.05)
+    # butalar fasad bo'ylab
+    sh = [n for n in ('shrub_01', 'shrub_02', 'shrub_03', 'shrub_04', 'shrub_sorrel_01') if n in LIBC]
+    if sh:
+        x = 0.5
+        while x < W - 0.3:
+            if abs(x - CX) > 1.7 and abs(x - DX) > 2.1: put(LIBC[random.choice(sh)], x, FY - 0.75, 0, random.uniform(0, 6.28), h=random.uniform(0.7, 1.1))
+            x += random.uniform(1.0, 1.5)
+        y = 0.8
+        while y < L - 0.5:
+            for x in (-0.9, W + 0.9): put(LIBC[random.choice(sh)], x, y, 0, random.uniform(0, 6.28), h=random.uniform(0.8, 1.3))
+            y += random.uniform(1.4, 2.0)
+    # gullar (fasad oldida tasma)
+    fl = pick('flower_gazania', 'periwinkle_plant', 'flower_ursinia')
+    if fl:
+        pts = [(random.uniform(0.3, W - 0.3), random.uniform(FY - 1.55, FY - 1.15), 0) for _ in range(int(W * 9))]
+        scatter(fl, [p_ for p_ in pts if abs(p_[0] - CX) > 1.3 and abs(p_[0] - DX) > 2.0], 0.7, 1.2)
+    # maysa
+    gr = pick('grass_medium_01', 'grass_medium_02')
+    if gr:
+        pts = []
+        x0, x1, y0, y1 = -S * 0.9, W + S * 0.9, FY - S * 1.2, L + S * 0.6
+        n = min(9000, int((x1 - x0) * (y1 - y0) * 1.6))
+        for _ in range(n):
+            x, y = random.uniform(x0, x1), random.uniform(y0, y1)
+            if not inside(x, y, BLOCK) and not (FY - 1.6 < y < FY - 0.4 and 0 < x < W): pts.append((x, y, 0))
+        scatter(gr, pts, 0.8, 1.6)
+    # kirish oldida guldonlar
+    pp = pick('potted_plant_01', 'potted_plant_02', 'planter_pot_clay')
+    if pp and VIEW != 'cut':
+        for x in (CX - 1.35, CX + 1.35): put(pp, x, FY - 0.45, 0, random.uniform(0, 6.28), h=1.0)
+    # yo'lak chiroqlari
+    LAMPS = []
+    lp = pick('street_lamp_02', 'street_lamp_01')
+    if lp and VIEW != 'cut':
+        y = FY - 2.6
+        while y > FY - S * 1.15:
+            for x in (CX - 1.35, CX + 1.35): put(lp, x, y, 0, 0, h=2.7); LAMPS.append((x, y, 2.6))
+            y -= 5.0
+    # bog' mebeli
+    bn = pick('outdoor_table_chair_set_01', 'painted_wooden_bench', 'wooden_picnic_table')
+    if bn and VIEW != 'cut': put(bn, -S * 0.35, FY - S * 0.35, 0, math.radians(20))
+    # mashina va odamlar
+    if VIEW != 'cut':
+        cc, ln = car_col(); put(cc, DX, FY - min(S * 0.42, 6.5), 0, math.radians(90 + random.uniform(-6, 6)), l=ln)
+        for x, y, r_ in ((CX + 0.9, FY - 1.9, -100), (CX + 1.5, FY - 2.2, 120), (CX - 0.2, FY - S * 0.55, 90), (DX - 2.3, FY - min(S * 0.42, 6.5) + 0.6, 200)):
+            pc, hh = person_col(); put(pc, x, y, 0, math.radians(r_ + random.uniform(-15, 15)), h=hh and hh * random.uniform(0.93, 1.05))
+    # interyer (kesma ko'rinish)
+    if VIEW == 'cut':
+        Z = 0.5
+        wd = pmat('Yogoch', (0.32, 0.2, 0.12, 1), 0.45); tx = pmat('Mato', (0.85, 0.83, 0.78, 1), 0.9); ce = pmat('Chinni', (0.95, 0.95, 0.95, 1), 0.15); ct = pmat('Stoleshnitsa', (0.12, 0.12, 0.13, 1), 0.3)
+        icoll = bpy.data.collections.new('Interyer'); sc.collection.children.link(icoll)
+        for x, y, w, h, t in ROOMS:
+            mx, my = x + w / 2, y + h / 2
+            if t == 'living':
+                c = ucol('mebel') or pick('sofa_02', 'Sofa_01', 'sofa_03')
+                if c: put(c, mx, y + h - 0.75, Z, 0)
+                c = pick('modern_coffee_table_01', 'modern_coffee_table_02', 'CoffeeTable_01')
+                if c: put(c, mx, my + 0.1, Z, 0)
+                c = pick('modern_arm_chair_01', 'ArmChair_01')
+                if c and w > 3.2: put(c, x + 0.75, my, Z, math.radians(-90))
+                c = pick('potted_plant_02', 'potted_plant_01')
+                if c: put(c, x + w - 0.45, y + h - 0.45, Z, 0, h=1.2)
+            elif t == 'bed':
+                bw = min(1.8, w - 0.9)
+                prim('cube', (mx, y + h - 1.15, Z + 0.22), (bw + 0.1, 2.1, 0.3), wd, icoll, bevel=0.03)
+                prim('cube', (mx, y + h - 1.12, Z + 0.45), (bw, 1.95, 0.22), tx, icoll, bevel=0.08)
+                prim('cube', (mx, y + h - 0.12, Z + 0.6), (bw + 0.2, 0.08, 1.2), wd, icoll, bevel=0.02)
+                for k in (-0.25, 0.25): prim('cube', (mx + k * bw, y + h - 0.45, Z + 0.62), (bw * 0.42, 0.42, 0.14), tx, icoll, bevel=0.06)
+                c = pick('side_table_01', 'painted_wooden_nightstand', 'ClassicNightstand_01')
+                if c: put(c, mx + bw / 2 + 0.45, y + h - 0.4, Z, 0)
+            elif t == 'kitchen':
+                prim('cube', (mx, y + h - 0.35, Z + 0.45), (w - 0.5, 0.6, 0.9), wd, icoll, bevel=0.01); prim('cube', (mx, y + h - 0.35, Z + 0.92), (w - 0.45, 0.64, 0.04), ct, icoll)
+                c = pick('dining_table', 'round_wooden_table_01', 'WoodenTable_01')
+                if c:
+                    put(c, mx, my - 0.2, Z, 0)
+                    ch = pick('dining_chair_02', 'WoodenChair_01')
+                    if ch:
+                        for dx, dy, a in ((0, -0.75, 0), (0, 0.75, 180), (-0.9, 0, -90), (0.9, 0, 90)): put(ch, mx + dx, my - 0.2 + dy, Z, math.radians(a))
+            elif t == 'bath':
+                prim('cube', (x + 0.45, my, Z + 0.3), (0.75, min(1.7, h - 0.4), 0.6), ce, icoll, bevel=0.08)
+            elif t == 'hall':
+                c = pick('potted_plant_04', 'potted_plant_01')
+                if c: put(c, x + 0.4, y + 0.4, Z, 0, h=1.0)
+            # xonani yoritish
+            ld = bpy.data.lights.new('Xona', 'POINT'); ld.energy = 120; ld.color = (1, 0.85, 0.65); ld.shadow_soft_size = 0.6
+            lo = bpy.data.objects.new('Xona', ld); lo.location = (mx, my, Z + 2.2); sc.collection.objects.link(lo)
+    # kechki yoritish
+    if SKY == 'kech' and VIEW != 'cut':
+        for x, y, w, h, t in ROOMS:
+            ld = bpy.data.lights.new('Deraza', 'POINT'); ld.energy = 180; ld.color = (1, 0.72, 0.42); lo = bpy.data.objects.new('Deraza', ld); lo.location = (x + w / 2, y + h / 2, 1.9); sc.collection.objects.link(lo)
+        for x, y, z in LAMPS:
+            ld = bpy.data.lights.new('Chiroq', 'POINT'); ld.energy = 60; ld.color = (1, 0.75, 0.45); ld.shadow_soft_size = 0.15; lo = bpy.data.objects.new('Chiroq', ld); lo.location = (x, y, z); sc.collection.objects.link(lo)
+        for x in (CX - 1.1, CX + 1.1, 0.4, W - 0.4):
+            ld = bpy.data.lights.new('Fasad', 'SPOT'); ld.energy = 120; ld.spot_size = math.radians(70); ld.color = (1, 0.78, 0.5); lo = bpy.data.objects.new('Fasad', ld); lo.location = (x, FY - 0.35, 0.3); lo.rotation_euler = (math.radians(-12), 0, 0); sc.collection.objects.link(lo)
+except Exception as e:
+    import traceback; traceback.print_exc(); log('joylash', e)
+# ===== osmon =====
+w = bpy.data.worlds.new('Osmon'); sc.world = w; w.use_nodes = True; nt = w.node_tree; bg = nt.nodes.get('Background')
+HDR = AP('hdri', 'kech.hdr' if SKY == 'kech' else 'kun.hdr')
+SUNE = 3.2
+if HDR:
+    try:
+        env = nt.nodes.new('ShaderNodeTexEnvironment'); env.image = bpy.data.images.load(HDR); tc_ = nt.nodes.new('ShaderNodeTexCoord'); mp_ = nt.nodes.new('ShaderNodeMapping')
+        mp_.inputs['Rotation'].default_value = (0, 0, math.radians(${(+o.hdriRot || 0)}))
+        nt.links.new(tc_.outputs['Generated'], mp_.inputs['Vector']); nt.links.new(mp_.outputs[0], env.inputs[0]); nt.links.new(env.outputs[0], bg.inputs[0])
+        bg.inputs[1].default_value = 0.55 if SKY == 'kech' else 1.0; EXPO = 0.2 if SKY == 'kech' else -0.15; SUNE = 0.0 if SKY == 'kech' else 1.2
+        log('hdri', os.path.basename(HDR))
+    except Exception as e: log('hdri', e); HDR = None
+if not HDR:
+    try:
+        sky = nt.nodes.new('ShaderNodeTexSky')
+        for t in ('NISHITA', 'MULTIPLE_SCATTERING', 'SINGLE_SCATTERING', 'HOSEK_WILKIE'):
+            try: sky.sky_type = t; break
+            except Exception: pass
+        try: sky.sun_elevation = math.radians(6 if SKY == 'kech' else 32); sky.sun_rotation = math.radians(215)
+        except Exception: pass
+        nt.links.new(sky.outputs[0], bg.inputs[0]); bg.inputs[1].default_value = 0.22
+    except Exception:
+        bg.inputs[0].default_value = (0.55, 0.72, 0.95, 1); bg.inputs[1].default_value = 1.0
+    if SKY == 'kech': SUNE = 1.2; EXPO = 0.4
+if SUNE > 0:
+    sd = bpy.data.lights.new('Quyosh', 'SUN'); sd.energy = SUNE; sd.angle = math.radians(1.5)
+    if SKY == 'kech': sd.color = (1, 0.6, 0.35)
+    so = bpy.data.objects.new('Quyosh', sd); sc.collection.objects.link(so); so.rotation_euler = (math.radians(80 if SKY == 'kech' else 55), 0, math.radians(215))`;
+  }
+
   function blenderScript(s, opt = {}) {
     const G3 = geometry(s), q = opt.quality === 'high' ? { spp: 256, rx: 1920, ry: 1080 } : opt.quality === 'draft' ? { spp: 24, rx: 960, ry: 540 } : { spp: 96, rx: 1600, ry: 900 };
     const hex = h => { const n = parseInt(String(h).replace('#', ''), 16); const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return '(' + c.map(v => v.toFixed(4)).join(', ') + ', 1)'; };
     const C = s.colors; const S = G3.size, cx = s.W / 2, cy = s.L / 2;
     const view = opt.view || 'front';
-    const cam = view === 'back' ? [cx + S * 1.15, s.L + S * 1.55, S * 0.55] : view === 'top' ? [cx - S * 0.9, cy - S * 1.1, S * 1.9] : view === 'side' ? [s.W + S * 1.7, cy - S * 0.6, S * 0.45] : [cx - S * 1.05, -S * 1.55, S * 0.55];
+    if (view === 'cut') { const zc = 0.45 + Math.min(s.h, 3) * 0.55; G3.boxes = G3.boxes.filter(b => !b.cut && b.p[2] - b.s[2] / 2 < zc - 0.05).map(b => { const z1 = b.p[2] - b.s[2] / 2, z2 = Math.min(zc, b.p[2] + b.s[2] / 2); return { ...b, p: [b.p[0], b.p[1], r2((z1 + z2) / 2)], s: [b.s[0], b.s[1], r2(z2 - z1)] }; }); G3.meshes = []; G3.top = zc; }
+    const fy = Math.min(0, ...G3.boxes.filter(b => b.p[2] - b.s[2] / 2 < 1).map(b => b.p[1] - b.s[1] / 2));
+    const lin = h => { const n = parseInt(String(h).replace('#', ''), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); };
+    const tint = (h, k = 1.25) => '(' + lin(h).map(v => Math.min(1, v * k).toFixed(4)).join(', ') + ', 1)';
+    const isRed = h => { const c = lin(h); return c[0] > c[1] * 1.6 && c[0] > 0.12; };
+    const rooms0 = plan(s, 0).rooms.map(r => [r.x, r.y, r.w, r.h, r.type || 'room']);
+    const cam = view === 'cut' ? [cx - S * 0.75, -S * 0.95, S * 1.25] : view === 'eye' ? [cx - S * 0.42, fy - S * 1.05, 1.65] : view === 'back' ? [cx + S * 1.15, s.L + S * 1.55, S * 0.55] : view === 'top' ? [cx - S * 0.9, cy - S * 1.1, S * 1.9] : view === 'side' ? [s.W + S * 1.7, cy - S * 0.6, S * 0.45] : [cx - S * 1.05, -S * 1.55, S * 0.55];
     return `# JARVIS LOYIHA — avtomatik yaratilgan Blender skripti (${s.name})
-import bpy, math, sys, os
+import bpy, math, sys, os, json, random, mathutils
+random.seed(${(s.W * 13 + s.L * 7) | 0})
 OUT = ${JSON.stringify(opt.out || '//render.png')}
 BLEND = ${JSON.stringify(opt.blend || '')}
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -295,7 +661,7 @@ M = {
  'base': mat('Sokol', ${hex(C.base)}, 0.9), 'floor': mat('Pol', (0.55, 0.42, 0.3, 1), 0.5), 'glass': mat('Oyna', (0.75, 0.85, 0.95, 1), glass=True),
  'door': mat('Eshik', ${hex(C.door)}, 0.45), 'column': mat('Ustun', ${hex(C.trim)}, 0.5),
  'ground': mat('Maysa', ${hex(C.ground)}, 0.95), 'trunk': mat('Tana', (0.18, 0.11, 0.06, 1), 0.9), 'leaf': mat('Barg', (0.09, 0.28, 0.06, 1), 0.8),
- 'path': mat('Yo\\'lak', (0.55, 0.53, 0.5, 1), 0.85)}
+ 'path': mat('Yo\\'lak', (0.55, 0.53, 0.5, 1), 0.85), 'drive': mat('Avtoyo\\'l', (0.42, 0.42, 0.4, 1), 0.85)}
 def box(p, s, m):
     bpy.ops.mesh.primitive_cube_add(size=1, location=p); o = bpy.context.active_object; o.scale = s; o.data.materials.append(M[m]); return o
 def mesh(v, f, m, name='Tom'):
@@ -309,28 +675,12 @@ for p, s_, m in B: box(p, s_, m)
 for ms in ${JSON.stringify(G3.meshes.map(x => [x.v, x.f, x.m]))}: mesh(ms[0], ms[1], ms[2])
 # yer va yo'lak
 bpy.ops.mesh.primitive_plane_add(size=${(S * 300).toFixed(1)}, location=(${cx}, ${cy}, 0)); g = bpy.context.active_object; g.data.materials.append(M['ground'])
-box((${cx}, ${-S * 0.6}, 0.02), (1.6, ${(S * 1.2).toFixed(2)}, 0.04), 'path')
-for t in ${JSON.stringify(G3.trees.map(t => [t.x, t.y, t.h, t.r]))}:
-    x, y, h, r = t
-    bpy.ops.mesh.primitive_cylinder_add(radius=0.15, depth=h * 0.45, location=(x, y, h * 0.22)); bpy.context.active_object.data.materials.append(M['trunk'])
-    for dx, dy, dz, k in ((0, 0, 0.62, 1.0), (0.45, 0.2, 0.5, 0.7), (-0.4, -0.25, 0.52, 0.72), (0.1, -0.4, 0.78, 0.65), (-0.2, 0.35, 0.8, 0.6)):
-        bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=r * k, location=(x + dx * r, y + dy * r, h * dz)); o = bpy.context.active_object; o.data.materials.append(M['leaf']); bpy.ops.object.shade_smooth()
-# osmon va quyosh
-w = bpy.data.worlds.new('Osmon'); sc.world = w; w.use_nodes = True; nt = w.node_tree; bg = nt.nodes.get('Background')
-try:
-    sky = nt.nodes.new('ShaderNodeTexSky')
-    for t in ('NISHITA', 'MULTIPLE_SCATTERING', 'SINGLE_SCATTERING', 'HOSEK_WILKIE'):
-        try: sky.sky_type = t; break
-        except Exception: pass
-    try: sky.sun_elevation = math.radians(32); sky.sun_rotation = math.radians(215)
-    except Exception: pass
-    nt.links.new(sky.outputs[0], bg.inputs[0]); bg.inputs[1].default_value = 0.22
-except Exception:
-    bg.inputs[0].default_value = (0.55, 0.72, 0.95, 1); bg.inputs[1].default_value = 1.0
-sd = bpy.data.lights.new('Quyosh', 'SUN'); sd.energy = 3.2; sd.angle = math.radians(1.5); so = bpy.data.objects.new('Quyosh', sd); sc.collection.objects.link(so); so.rotation_euler = (math.radians(55), 0, math.radians(215))
+box((${cx}, ${(fy - S * 0.6).toFixed(2)}, 0.02), (1.6, ${(S * 1.2).toFixed(2)}, 0.04), 'path')
+box((${(s.W * 0.84).toFixed(2)}, ${(fy - 0.1 - S * 0.6).toFixed(2)}, 0.021), (3.6, ${(S * 1.2).toFixed(2)}, 0.04), 'drive')
+${assetPy(s, G3, { view, fy, tint, isRed, rooms0, assets: opt.assets || '', lib: opt.lib || '', sky: opt.sky || 'kun' })}
 # kamera
-tgt = bpy.data.objects.new('Nishon', None); sc.collection.objects.link(tgt); tgt.location = (${cx}, ${cy}, ${(G3.top * 0.45).toFixed(2)})
-cd = bpy.data.cameras.new('Kamera'); cd.lens = ${view === 'top' ? 30 : 35}; co = bpy.data.objects.new('Kamera', cd); sc.collection.objects.link(co); co.location = (${cam.map(v => v.toFixed(2)).join(', ')})
+tgt = bpy.data.objects.new('Nishon', None); sc.collection.objects.link(tgt); tgt.location = (${cx}, ${view === 'eye' ? (s.L * 0.25).toFixed(2) : cy}, ${(view === 'eye' ? G3.top * 0.5 : view === 'cut' ? 0.6 : G3.top * 0.45).toFixed(2)})
+cd = bpy.data.cameras.new('Kamera'); cd.lens = ${view === 'top' ? 30 : view === 'eye' ? 22 : 35}; co = bpy.data.objects.new('Kamera', cd); sc.collection.objects.link(co); co.location = (${cam.map(v => v.toFixed(2)).join(', ')})
 tc = co.constraints.new('TRACK_TO'); tc.target = tgt; tc.track_axis = 'TRACK_NEGATIVE_Z'; tc.up_axis = 'UP_Y'; sc.camera = co
 # render sozlamalari
 sc.render.engine = 'CYCLES'; sc.cycles.samples = ${q.spp}
@@ -342,7 +692,7 @@ try:
     for lk in ('AgX - Punchy', 'Punchy', 'AgX - Medium High Contrast'):
         try: sc.view_settings.look = lk; break
         except Exception: pass
-    sc.view_settings.exposure = -0.35
+    sc.view_settings.exposure = EXPO
 except Exception:
     try: sc.view_settings.view_transform = 'Filmic'
     except Exception: pass

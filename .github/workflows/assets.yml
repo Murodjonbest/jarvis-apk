@@ -6,20 +6,30 @@ on:
 permissions:
   contents: write
 jobs:
-  probe:
+  build:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-      - name: Poly Haven ro'yxati
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - name: Yuklab olish (Poly Haven CC0)
+        run: python3 assets/fetch.py "$PWD/out/loyiha"
+      - name: Blender (bpy)
+        run: pip install bpy==5.3.* || pip install bpy
+      - name: Kutubxona .blend
+        run: python3 -c "import sys; sys.argv=['x','--','$PWD/out/loyiha']; exec(open('assets/mklib.py').read())"
+      - name: Zip
         run: |
-          python3 - <<'PY'
-          import json,urllib.request
-          def get(u): return json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'User-Agent':'jarvis-loyiha'})))
-          for t in ['hdris','textures','models']:
-              a=get('https://api.polyhaven.com/assets?t='+t)
-              print('=====',t,len(a))
-              cats={}
-              for k,v in a.items():
-                  for c in v.get('categories',[]): cats.setdefault(c,[]).append(k)
-              for c,l in sorted(cats.items()): print(c,len(l),' '.join(l[:60]))
-          PY
+          cd out/loyiha && rm -rf _gltf && du -sh * && zip -qr ../loyiha-assets.zip . && ls -la ..
+      - name: Sinov render
+        run: |
+          mkdir -p prev && node assets/testgen.js "$PWD/out/loyiha" "$PWD/prev"
+          for f in prev/*.py; do timeout 1500 python3 -c "exec(open('$f').read())" 2>&1 | grep -E "JARVIS|Error|Trace|rror:" | tail -25 || true; done
+          ls -la prev
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete loyiha-assets -y --cleanup-tag 2>/dev/null || true
+          gh release create loyiha-assets out/loyiha-assets.zip prev/*.png --title "Loyiha kutubxonasi" --notes "Jarvis Loyiha: Poly Haven CC0 resurslari (HDRI, PBR, modellar) + sinov renderlar" --prerelease
