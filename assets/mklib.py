@@ -29,6 +29,24 @@ def thin(o, target):
     kill = [bm.faces[i] for i in np.nonzero(~np.isin(fl, np.array(sorted(keep))))[0]]
     bmesh.ops.delete(bm, geom=kill, context='FACES'); bm.to_mesh(me); bm.free(); me.update()
     nt = sum(len(p.vertices) - 2 for p in me.polygons); print('thin', o.name, tris, '->', nt, 'k=%.2f' % k); return nt
+
+def bbox_of(objs):
+    bpy.context.view_layer.update()
+    pts = [o.matrix_world @ mathutils.Vector(c) for o in objs if o.type == 'MESH' for c in o.bound_box]
+    mn = [min(p[i] for p in pts) for i in range(3)]; mx = [max(p[i] for p in pts) for i in range(3)]; return mn, mx
+def split(m, col):
+    """To'plam (masalan shrub_02 = 4 ta buta) ni alohida variant kolleksiyalarga ajratish: PH_<nom>#<i>"""
+    roots = [o for o in col.objects if o.parent is None and o.type in ('MESH', 'EMPTY')]
+    if len(roots) < 2: return 0
+    for i, r in enumerate(roots):
+        objs = [r] + list(r.children_recursive)
+        if not any(o.type == 'MESH' for o in objs): continue
+        c = bpy.data.collections.new('PH_%s#%d' % (m, i))
+        for o in objs: c.objects.link(o)
+        mn, mx = bbox_of(objs); c.instance_offset = ((mn[0] + mx[0]) / 2, (mn[1] + mx[1]) / 2, mn[2])
+        c['h'] = mx[2] - mn[2]; c['l'] = max(mx[0] - mn[0], mx[1] - mn[1]); c.use_fake_user = True
+    return len(roots)
+SPLIT = ('shrub_01', 'shrub_02', 'shrub_03', 'shrub_04')
 MAXT = 450000
 man = json.load(open(os.path.join(OUT, 'manifest.json'))); ok = []
 for m in man['models']:
@@ -55,6 +73,8 @@ for m in man['models']:
     mn = [min(p[i] for p in pts) for i in range(3)]; mx = [max(p[i] for p in pts) for i in range(3)]
     col.instance_offset = ((mn[0] + mx[0]) / 2, (mn[1] + mx[1]) / 2, mn[2])
     col['h'] = mx[2] - mn[2]; col['l'] = max(mx[0] - mn[0], mx[1] - mn[1])
+    if m in SPLIT:
+        print('split', m, split(m, col))
     ok.append(m); print('lib', m, round(col['h'], 2), round(col['l'], 2), len(new), tris)
 for c in list(bpy.context.scene.collection.children): bpy.context.scene.collection.children.unlink(c)
 for c in bpy.data.collections: c.use_fake_user = True
