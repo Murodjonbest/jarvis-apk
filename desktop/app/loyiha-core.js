@@ -488,53 +488,56 @@ try:
     BLOCK = [(-0.6, FY - 0.6, W + 0.6, L + 0.6), (CX - 1.1, FY - S * 1.25, CX + 1.1, FY), (DX - 2.0, FY - S * 1.25, DX + 2.0, FY)]
     # daraxtlar
     for x, y, h, r in TREES:
-        u = ucol('daraxt'); c = u or (pick('fir_tree_01', 'pine_tree_01', 'island_tree_01') if STYLE == 'neoklassik' else pick('island_tree_01', 'island_tree_02', 'island_tree_03', 'jacaranda_tree', 'tree_small_02'))
-        if c: put(c, x, y, 0, random.uniform(0, 6.28), h=h * 1.35, jit=0.12)
+        u = ucol('daraxt'); c = u or pick('island_tree_01', 'island_tree_02', 'tree_small_02')
+        if c: put(c, x, y, 0, random.uniform(0, 6.28), h=h * 1.3, jit=0.12)
         else:
             bpy.ops.mesh.primitive_cylinder_add(radius=0.15, depth=h * 0.45, location=(x, y, h * 0.22)); bpy.context.active_object.data.materials.append(M['trunk'])
             for dx, dy, dz, k in ((0, 0, 0.62, 1.0), (0.45, 0.2, 0.5, 0.7), (-0.4, -0.25, 0.52, 0.72), (0.1, -0.4, 0.78, 0.65), (-0.2, 0.35, 0.8, 0.6)):
                 bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=r * k, location=(x + dx * r, y + dy * r, h * dz)); o_ = bpy.context.active_object; o_.data.materials.append(M['leaf']); bpy.ops.object.shade_smooth()
     if VIEW != 'cut' and STYLE == 'neoklassik':
-        c = pick('fir_tree_01', 'pine_sapling_medium')
-        if c:
-            for x in (-1.4, W + 1.4): put(c, x, FY - 0.9, 0, random.uniform(0, 6.28), h=TOP * 0.9, jit=0.05)
+        cyp = bpy.data.collections.new('Sarv'); lm = pmat('Sarv_barg', (0.05, 0.16, 0.05, 1), 0.85)
+        for i in range(9):
+            z = 0.5 + i * 0.42; r = 0.55 * (1 - i / 10.5) + 0.12
+            prim('sph', (random.uniform(-0.05, 0.05), random.uniform(-0.05, 0.05), z), (r, r, 0.42), lm, cyp, smooth=True)
+        prim('cyl', (0, 0, 0.3), (0.08, 0.08, 0.6), M['trunk'], cyp, v=8); cyp['h'] = 4.3; cyp['l'] = 1.3
+        for x in (-1.3, W + 1.3): put(cyp, x, FY - 0.8, 0, random.uniform(0, 6.28), h=min(TOP * 0.85, 6.5), jit=0.04)
     # butalar fasad bo'ylab
-    sh = [n for n in ('shrub_01', 'shrub_02', 'shrub_03', 'shrub_04', 'shrub_sorrel_01') if n in LIBC]
+    sh = [n for n in ('shrub_02', 'shrub_03', 'shrub_01') if n in LIBC]
     if sh:
         x = 0.5
         while x < W - 0.3:
-            if abs(x - CX) > 1.7 and abs(x - DX) > 2.1: put(LIBC[random.choice(sh)], x, FY - 0.75, 0, random.uniform(0, 6.28), h=random.uniform(0.7, 1.1))
+            if abs(x - CX) > 1.7 and abs(x - DX) > 2.1: put(LIBC[random.choice(sh)], x, FY - 0.75, 0, random.uniform(0, 6.28), l=random.uniform(1.0, 1.4))
             x += random.uniform(1.0, 1.5)
         y = 0.8
         while y < L - 0.5:
-            for x in (-0.9, W + 0.9): put(LIBC[random.choice(sh)], x, y, 0, random.uniform(0, 6.28), h=random.uniform(0.8, 1.3))
+            for x in (-0.9, W + 0.9): put(LIBC[random.choice(sh)], x, y, 0, random.uniform(0, 6.28), l=random.uniform(1.1, 1.6))
             y += random.uniform(1.4, 2.0)
     # gullar (fasad oldida tasma)
     fl = pick('flower_gazania', 'periwinkle_plant', 'flower_ursinia')
     if fl:
-        pts = [(random.uniform(0.3, W - 0.3), random.uniform(FY - 1.55, FY - 1.15), 0) for _ in range(int(W * 9))]
-        scatter(fl, [p_ for p_ in pts if abs(p_[0] - CX) > 1.3 and abs(p_[0] - DX) > 2.0], 0.7, 1.2)
+        fl_l = dims(fl)[1]; pts = [(random.uniform(0.3, W - 0.3), random.uniform(FY - 1.55, FY - 1.15), 0) for _ in range(int(W * 0.5 * 3 / max(0.15, fl_l * fl_l)) + 4)]
+        scatter(fl, [p_ for p_ in pts if abs(p_[0] - CX) > 1.3 and abs(p_[0] - DX) > 2.0], 0.5, 0.8)
     # maysa
-    gr = pick('grass_medium_01', 'grass_medium_02')
+    gr = pick('grass_medium_02', 'grass_medium_01')
     if gr:
         pts = []
         x0, x1, y0, y1 = -S * 0.9, W + S * 0.9, FY - S * 1.2, L + S * 0.6
-        n = min(9000, int((x1 - x0) * (y1 - y0) * 1.6))
+        gl_ = max(0.3, dims(gr)[1]); n = min(7000, int((x1 - x0) * (y1 - y0) * 1.3 / (gl_ * gl_)))
         for _ in range(n):
             x, y = random.uniform(x0, x1), random.uniform(y0, y1)
             if not inside(x, y, BLOCK) and not (FY - 1.6 < y < FY - 0.4 and 0 < x < W): pts.append((x, y, 0))
-        scatter(gr, pts, 0.8, 1.6)
+        scatter(gr, pts, 0.8, 1.3)
     # kirish oldida guldonlar
     pp = pick('potted_plant_01', 'potted_plant_02', 'planter_pot_clay')
     if pp and VIEW != 'cut':
-        for x in (CX - 1.35, CX + 1.35): put(pp, x, FY - 0.45, 0, random.uniform(0, 6.28), h=1.0)
+        for x in (CX - 1.35, CX + 1.35): put(pp, x, FY - 0.45, 0, random.uniform(0, 6.28), h=1.2)
     # yo'lak chiroqlari
     LAMPS = []
-    lp = pick('street_lamp_02', 'street_lamp_01')
+    lp = pick('street_lamp_02', 'street_lamp_01'); lh = 1.7 if lp and lp.name.endswith('street_lamp_02') else 3.0
     if lp and VIEW != 'cut':
         y = FY - 2.6
         while y > FY - S * 1.15:
-            for x in (CX - 1.35, CX + 1.35): put(lp, x, y, 0, 0, h=2.7); LAMPS.append((x, y, 2.6))
+            for x in (CX - 1.35, CX + 1.35): put(lp, x, y, 0, 0, h=lh); LAMPS.append((x, y, lh * 0.92))
             y -= 5.0
     # bog' mebeli
     bn = pick('outdoor_table_chair_set_01', 'painted_wooden_bench', 'wooden_picnic_table')

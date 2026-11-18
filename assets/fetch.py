@@ -10,7 +10,7 @@ def dl(u, p):
 HDRI = {'kun': ['kloofendal_48d_partly_cloudy_puresky', 'kloofendal_43d_clear_puresky'], 'kech': ['belfast_sunset_puresky', 'evening_road_01_puresky']}
 TEX = ['white_stucco', 'plastered_wall', 'red_brick_03', 'brick_wall_02', 'clay_roof_tiles', 'roof_tiles_14', 'grey_roof_tiles_02', 'grey_roof_tiles', 'marble_01',
        'rectangular_facade_tiles', 'plaster_stone_wall_01', 'herringbone_pavement_02', 'brick_pavement', 'concrete_pavers_02', 'concrete_pavement', 'laminate_floor_02', 'diagonal_parquet', 'aerial_grass_rock', 'forest_floor']
-MODELS = ['island_tree_01', 'island_tree_02', 'island_tree_03', 'jacaranda_tree', 'tree_small_02', 'fir_tree_01', 'pine_tree_01', 'pine_sapling_medium',
+MODELS = ['island_tree_01', 'island_tree_02', 'island_tree_03', 'tree_small_02',
           'shrub_01', 'shrub_02', 'shrub_03', 'shrub_04', 'shrub_sorrel_01', 'grass_medium_01', 'grass_medium_02', 'flower_gazania', 'periwinkle_plant', 'flower_ursinia',
           'potted_plant_01', 'potted_plant_02', 'potted_plant_04', 'planter_pot_clay', 'street_lamp_01', 'street_lamp_02', 'outdoor_table_chair_set_01', 'painted_wooden_bench',
           'sofa_02', 'Sofa_01', 'sofa_03', 'modern_coffee_table_01', 'modern_coffee_table_02', 'modern_arm_chair_01', 'ArmChair_01', 'dining_table', 'dining_chair_02', 'side_table_01', 'painted_wooden_nightstand']
